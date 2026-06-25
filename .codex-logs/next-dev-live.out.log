@@ -1,0 +1,14 @@
+
+> lumenai@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3002
+
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://127.0.0.1:3002
+- Network:       http://127.0.0.1:3002
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 3.6s
+○ Compiling /login ...
+ GET /login?e=no_session 200 in 4.9s (compile: 4.1s, render: 859ms)
+ GET /widget?key=test&embed=1 200 in 288ms (compile: 107ms, render: 181ms)
