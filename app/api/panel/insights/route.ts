@@ -77,6 +77,95 @@ function safeJson<T>(value: string | null, fallback: T): T {
   }
 }
 
+function decodeXml(value: string) {
+  return clean(value, 500)
+    .replace(/<!\[CDATA\[(.*?)\]\]>/g, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+async function fetchMarketNews() {
+  const query = encodeURIComponent("AI ecommerce sales automation market");
+  const url = `https://news.google.com/rss/search?q=${query}&hl=es-419&gl=US&ceid=US:es-419`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "LumenAI-Radar/1.0",
+      },
+      signal: AbortSignal.timeout(4200),
+      next: { revalidate: 900 },
+    });
+
+    if (!res.ok) return [];
+
+    const xml = await res.text();
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)]
+      .slice(0, 5)
+      .map((match) => {
+        const block = match[1] || "";
+        const title = decodeXml(block.match(/<title>([\s\S]*?)<\/title>/)?.[1] || "");
+        const link = decodeXml(block.match(/<link>([\s\S]*?)<\/link>/)?.[1] || "");
+        const pubDate = decodeXml(block.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || "");
+        const [headline, source] = title.split(" - ").reduce(
+          (acc, part, index, arr) => {
+            if (index === arr.length - 1 && arr.length > 1) return [acc[0], part];
+            return [acc[0] ? `${acc[0]} - ${part}` : part, acc[1]];
+          },
+          ["", ""] as [string, string]
+        );
+
+        return {
+          headline: clean(headline || title, 180),
+          source: clean(source || "Google News", 80),
+          link,
+          pubDate,
+        };
+      })
+      .filter((item) => item.headline);
+
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+async function readPersistedMarketItems(input: {
+  admin: Awaited<ReturnType<typeof requireUserBusiness>>["admin"];
+  businessId: string;
+}) {
+  const { admin, businessId } = input;
+  if (!admin) return [];
+
+  try {
+    const { data, error } = await admin
+      .from("market_items")
+      .select("title,url,summary,source,published_at,created_at")
+      .eq("business_id", businessId)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (error || !Array.isArray(data)) return [];
+
+    return data
+      .map((item) => ({
+        headline: clean(item.title, 180),
+        source: clean(item.source || "Fuente conectada", 80),
+        link: clean(item.url, 500),
+        pubDate: clean(item.published_at || item.created_at, 80),
+        summary: clean(item.summary, 240),
+        persisted: true,
+      }))
+      .filter((item) => item.headline);
+  } catch {
+    return [];
+  }
+}
+
 export async function GET() {
   try {
     const ctx = await requireUserBusiness();
@@ -217,6 +306,12 @@ export async function GET() {
       });
     }
 
+    const persistedMarket = await readPersistedMarketItems({
+      admin: ctx.admin,
+      businessId,
+    });
+    const marketNews = persistedMarket.length ? persistedMarket : await fetchMarketNews();
+
     const aiText = await callGroqChat({
       purpose: "panel",
       responseFormat: "json_object",
@@ -226,7 +321,7 @@ export async function GET() {
         {
           role: "system",
           content:
-            "Eres Lumen Radar, asistente ejecutivo de panel. Das insights breves, accionables y honestos. No afirmes noticias en vivo si no hay fuente externa conectada. Responde JSON: {headline, brief, marketNotes}.",
+            "Eres Lumen Radar, asistente ejecutivo de panel potenciado por Lumenite. Das insights breves, accionables y honestos. Usa noticias externas solo si vienen en marketNews. Responde JSON: {headline, brief, marketNotes}.",
         },
         {
           role: "user",
@@ -257,8 +352,11 @@ export async function GET() {
               title: item.title,
               published: item.is_published,
             })),
+            marketNews,
             currentAdvice:
-              "Si el usuario pide noticias de mercado, explica que ahora el radar usa senales internas y mejores practicas. Para noticias reales se debe conectar RSS/News API o una tabla de market_feeds.",
+              marketNews.length > 0
+                ? "Cruza las noticias externas con el estado del panel. No exageres ni inventes datos."
+                : "Si no hay noticias externas disponibles, explica que Radar usa senales internas y mejores practicas.",
           }),
         },
       ],
@@ -284,10 +382,15 @@ export async function GET() {
       marketNotes:
         Array.isArray(ai.marketNotes) && ai.marketNotes.length
           ? ai.marketNotes.map((item) => clean(item, 220)).filter(Boolean).slice(0, 3)
+          : marketNews.length
+          ? marketNews
+              .slice(0, 3)
+              .map((item) => `${item.headline}${item.source ? ` (${item.source})` : ""}`)
           : [
               "Radar operativo activo: usa datos internos del panel.",
-              "Para noticias reales de mercado falta conectar RSS, News API o una tabla market_feeds.",
+              "Noticias externas no disponibles en este momento; se mantiene lectura interna del sistema.",
             ],
+      marketNews,
       refreshedAt: new Date().toISOString(),
     });
   } catch (error: unknown) {

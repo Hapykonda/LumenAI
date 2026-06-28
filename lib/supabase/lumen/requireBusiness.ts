@@ -2,13 +2,13 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseBrowserEnv, getSupabaseServerEnv } from "@/lib/env";
 
 async function resolveBusinessId(userId: string) {
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  );
+  const env = getSupabaseServerEnv();
+  const admin = createClient(env.url, env.serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
   const { data: p } = await admin
     .from("profiles")
@@ -31,10 +31,11 @@ async function resolveBusinessId(userId: string) {
 export async function requireBusiness() {
   // ✅ Next 16.1.1: cookies() devuelve Promise → SIEMPRE await
   const cookieStore = await cookies();
+  const env = getSupabaseBrowserEnv();
 
   const sb = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.url,
+    env.anonKey,
     {
       cookies: {
         getAll() {

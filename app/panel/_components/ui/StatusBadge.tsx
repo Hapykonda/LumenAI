@@ -20,30 +20,30 @@ export function StatusBadge({
       ? {
           borderColor: `rgba(${accentA}, .22)`,
           background: `linear-gradient(135deg, rgba(${accentA}, .085), rgba(${accentB}, .055))`,
-          color: "rgba(255,255,255,.88)",
+          color: "var(--lmn-text)",
         }
       : tone === "warning"
       ? {
-          borderColor: "rgba(255,199,87,.22)",
-          background: "rgba(255,199,87,.07)",
-          color: "rgba(255,255,255,.86)",
+          borderColor: "color-mix(in srgb, var(--lmn-warning) 32%, transparent)",
+          background: "color-mix(in srgb, var(--lmn-warning) 10%, transparent)",
+          color: "var(--lmn-text)",
         }
       : tone === "danger"
       ? {
-          borderColor: "rgba(255,90,90,.22)",
-          background: "rgba(255,90,90,.075)",
-          color: "rgba(255,255,255,.86)",
+          borderColor: "color-mix(in srgb, var(--lmn-danger) 32%, transparent)",
+          background: "color-mix(in srgb, var(--lmn-danger) 10%, transparent)",
+          color: "var(--lmn-text)",
         }
       : tone === "muted"
       ? {
-          borderColor: "rgba(255,255,255,.035)",
-          background: "rgba(255,255,255,.012)",
-          color: "rgba(255,255,255,.45)",
+          borderColor: "var(--lmn-border)",
+          background: "color-mix(in srgb, var(--lmn-surface-2) 74%, transparent)",
+          color: "var(--lmn-muted)",
         }
       : {
-          borderColor: "rgba(255,255,255,.05)",
-          background: "rgba(255,255,255,.018)",
-          color: "rgba(255,255,255,.72)",
+          borderColor: "var(--lmn-border)",
+          background: "color-mix(in srgb, var(--lmn-surface) 78%, transparent)",
+          color: "var(--lmn-text-soft)",
         };
 
   return (

@@ -30,11 +30,22 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files: keep real secrets out of Git, allow sanitized examples.
+.env
+.env.*
+.env.local
+.env*.local
+!.env.example
+!.env.local.example
+*.secret
+*.secrets
+*secrets*.json
 
 # vercel
 .vercel
+
+# Supabase local metadata
+supabase/.temp/
 
 # typescript
 *.tsbuildinfo

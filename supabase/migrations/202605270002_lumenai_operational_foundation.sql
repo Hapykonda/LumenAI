@@ -312,6 +312,8 @@ create table if not exists public.lumenai_audit_log (
 create index if not exists lumenai_audit_business_created_idx
   on public.lumenai_audit_log (business_id, created_at desc);
 
+drop function if exists public.get_business_kb_text(uuid);
+
 create or replace function public.get_business_kb_text(p_business_id uuid)
 returns text
 language sql

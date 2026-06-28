@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies, headers } from "next/headers";
+import { getSupabaseBrowserEnv, getSupabaseServerEnv } from "@/lib/env";
 
 type CookiePair = { name: string; value: string };
 
@@ -35,10 +36,11 @@ async function getAllCookiesSafe(): Promise<CookiePair[]> {
 
 export async function sbServer(res: NextResponse) {
   const cookiePairs = await getAllCookiesSafe();
+  const env = getSupabaseBrowserEnv();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.url,
+    env.anonKey,
     {
       cookies: {
         getAll() {
@@ -78,11 +80,10 @@ export async function requireUserAndBusinessId(supabaseAuth: any) {
   const user = data?.user;
   if (!user) throw new Error("not_authenticated");
 
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  );
+  const env = getSupabaseServerEnv();
+  const admin = createClient(env.url, env.serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
   const businessId = await resolveBusinessId(admin, user.id);
   if (!businessId) throw new Error("no_business");

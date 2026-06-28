@@ -5,6 +5,7 @@ import { buildBusinessContext } from "@/lib/ai/business-context";
 import { buildDefaultSalesSystemPrompt } from "@/lib/ai/defaultSalesPrompt";
 import { callGroqChat } from "@/lib/ai/groq";
 import { resolveCountryName } from "@/lib/geo/countries";
+import { getSupabaseServerEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -102,14 +103,9 @@ export async function OPTIONS() {
 }
 
 function admin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const env = getSupabaseServerEnv();
 
-  if (!url || !service) {
-    throw new Error("Faltan env NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY");
-  }
-
-  return createClient(url, service, {
+  return createClient(env.url, env.serviceRoleKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,

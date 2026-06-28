@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseBrowserEnv, getSupabaseServerEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,10 +13,11 @@ export const runtime = "nodejs";
  */
 export async function sbServer(res: NextResponse) {
   const cookieStore = await Promise.resolve(cookies() as any);
+  const env = getSupabaseBrowserEnv();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.url,
+    env.anonKey,
     {
       cookies: {
         getAll() {
@@ -35,11 +37,11 @@ export async function sbServer(res: NextResponse) {
  * Admin client (service role) — SOLO en server
  */
 export function sbAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  );
+  const env = getSupabaseServerEnv();
+
+  return createClient(env.url, env.serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 /** Copia cookies del response “interno” al JSON final */

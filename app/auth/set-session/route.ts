@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getSupabaseBrowserEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -16,10 +17,11 @@ export async function POST(request: NextRequest) {
   }
 
   const response = NextResponse.json({ ok: true });
+  const env = getSupabaseBrowserEnv();
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.url,
+    env.anonKey,
     {
       cookies: {
         getAll() {

@@ -24,26 +24,23 @@ export function GlassCard({
   const variantStyle: CSSProperties =
     variant === "strong"
       ? {
-          borderColor: "rgba(255,255,255,.072)",
+          borderColor: "var(--lmn-border-strong)",
           background:
-            `radial-gradient(420px 240px at 88% 102%, rgba(${accentA}, .12), transparent 66%), radial-gradient(340px 220px at 4% 0%, rgba(${accentB}, .08), transparent 62%), linear-gradient(180deg, rgba(255,255,255,.048), rgba(255,255,255,.012)), rgba(8,10,15,.86)`,
-          boxShadow:
-            "0 24px 70px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.045)",
+            `radial-gradient(420px 240px at 88% 102%, rgba(${accentA}, .12), transparent 66%), radial-gradient(340px 220px at 4% 0%, rgba(${accentB}, .08), transparent 62%), linear-gradient(180deg, rgba(255,255,255,.060), rgba(255,255,255,.014)), var(--lmn-surface)`,
+          boxShadow: "var(--lmn-shadow-card), inset 0 1px 0 rgba(255,255,255,.055)",
         }
       : variant === "soft"
       ? {
-          borderColor: "rgba(255,255,255,.050)",
+          borderColor: "var(--lmn-border)",
           background:
-            `radial-gradient(320px 190px at 94% 105%, rgba(${accentA}, .09), transparent 68%), radial-gradient(260px 160px at 6% 0%, rgba(${accentB}, .06), transparent 62%), linear-gradient(180deg, rgba(255,255,255,.036), rgba(255,255,255,.010)), rgba(11,15,22,.72)`,
-          boxShadow:
-            "0 18px 48px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.035)",
+            `radial-gradient(320px 190px at 94% 105%, rgba(${accentA}, .08), transparent 68%), radial-gradient(260px 160px at 6% 0%, rgba(${accentB}, .05), transparent 62%), linear-gradient(180deg, rgba(255,255,255,.040), rgba(255,255,255,.010)), var(--lmn-surface-2)`,
+          boxShadow: "var(--lmn-shadow-soft), inset 0 1px 0 rgba(255,255,255,.040)",
         }
       : {
-          borderColor: "rgba(255,255,255,.058)",
+          borderColor: "var(--lmn-border)",
           background:
-            `radial-gradient(380px 220px at 92% 104%, rgba(${accentA}, .105), transparent 66%), radial-gradient(300px 180px at 0% 0%, rgba(${accentB}, .070), transparent 64%), linear-gradient(180deg, rgba(255,255,255,.042), rgba(255,255,255,.010)), rgba(8,10,15,.86)`,
-          boxShadow:
-            "0 22px 58px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.040)",
+            `radial-gradient(380px 220px at 92% 104%, rgba(${accentA}, .095), transparent 66%), radial-gradient(300px 180px at 0% 0%, rgba(${accentB}, .060), transparent 64%), linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.010)), var(--lmn-surface)`,
+          boxShadow: "var(--lmn-shadow-card), inset 0 1px 0 rgba(255,255,255,.045)",
         };
 
   return (
@@ -62,7 +59,7 @@ export function GlassCard({
         backdropFilter: "none",
         WebkitBackdropFilter: "none",
         contain: "layout paint",
-        borderRadius: "10px",
+        borderRadius: "var(--lmn-radius-lg)",
         ...style,
       }}
     >

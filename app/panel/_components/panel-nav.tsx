@@ -2,6 +2,11 @@ import type { ReactNode } from "react";
 import {
   BotMessageSquare,
   BrainCircuit,
+  GitBranch,
+  HeartPulse,
+  Megaphone,
+  Newspaper,
+  TrendingUp,
   WandSparkles,
   LayoutDashboard,
   MessagesSquare,
@@ -61,6 +66,34 @@ export const PANEL_NAV: NavItem[] = [
     icon: Icon(WandSparkles),
   },
   {
+    label: "Radar",
+    href: "/panel/radar",
+    desc: "Senales ejecutivas",
+    group: "builder",
+    icon: Icon(Newspaper),
+  },
+  {
+    label: "Growth",
+    href: "/panel/growth",
+    desc: "Oportunidades IA",
+    group: "builder",
+    icon: Icon(TrendingUp),
+  },
+  {
+    label: "Business Twin",
+    href: "/panel/twin",
+    desc: "Simular decisiones",
+    group: "builder",
+    icon: Icon(GitBranch),
+  },
+  {
+    label: "Campaigns",
+    href: "/panel/campaigns",
+    desc: "Campanas listas",
+    group: "builder",
+    icon: Icon(Megaphone),
+  },
+  {
     label: "Knowledge",
     href: "/panel/knowledge",
     desc: "Cerebro del negocio",
@@ -95,11 +128,18 @@ export const PANEL_NAV: NavItem[] = [
     group: "system",
     icon: Icon(Palette),
   },
+  {
+    label: "Health",
+    href: "/panel/system-health",
+    desc: "QA operativo",
+    group: "system",
+    icon: Icon(HeartPulse),
+  },
 ];
 
 export const PANEL_NAV_GROUP_LABELS: Record<NavGroup, string> = {
   center: "Principal",
-  builder: "Base IA",
+  builder: "Inteligencia",
   operation: "Operacion",
   system: "Sistema",
 };

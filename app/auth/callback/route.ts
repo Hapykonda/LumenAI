@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { getSupabaseBrowserEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,10 +15,11 @@ export async function GET(req: NextRequest) {
   const type = url.searchParams.get("type"); // a veces viene vacío
 
   const res = NextResponse.redirect(`${origin}${next}`);
+  const env = getSupabaseBrowserEnv();
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.url,
+    env.anonKey,
     {
       cookies: {
         getAll() {

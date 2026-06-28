@@ -9,9 +9,13 @@ import {
   Loader2,
   RefreshCw,
   Rocket,
+  CalendarClock,
   Send,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
+  ImagePlus,
+  Undo2,
   WandSparkles,
 } from "lucide-react";
 import { ActionButton } from "../_components/ui/ActionButton";
@@ -58,25 +62,48 @@ type Snapshot = {
   };
 };
 
+type LastSnapshot = {
+  id: string;
+  actionType?: string | null;
+  userPrompt?: string | null;
+  createdAt?: string | null;
+};
+
 type ApiData = {
   ok?: boolean;
   error?: string;
+  mode?: "chat" | "proposal" | "executed";
+  assistantMessage?: string;
   ai?: AiStatus;
   snapshot?: Snapshot;
+  lastSnapshot?: LastSnapshot | null;
   examples?: string[];
   proposal?: Proposal;
   applied?: boolean;
   appliedAt?: string;
+  rollback?: {
+    restored: boolean;
+    message: string;
+    snapshotId: string | null;
+  };
 };
 
 const starterPrompts = [
+  "Agrega el producto Snide Nocta, disponible en todos los colores, precio 70 USD.",
   "Configura LumenAI para vender con un tono elegante, claro y consultivo.",
-  "Audita todo el panel y dejalo listo para presentar a un cliente real.",
+  "Cambia el color del panel y widget a #0A84FF y #7C3AED.",
   "Optimiza el widget para captar leads y derivar a humano cuando corresponda.",
-  "Mejora la calibracion para objeciones de precio, confianza y urgencia.",
+  "Crea una regla para capturar solicitudes de reunion y pedir datos de contacto.",
 ];
 
 const systemLayers = [
+  {
+    icon: ShoppingBag,
+    title: "Productos",
+    text: "Crea, actualiza o elimina productos, precios y disponibilidad.",
+    prompt:
+      "Agrega un producto llamado Snide Nocta, disponible en todos los colores, precio 70 USD.",
+  },
   {
     icon: WandSparkles,
     title: "Interpretacion",
@@ -105,6 +132,20 @@ const systemLayers = [
     prompt:
       "Deja listo el sistema operativo: widget, seguimiento de leads, automatizaciones y seguridad.",
   },
+  {
+    icon: CalendarClock,
+    title: "Agenda",
+    text: "Prepara reglas para reuniones, citas y derivacion humana.",
+    prompt:
+      "Crea una regla para cuando un cliente pida reunion: capturar nombre, contacto, motivo y fecha ideal.",
+  },
+  {
+    icon: ImagePlus,
+    title: "Perfil visual",
+    text: "Conecta avatar, logo, contacto y presencia del widget.",
+    prompt:
+      "Revisa el perfil visual del widget y dime que falta para que tenga avatar, logo y contacto profesional.",
+  },
 ];
 
 function uid() {
@@ -120,6 +161,7 @@ function readiness(snapshot?: Snapshot | null) {
 
 export default function AutoConfigClient() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [lastSnapshotInfo, setLastSnapshotInfo] = useState<LastSnapshot | null>(null);
   const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [input, setInput] = useState("");
@@ -134,6 +176,7 @@ export default function AutoConfigClient() {
   ]);
   const [busy, setBusy] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [rollingBack, setRollingBack] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const bootPromptRef = useRef(false);
@@ -171,6 +214,19 @@ export default function AutoConfigClient() {
       }
       setAiStatus(json?.ai ?? null);
       setSnapshot(json?.snapshot ?? null);
+      setLastSnapshotInfo(json?.lastSnapshot ?? null);
+      setMessages((items) =>
+        items.length === 1 && items[0]?.id === "hello"
+          ? [
+              {
+                ...items[0],
+                content: json?.ai?.configured
+                  ? "Lumenite esta conectado y leyendo este panel. Pideme un cambio concreto y puedo aplicarlo en calibracion, widget, Knowledge, productos, contacto o automatizaciones."
+                  : "Lumenite esta en modo seguro. Puedo revisar el panel y preparar propuestas, pero falta conectar el motor operativo externo.",
+              },
+            ]
+          : items
+      );
       setError(null);
     } catch {
       setError("No se pudo conectar con Config IA.");
@@ -186,13 +242,16 @@ export default function AutoConfigClient() {
     setProposal(null);
     setLastRequest(message);
     setInput("");
+    const pendingId = uid();
     setMessages((items) => [
       ...items,
       { id: uid(), role: "user", content: message },
       {
-        id: uid(),
+        id: pendingId,
         role: "assistant",
-        content: "Estoy leyendo el panel y preparando una propuesta segura.",
+        content: aiStatus?.configured
+          ? "Lumenite esta leyendo el panel antes de responder."
+          : "Estoy leyendo el panel en modo seguro antes de responder.",
       },
     ]);
 
@@ -205,29 +264,57 @@ export default function AutoConfigClient() {
       });
       const json = (await res.json().catch(() => null)) as ApiData | null;
 
-      if (!res.ok || json?.ok === false || !json?.proposal) {
-        throw new Error(json?.error || "No se pudo generar propuesta.");
+      if (!res.ok || json?.ok === false || !json) {
+        throw new Error(json?.error || "No se pudo generar respuesta.");
+      }
+
+      setAiStatus(json.ai ?? aiStatus);
+
+      if (json.mode === "chat" || json.mode === "executed" || json.assistantMessage) {
+        setProposal(null);
+        if (json.mode === "executed") {
+          void loadSnapshot();
+        }
+        setMessages((items) =>
+          items.map((item) =>
+            item.id === pendingId
+              ? {
+                  ...item,
+                  content:
+                    json.assistantMessage ||
+                    "Lumenite esta conectado. Dame una instruccion concreta para configurar el panel.",
+                }
+              : item
+          )
+        );
+        return;
+      }
+
+      if (!json.proposal) {
+        throw new Error(json.error || "No se pudo generar propuesta.");
       }
 
       const nextProposal = json.proposal;
-      setAiStatus(json.ai ?? aiStatus);
       setProposal(nextProposal);
-      setMessages((items) => [
-        ...items,
-        {
-          id: uid(),
-          role: "assistant",
-          content: `${nextProposal.title}\n\n${nextProposal.summary}`,
-        },
-      ]);
+      setMessages((items) =>
+        items.map((item) =>
+          item.id === pendingId
+            ? {
+                ...item,
+                content: `${nextProposal.title}\n\n${nextProposal.summary}`,
+              }
+            : item
+        )
+      );
     } catch (err) {
       const messageText =
-        err instanceof Error ? err.message : "Error generando propuesta.";
+        err instanceof Error ? err.message : "Error generando respuesta.";
       setError(messageText);
-      setMessages((items) => [
-        ...items,
-        { id: uid(), role: "assistant", content: messageText },
-      ]);
+      setMessages((items) =>
+        items.map((item) =>
+          item.id === pendingId ? { ...item, content: messageText } : item
+        )
+      );
     } finally {
       setBusy(false);
     }
@@ -304,6 +391,47 @@ export default function AutoConfigClient() {
     }
   }
 
+  async function rollbackLastConfig() {
+    if (rollingBack || busy) return;
+
+    setRollingBack(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/panel/autoconfig", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ rollback: true }),
+      });
+      const json = (await res.json().catch(() => null)) as ApiData | null;
+
+      if (!res.ok || json?.ok === false || !json) {
+        throw new Error(json?.error || "No se pudo revertir la configuracion.");
+      }
+
+      setMessages((items) => [
+        ...items,
+        {
+          id: uid(),
+          role: "assistant",
+          content:
+            json.assistantMessage ||
+            "Reversion ejecutada. Revisa el borrador y publica si quieres llevarla al widget.",
+        },
+      ]);
+      await loadSnapshot();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo revertir la configuracion."
+      );
+    } finally {
+      setRollingBack(false);
+    }
+  }
+
   useEffect(() => {
     void loadSnapshot();
 
@@ -344,6 +472,18 @@ export default function AutoConfigClient() {
             <RefreshCw className="h-3.5 w-3.5" />
             Actualizar
           </ActionButton>
+          <ActionButton
+            onClick={() => void rollbackLastConfig()}
+            variant="secondary"
+            disabled={!lastSnapshotInfo || rollingBack}
+          >
+            {rollingBack ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Undo2 className="h-3.5 w-3.5" />
+            )}
+            Revertir
+          </ActionButton>
         </div>
       </PanelSectionHeader>
 
@@ -372,14 +512,14 @@ export default function AutoConfigClient() {
 
           <div className="lmn-ai-connection-strip">
             <span>
-              Motor: {aiStatus?.provider ? aiStatus.provider.toUpperCase() : "Local"}
+              Motor: Lumenite
             </span>
             <span>
               {aiStatus?.configured
-                ? aiStatus.model
-                : "Fallback sin API externa"}
+                ? "Configuracion operativa activa"
+                : "Modo seguro"}
             </span>
-            {aiStatus?.usingFallbackKey ? <span>Key global</span> : null}
+            {aiStatus?.usingFallbackKey ? <span>Conexion compartida</span> : null}
           </div>
 
           <div ref={scrollRef} className="lmn-autoconfig-thread">
@@ -424,7 +564,7 @@ export default function AutoConfigClient() {
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="Ej: deja LumenAI listo para una demo premium, con tono elegante y cierre consultivo..."
+                placeholder="Ej: Agrega un servicio de instalacion web desde $69.990, activa tono cercano y destaca WhatsApp como canal principal."
                 rows={3}
               />
               <button type="submit" disabled={busy || !input.trim()}>
@@ -461,6 +601,16 @@ export default function AutoConfigClient() {
                   />
                 </div>
               ))}
+            </div>
+            <div className="mt-4 rounded-[14px] border border-white/[0.07] bg-white/[0.018] p-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/34">
+                Ultimo snapshot
+              </div>
+              <p className="mt-2 text-xs leading-5 text-white/48">
+                {lastSnapshotInfo?.createdAt
+                  ? `${lastSnapshotInfo.actionType || "configuracion"} guardada. Puedes revertir el borrador si el cambio no encaja.`
+                  : "Aun no hay snapshots. Se crearan cuando Config IA aplique cambios."}
+              </p>
             </div>
           </GlassCard>
 

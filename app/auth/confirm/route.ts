@@ -1,6 +1,7 @@
- import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
+import { getSupabaseBrowserEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -37,6 +38,7 @@ export async function GET(req: Request) {
   const origin = url.origin;
 
   const response = NextResponse.redirect(new URL(next, origin));
+  const env = getSupabaseBrowserEnv();
 
   // ✅ cookies() puede ser sync o async en Next 16 → unwrap seguro
   const cookieStore: any = await Promise.resolve(cookies() as any);
@@ -49,8 +51,8 @@ export async function GET(req: Request) {
   };
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.url,
+    env.anonKey,
     {
       cookies: {
         getAll() {

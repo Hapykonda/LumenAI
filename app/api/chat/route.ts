@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function POST() {
   return NextResponse.json(
-    { ok: false, error: "API /api/chat desactivada temporalmente (modo rescate auth/panel)." },
+    { ok: false, error: "Este canal no esta disponible. Usa el chat del panel o el widget publico." },
     { status: 501 }
   );
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getSupabaseBrowserEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,10 +22,11 @@ export async function POST(req: Request) {
 
   // 3) Capturar cookies que Supabase quiera setear (sin escribir aún en response)
   const pendingCookies: Array<{ name: string; value: string; options: any }> = [];
+  const env = getSupabaseBrowserEnv();
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.url,
+    env.anonKey,
     {
       cookies: {
         getAll() {

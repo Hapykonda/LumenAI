@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { resolveLumeniteEnv } from "@/lib/ai/lumenite/env";
+import { getOptionalEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,11 +24,12 @@ export async function POST(req: Request) {
   const headers = corsHeaders();
 
   try {
-    const apiKey = process.env.GROQ_API_KEY;
+    const widgetEnv = resolveLumeniteEnv("widget");
+    const apiKey = widgetEnv.apiKey;
 
     if (!apiKey) {
       return NextResponse.json(
-        { ok: false, error: "Falta GROQ_API_KEY para transcribir audio." },
+        { ok: false, error: "La transcripcion de audio no esta configurada." },
         { status: 500, headers }
       );
     }
@@ -50,7 +53,12 @@ export async function POST(req: Request) {
 
     const upstream = new FormData();
     upstream.set("file", file, file.name || "audio.webm");
-    upstream.set("model", process.env.GROQ_TRANSCRIPTION_MODEL || "whisper-large-v3-turbo");
+    upstream.set(
+      "model",
+      getOptionalEnv("GROQ_TRANSCRIPTION_MODEL") ||
+        getOptionalEnv("GROQ_WIDGET_TRANSCRIPTION_MODEL") ||
+        "whisper-large-v3-turbo"
+    );
     upstream.set("language", String(form.get("language") || "es").slice(0, 12));
     upstream.set("response_format", "json");
 
@@ -68,7 +76,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           ok: false,
-          error: data?.error?.message || `Groq transcription error ${res.status}`,
+          error: data?.error?.message || `No se pudo transcribir el audio (${res.status}).`,
         },
         { status: res.status, headers }
       );

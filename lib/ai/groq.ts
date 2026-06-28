@@ -1,58 +1,26 @@
-type GroqPurpose = "autoconfig" | "panel" | "widget";
+import {
+  getLumenitePublicStatus,
+  resolveLumeniteEnv,
+  type LumeniteAgentKey,
+} from "@/lib/ai/lumenite/env";
+
+type GroqPurpose = LumeniteAgentKey;
 
 type ChatMessage = {
   role: "system" | "user" | "assistant";
   content: string;
 };
 
-const purposeEnv: Record<
-  GroqPurpose,
-  { key: string; model: string; fallbackModel: string }
-> = {
-  autoconfig: {
-    key: "GROQ_AUTOCONFIG_API_KEY",
-    model: "GROQ_AUTOCONFIG_MODEL",
-    fallbackModel: "llama-3.3-70b-versatile",
-  },
-  panel: {
-    key: "GROQ_PANEL_API_KEY",
-    model: "GROQ_PANEL_MODEL",
-    fallbackModel: "llama-3.3-70b-versatile",
-  },
-  widget: {
-    key: "GROQ_WIDGET_API_KEY",
-    model: "GROQ_WIDGET_MODEL",
-    fallbackModel: "llama-3.3-70b-versatile",
-  },
-};
-
 export function getGroqApiKey(purpose: GroqPurpose) {
-  const envName = purposeEnv[purpose].key;
-  return process.env[envName] || process.env.GROQ_API_KEY || "";
+  return resolveLumeniteEnv(purpose).apiKey;
 }
 
 export function getGroqStatus(purpose: GroqPurpose) {
-  const config = purposeEnv[purpose];
-  const dedicatedKey = Boolean(process.env[config.key]);
-  const fallbackKey = Boolean(process.env.GROQ_API_KEY);
-
-  return {
-    provider: "groq",
-    configured: dedicatedKey || fallbackKey,
-    dedicatedKey,
-    usingFallbackKey: !dedicatedKey && fallbackKey,
-    env: config.key,
-    model: getGroqModel(purpose),
-  };
+  return getLumenitePublicStatus(purpose);
 }
 
 export function getGroqModel(purpose: GroqPurpose) {
-  const config = purposeEnv[purpose];
-  return (
-    process.env[config.model] ||
-    process.env.GROQ_MODEL ||
-    config.fallbackModel
-  );
+  return resolveLumeniteEnv(purpose).model;
 }
 
 export async function callGroqChat(input: {

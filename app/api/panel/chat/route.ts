@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { callGroqChat } from "@/lib/ai/groq";
+import { getSupabaseBrowserEnv, getSupabaseServerEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,19 +11,20 @@ export const runtime = "nodejs";
 type PendingCookie = { name: string; value: string; options?: any };
 
 function supabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
+  const env = getSupabaseServerEnv();
+
+  return createClient(env.url, env.serviceRoleKey, {
+    auth: { persistSession: false },
+  });
 }
 
 function supabaseSSR(req: NextRequest) {
   const pending: PendingCookie[] = [];
+  const env = getSupabaseBrowserEnv();
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.url,
+    env.anonKey,
     {
       cookies: {
         getAll() {

@@ -31,25 +31,28 @@ function getStyle(variant: "primary" | "secondary" | "ghost") {
   if (variant === "primary") {
     return {
       borderColor: `rgba(${accentA}, .34)`,
-      background: `linear-gradient(135deg, rgba(${accentA}, .14), rgba(${accentB}, .075)), rgba(8,10,15,.86)`,
-      boxShadow: `0 14px 34px rgba(0,0,0,.34), 0 0 18px rgba(${accentA}, .045), inset 0 1px 0 rgba(255,255,255,.045)`,
-      borderRadius: 8,
+      background: `linear-gradient(135deg, rgba(${accentA}, .86), rgba(${accentB}, .78))`,
+      boxShadow: `var(--lmn-glow), inset 0 1px 0 rgba(255,255,255,.20)`,
+      color: "var(--lmn-bg)",
+      borderRadius: "var(--lmn-radius-sm)",
     };
   }
 
   if (variant === "secondary") {
     return {
-      borderColor: "rgba(255,255,255,.070)",
-      background: "linear-gradient(145deg, rgba(255,255,255,.035), rgba(255,255,255,.010)), rgba(8,10,15,.76)",
-      boxShadow: "0 10px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.030)",
-      borderRadius: 8,
+      borderColor: "var(--lmn-border)",
+      background: "linear-gradient(145deg, rgba(255,255,255,.048), rgba(255,255,255,.012)), var(--lmn-surface)",
+      boxShadow: "var(--lmn-shadow-soft), inset 0 1px 0 rgba(255,255,255,.040)",
+      color: "var(--lmn-text)",
+      borderRadius: "var(--lmn-radius-sm)",
     };
   }
 
   return {
-    borderColor: "rgba(255,255,255,.030)",
-    background: "rgba(8,10,15,.62)",
-    borderRadius: 8,
+    borderColor: "var(--lmn-border)",
+    background: "transparent",
+    color: "var(--lmn-text-soft)",
+    borderRadius: "var(--lmn-radius-sm)",
   };
 }
 
@@ -58,7 +61,7 @@ export function ActionButton(props: ActionButtonProps) {
   const disabled = props.disabled;
 
   const baseClass = cn(
-    "apex-button lmn-action-button lmn-liquid-button lmn-focus-ring inline-flex h-10 items-center justify-center gap-2 border px-3 text-xs font-black text-white transition duration-150",
+    "apex-button lmn-action-button lmn-liquid-button lmn-focus-ring inline-flex h-10 items-center justify-center gap-2 border px-3 text-xs font-black transition duration-150",
     "hover:bg-white/[0.035] active:translate-y-px",
     disabled && "pointer-events-none opacity-50",
     props.className

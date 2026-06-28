@@ -1,107 +1,57 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, Sparkles } from "lucide-react";
+import { ArrowUpRight, Moon, Sparkles, Sun } from "lucide-react";
 import { AnimatedSidebar } from "./AnimatedSidebar";
 import { isPanelActive, PANEL_NAV } from "./panel-nav";
 import { PanelInsightsAssistant } from "./PanelInsightsAssistant";
-
-const PANEL_THEME_EVENT = "lumen-theme:update";
-
-function normalizeHex(hex?: string | null) {
-  if (!hex) return null;
-
-  let value = hex.trim().replace("#", "");
-
-  if (value.length === 3) {
-    value = value
-      .split("")
-      .map((char) => char + char)
-      .join("");
-  }
-
-  if (!/^[0-9a-fA-F]{6}$/.test(value)) return null;
-
-  return `#${value.toLowerCase()}`;
-}
-
-function hexToRgbString(hex?: string | null) {
-  const safe = normalizeHex(hex);
-  if (!safe) return null;
-
-  const value = safe.slice(1);
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-
-  return `${r}, ${g}, ${b}`;
-}
-
-function applyPanelTheme(input?: {
-  primary?: string | null;
-  secondary?: string | null;
-}) {
-  if (typeof document === "undefined") return;
-
-  const primary = normalizeHex(input?.primary) || "#00E5FF";
-  const secondary = normalizeHex(input?.secondary) || "#1B43FF";
-
-  const primaryRgb = hexToRgbString(primary) || "0, 229, 255";
-  const secondaryRgb = hexToRgbString(secondary) || "27, 67, 255";
-
-  const root = document.documentElement;
-
-  root.style.setProperty("--lmn-accent", primary);
-  root.style.setProperty("--lmn-accent-2", secondary);
-  root.style.setProperty("--lmn-accent-rgb", primaryRgb);
-  root.style.setProperty("--lmn-accent-2-rgb", secondaryRgb);
-}
-
-function readStoredPanelTheme() {
-  if (typeof window === "undefined") return null;
-
-  const primary =
-    window.localStorage.getItem("lmn_theme_primary") ||
-    window.localStorage.getItem("widget_primary_color") ||
-    window.localStorage.getItem("panel_primary_color");
-
-  const secondary =
-    window.localStorage.getItem("lmn_theme_secondary") ||
-    window.localStorage.getItem("widget_secondary_color") ||
-    window.localStorage.getItem("panel_secondary_color") ||
-    primary;
-
-  if (!primary && !secondary) return null;
-
-  return {
-    primary: primary || "#00E5FF",
-    secondary: secondary || "#1B43FF",
-  };
-}
+import {
+  PANEL_THEME_EVENT,
+  applyPanelThemeToRoot,
+  readPanelThemeFromStorage,
+  savePanelThemeToStorage,
+  type PanelThemeColors,
+} from "@/lib/panel-theme";
 
 function PanelThemeRuntime() {
   useEffect(() => {
-    const stored = readStoredPanelTheme();
+    const stored = readPanelThemeFromStorage();
+    const currentVersion = window.localStorage.getItem("lmn_theme_version");
+    const shouldUpgradeDefault = currentVersion !== "minimal-premium-20260626";
 
-    applyPanelTheme(
-      stored || {
-        primary: "#00E5FF",
-        secondary: "#1B43FF",
+    applyPanelThemeToRoot(
+      shouldUpgradeDefault
+        ? {
+            ...(stored || {
+              primary: "#D7FF2F",
+              secondary: "#111318",
+            }),
+            mode: "light",
+          }
+        : stored || {
+        primary: "#D7FF2F",
+        secondary: "#111318",
+        mode: "light",
       }
     );
+    if (shouldUpgradeDefault) {
+      savePanelThemeToStorage({
+        ...(stored || {
+          primary: "#D7FF2F",
+          secondary: "#111318",
+        }),
+        mode: "light",
+      });
+      window.localStorage.setItem("lmn_theme_version", "minimal-premium-20260626");
+    }
 
     const handleThemeChange = (event: Event) => {
-      const customEvent = event as CustomEvent<{
-        primary?: string;
-        secondary?: string;
-      }>;
+      const customEvent = event as CustomEvent<Partial<PanelThemeColors>>;
 
-      applyPanelTheme({
-        primary: customEvent.detail?.primary,
-        secondary: customEvent.detail?.secondary,
-      });
+      applyPanelThemeToRoot(customEvent.detail);
+      savePanelThemeToStorage(customEvent.detail);
     };
 
     window.addEventListener(PANEL_THEME_EVENT, handleThemeChange as EventListener);
@@ -117,6 +67,12 @@ function PanelThemeRuntime() {
   return null;
 }
 
+function readModePreference() {
+  if (typeof window === "undefined") return "light";
+  const stored = readPanelThemeFromStorage();
+  return stored?.mode === "dark" ? "dark" : "light";
+}
+
 export default function PanelShell({
   children,
   userEmail,
@@ -125,14 +81,34 @@ export default function PanelShell({
   userEmail?: string;
 }) {
   const pathname = usePathname() || "/panel/overview";
+  const [mode, setMode] = useState<"light" | "dark">("light");
   const activeItem =
     PANEL_NAV.find((item) => isPanelActive(pathname, item.href)) || PANEL_NAV[0];
 
+  useEffect(() => {
+    setMode(readModePreference());
+  }, []);
+
+  function toggleMode() {
+    const next = mode === "dark" ? "light" : "dark";
+    setMode(next);
+    const stored = readPanelThemeFromStorage();
+    const nextTheme = {
+      ...(stored || {
+        primary: "#D7FF2F",
+        secondary: "#64B5FF",
+      }),
+      mode: next,
+    } satisfies Partial<PanelThemeColors>;
+    applyPanelThemeToRoot(nextTheme);
+    savePanelThemeToStorage(nextTheme);
+  }
+
   return (
     <div
-      className="apex-os lmn-vision-os lmn-obsidian-system lmn-vercel-system relative isolate min-h-screen w-full overflow-x-hidden bg-black text-white"
+      className="apex-os lmn-minimal-shell lmn-vision-os lmn-obsidian-system lmn-vercel-system relative isolate min-h-screen w-full overflow-x-hidden text-white"
       style={{
-        colorScheme: "dark",
+        colorScheme: mode,
       }}
     >
       <PanelThemeRuntime />
@@ -172,6 +148,19 @@ export default function PanelShell({
                   </div>
 
                   <div className="lmn-panel-topbar-actions">
+                    <button
+                      type="button"
+                      className="lmn-panel-theme-toggle"
+                      onClick={toggleMode}
+                      aria-label={mode === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
+                      title={mode === "dark" ? "Modo claro" : "Modo oscuro"}
+                    >
+                      {mode === "dark" ? (
+                        <Sun className="h-3.5 w-3.5" />
+                      ) : (
+                        <Moon className="h-3.5 w-3.5" />
+                      )}
+                    </button>
                     <Link href="/panel/autoconfig" className="lmn-panel-topbar-button is-primary">
                       <Sparkles className="h-3.5 w-3.5" />
                       Config IA

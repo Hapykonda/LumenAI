@@ -18,8 +18,8 @@ export default function RootLayout({
         style={{
           margin: 0,
           minHeight: "100vh",
-          background: "#05070B",
-          color: "#F5F7FA",
+          background: "var(--lmn-bg, #050607)",
+          color: "var(--lmn-text, #F5F7FA)",
         }}
       >
         {children}

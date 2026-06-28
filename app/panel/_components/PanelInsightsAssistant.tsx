@@ -163,8 +163,8 @@ export function PanelInsightsAssistant() {
                 {loading ? "Analizando sistema" : data?.headline || "Radar operativo"}
               </h3>
               <div className="mt-2 lmn-radar-ai-state">
-                <span>{data?.assistant?.ai?.configured ? "Groq conectado" : "Modo seguro"}</span>
-                <span>{data?.assistant?.ai?.model || "Fallback local"}</span>
+                <span>{data?.assistant?.ai?.configured ? "Lumenite activo" : "Modo seguro"}</span>
+                <span>Radar operativo</span>
               </div>
             </div>
 

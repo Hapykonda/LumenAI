@@ -26,9 +26,10 @@ import { BorderBeam } from "@/components/ui/border-beam";
 import { GridPattern } from "@/components/ui/grid-pattern";
 import { Meteors } from "@/components/ui/meteors";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
+import { getAppUrl } from "@/lib/env";
 
 function getBaseUrl() {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const envUrl = getAppUrl();
   if (envUrl) return envUrl.replace(/\/$/, "");
   return window.location.origin;
 }

@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LumenAI
 
-## Getting Started
+LumenAI es un SaaS de atencion, ventas y soporte con IA para PYMES y empresas.
+Centraliza widget publico, Knowledge, conversaciones, leads, calibracion, Config IA
+y Radar Ejecutivo en un panel operativo.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router
+- React
+- TypeScript
+- Supabase
+- Vercel
+- CSS/Tailwind con sistema visual propio
+
+## Modulos principales
+
+- `/` landing publica
+- `/login` autenticacion
+- `/onboarding` alta inicial de negocio
+- `/panel/overview` centro de mando
+- `/panel/autoconfig` Config IA con Lumenite
+- `/panel/calibration` studio de calibracion
+- `/panel/knowledge` memoria operativa del negocio
+- `/panel/chat` inbox de conversaciones
+- `/panel/leads` mini CRM
+- `/panel/widget` instalacion y configuracion del widget
+- `/panel/settings` personalizacion
+- `/widget/[key]` widget publico
+
+## Variables requeridas
+
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `GROQ_API_KEY` como fallback si sigue activo
+- `GROQ_AUTOCONFIG_API_KEY`
+- `GROQ_PANEL_API_KEY`
+- `GROQ_WIDGET_API_KEY` si el widget usa key dedicada
+
+No exponer `SUPABASE_SERVICE_ROLE_KEY` ni claves de IA en cliente.
+
+## Desarrollo local
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Validacion
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx tsc --noEmit
+npm run lint -- --quiet
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Smoke test:
 
-## Learn More
+```bash
+npm run start -- -p 3002
+npm run test:smoke
+```
 
-To learn more about Next.js, take a look at the following resources:
+Si usas otro puerto:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+$env:LUMENAI_TEST_URL="http://127.0.0.1:3000"; npm run test:smoke
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Supabase
 
-## Deploy on Vercel
+Las migraciones en `supabase/migrations` crean la base operativa:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- negocios y perfiles
+- widget settings
+- Knowledge
+- chats y mensajes
+- leads
+- automatizaciones
+- audit log
+- snapshots/rollback de Config IA
+- action runs
+- market feeds/items para Radar persistente
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Aplicar migraciones antes de QA productivo.
+
+## QA recomendado
+
+1. Entrar con cuenta real.
+2. Completar onboarding si aplica.
+3. Crear Knowledge de servicios/precios/pagos.
+4. Pedir a Config IA: `Agrega el servicio Web Profesional, precio $69.990 CLP, pago por transferencia, horario lunes a viernes.`
+5. Verificar que Knowledge, pagos y horario se actualicen.
+6. Aplicar propuesta si corresponde.
+7. Publicar calibracion.
+8. Abrir widget publico.
+9. Preguntar precios, horarios y pedir humano.
+10. Confirmar chat, mensajes y lead en Supabase.

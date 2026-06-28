@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { ensureShape } from "@/app/panel/calibration/defaults";
+import { getSupabaseBrowserEnv, getSupabaseServerEnv } from "@/lib/env";
 
 export function jsonError(message: string, status = 400, detail?: string) {
   return NextResponse.json(
@@ -16,14 +17,9 @@ export function jsonError(message: string, status = 400, detail?: string) {
 }
 
 export function adminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const env = getSupabaseServerEnv();
 
-  if (!url || !service) {
-    throw new Error("Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY");
-  }
-
-  return createClient(url, service, {
+  return createClient(env.url, env.serviceRoleKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -32,16 +28,11 @@ export function adminClient() {
 }
 
 async function userFromCookies() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anon) {
-    throw new Error("Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  }
+  const env = getSupabaseBrowserEnv();
 
   const cookieStore = await cookies();
 
-  const supabase = createServerClient(url, anon, {
+  const supabase = createServerClient(env.url, env.anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

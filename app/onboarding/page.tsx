@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import OnboardingClient from "./OnboardingClient";
+import { getSupabaseBrowserEnv, getSupabaseServerEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -31,10 +32,11 @@ async function resolveBusinessId(admin: any, userId: string) {
 export default async function OnboardingPage() {
   // ✅ Next 16: cookies() async
   const cookieStore = await cookies();
+  const browserEnv = getSupabaseBrowserEnv();
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    browserEnv.url,
+    browserEnv.anonKey,
     {
       cookies: {
         getAll() {
@@ -49,11 +51,10 @@ export default async function OnboardingPage() {
   const user = data?.user;
   if (!user) redirect("/login");
 
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  );
+  const serverEnv = getSupabaseServerEnv();
+  const admin = createClient(serverEnv.url, serverEnv.serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
   const businessId = await resolveBusinessId(admin, user.id);
 

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
+import { getSupabaseBrowserEnv, getSupabaseServerEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,10 +22,11 @@ export async function POST(req: NextRequest) {
     // auth (cookie session)
     const cookieStore = await cookies();
     const res = NextResponse.json({ ok: true });
+    const browserEnv = getSupabaseBrowserEnv();
 
     const sb = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      browserEnv.url,
+      browserEnv.anonKey,
       {
         cookies: {
           getAll() {
@@ -46,11 +48,10 @@ export async function POST(req: NextRequest) {
     }
 
     // admin (service role)
-    const admin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
+    const serverEnv = getSupabaseServerEnv();
+    const admin = createClient(serverEnv.url, serverEnv.serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
     // 1) Si YA existe business para este user, úsalo (evita duplicados)
     const { data: existing } = await admin

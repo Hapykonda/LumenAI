@@ -9,10 +9,15 @@ import {
   BookOpen,
   Bot,
   Clock3,
+  GitBranch,
+  HeartPulse,
+  Megaphone,
   MessageCircle,
+  Newspaper,
   SlidersHorizontal,
   Sparkles,
   Target,
+  TrendingUp,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { GlassCard } from "../_components/ui/GlassCard";
@@ -424,45 +429,21 @@ export default function OverviewPage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-5">
-      <PanelSectionHeader
-        title="Centro ejecutivo LumenAI"
-        description="MÃ©tricas reales de leads, chats, Knowledge, widget y conversaciones que necesitan atenciÃ³n."
-      >
-        <div className="lmn-overview-hero-grid">
-          <div className="lmn-overview-hero-metrics">
-            {[
-              ["Health", `${launchPercent}%`],
-              ["Urgentes", urgentCount],
-              ["Chats", stats?.chats_total ?? 0],
-              ["Leads", stats?.leads_total ?? 0],
-            ].map(([label, value]) => (
-              <div key={String(label)} className="lmn-overview-hero-stat">
-                <span>{label}</span>
-                <strong>{value}</strong>
-              </div>
-            ))}
-          </div>
+    <div className="lmn-overview-minimal-page flex flex-col gap-5">
+      <MinimalOverviewHero
+        businessName={data?.business?.name || "LumenAI"}
+        launchPercent={launchPercent}
+        urgentCount={urgentCount}
+        chatsTotal={stats?.chats_total ?? 0}
+        leadsTotal={stats?.leads_total ?? 0}
+        widgetReady={Boolean(data?.checks?.widget)}
+        knowledgeReady={Boolean(data?.checks?.knowledge)}
+      />
 
-          <div
-            className="lmn-overview-hero-readiness"
-            aria-label={`Sistema listo al ${launchPercent}%`}
-          >
-            <div
-              className="lmn-overview-hero-ring"
-              style={{
-                ["--lmn-progress" as string]: `${Math.max(
-                  0,
-                  Math.min(100, launchPercent)
-                )}%`,
-              }}
-            >
-              <strong>{launchPercent}</strong>
-              <span>Sistema listo</span>
-            </div>
-          </div>
-        </div>
-      </PanelSectionHeader>
+      <PanelSectionHeader
+        title="Centro ejecutivo"
+        description="Metricas reales de leads, chats, Knowledge, widget y conversaciones que necesitan atencion."
+      />
 
       {err ? (
         <div className="apex-cut border border-red-400/25 bg-red-500/10 p-4 text-sm font-bold text-red-100">
@@ -655,6 +636,79 @@ export default function OverviewPage() {
       </section>
 
     </div>
+  );
+}
+
+function MinimalOverviewHero({
+  businessName,
+  launchPercent,
+  urgentCount,
+  chatsTotal,
+  leadsTotal,
+  widgetReady,
+  knowledgeReady,
+}: {
+  businessName: string;
+  launchPercent: number;
+  urgentCount: number;
+  chatsTotal: number;
+  leadsTotal: number;
+  widgetReady: boolean;
+  knowledgeReady: boolean;
+}) {
+  const readyTone = launchPercent >= 80 ? "active" : launchPercent >= 55 ? "warning" : "danger";
+
+  return (
+    <section className="lmn-minimal-overview-hero">
+      <div className="lmn-minimal-overview-copy">
+        <div className="lmn-minimal-overview-kicker">
+          <Sparkles className="h-3.5 w-3.5" />
+          LumenAI Command Center
+        </div>
+        <h1>{businessName} esta listo para operar con inteligencia comercial.</h1>
+        <p>
+          Revisa salud del sistema, conversaciones, oportunidades, Knowledge y
+          cambios recomendados por Lumenite desde un centro de mando mas claro.
+        </p>
+
+        <div className="lmn-minimal-overview-actions">
+          <ActionButton href="/panel/autoconfig" variant="primary">
+            Configurar con IA
+            <ArrowRight className="h-3.5 w-3.5" />
+          </ActionButton>
+          <ActionButton href="/panel/widget" variant="secondary">
+            Revisar widget
+            <Bot className="h-3.5 w-3.5" />
+          </ActionButton>
+        </div>
+      </div>
+
+      <div className="lmn-minimal-overview-board">
+        <div className="lmn-minimal-overview-score">
+          <span>Readiness</span>
+          <strong>{launchPercent}%</strong>
+          <StatusBadge tone={readyTone}>
+            {launchPercent >= 80 ? "Sistema listo" : "Requiere ajuste"}
+          </StatusBadge>
+        </div>
+
+        <div className="lmn-minimal-overview-grid">
+          {[
+            ["Urgentes", urgentCount, urgentCount > 0 ? "warning" : "active"],
+            ["Chats", chatsTotal, chatsTotal > 0 ? "active" : "muted"],
+            ["Leads", leadsTotal, leadsTotal > 0 ? "active" : "muted"],
+            ["Widget", widgetReady ? "Activo" : "Pendiente", widgetReady ? "active" : "warning"],
+            ["Knowledge", knowledgeReady ? "Lista" : "Pendiente", knowledgeReady ? "active" : "warning"],
+          ].map(([label, value, tone]) => (
+            <div key={String(label)} className="lmn-minimal-overview-tile">
+              <span>{label}</span>
+              <strong>{value}</strong>
+              <i data-tone={tone} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -927,6 +981,42 @@ function SystemModules({
       href: "/panel/knowledge",
     },
     {
+      icon: <Newspaper className="h-4 w-4" />,
+      title: "Radar",
+      cardClass: "lmn-module-autopilot",
+      text: "Senales internas, mercado y acciones ejecutivas del negocio.",
+      value: "Insights",
+      ok: true,
+      href: "/panel/radar",
+    },
+    {
+      icon: <TrendingUp className="h-4 w-4" />,
+      title: "Growth",
+      cardClass: "lmn-module-leads",
+      text: "Detecta oportunidades desde leads, chats y mensajes reales.",
+      value: "Revenue",
+      ok: leadsTotal > 0 || chatsTotal > 0,
+      href: "/panel/growth",
+    },
+    {
+      icon: <GitBranch className="h-4 w-4" />,
+      title: "Twin",
+      cardClass: "lmn-module-autopilot",
+      text: "Simula decisiones comerciales antes de aplicarlas.",
+      value: "Strategy",
+      ok: knowledgeReady || leadsTotal > 0,
+      href: "/panel/twin",
+    },
+    {
+      icon: <Megaphone className="h-4 w-4" />,
+      title: "Campaigns",
+      cardClass: "lmn-module-card",
+      text: "Crea campanas, mensajes, tareas y experimentos listos.",
+      value: "Studio",
+      ok: knowledgeReady,
+      href: "/panel/campaigns",
+    },
+    {
       icon: <Bot className="h-4 w-4" />,
       title: "Widget",
       cardClass: "lmn-module-widget",
@@ -962,6 +1052,15 @@ function SystemModules({
       ok: true,
       href: "/panel/settings",
     },
+    {
+      icon: <HeartPulse className="h-4 w-4" />,
+      title: "Health",
+      cardClass: "lmn-module-autopilot",
+      text: "Checklist de auth, Supabase, widget, keys y action runs.",
+      value: "QA",
+      ok: true,
+      href: "/panel/system-health",
+    },
   ];
 
   return (
@@ -970,14 +1069,15 @@ function SystemModules({
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="max-w-3xl">
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/34">
-              MÃ³dulos principales
+              Modulos principales
             </div>
             <h3 className="mt-2 text-2xl font-black tracking-[-0.045em] text-white md:text-3xl">
-              Operacion LumenAI en seis piezas
+              LumenAI Enterprise Intelligence OS
             </h3>
             <p className="mt-3 max-w-[760px] text-sm leading-7 text-white/50">
-              Una lectura clara de las Ã¡reas que sostienen el servicio: conocimiento,
-              widget pÃºblico, atenciÃ³n, oportunidades y acciones inteligentes.
+              Un mapa claro de las areas que sostienen el servicio: configuracion,
+              Knowledge, widget publico, atencion, oportunidades, simulacion,
+              campanas y salud operativa.
             </p>
           </div>
 
@@ -986,7 +1086,7 @@ function SystemModules({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {modules.map((module) => (
             <Link
               key={module.title}
