@@ -6,8 +6,6 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  const url = new URL(request.url);
-
   const body = await request.json().catch(() => ({}));
   const access_token = body?.access_token;
   const refresh_token = body?.refresh_token;

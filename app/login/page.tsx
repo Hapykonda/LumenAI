@@ -29,13 +29,26 @@ import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { getAppUrl } from "@/lib/env";
 
 function getBaseUrl() {
-  const envUrl = getAppUrl();
-  if (envUrl) return envUrl.replace(/\/$/, "");
-  return window.location.origin;
+  const envUrl = getAppUrl().replace(/\/+$/, "");
+
+  if (typeof window === "undefined") return envUrl;
+
+  const currentOrigin = window.location.origin.replace(/\/+$/, "");
+  const currentHostIsLocal = /^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(window.location.host);
+  const envUrlIsLocal = /\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(envUrl);
+
+  if (!envUrl) return currentOrigin;
+  if (!currentHostIsLocal && envUrlIsLocal) return currentOrigin;
+
+  return envUrl;
 }
 
-function getCallbackUrl() {
+function getConfirmUrl() {
   return `${getBaseUrl()}/auth/confirm?next=/panel`;
+}
+
+function getOAuthCallbackUrl() {
+  return `${getBaseUrl()}/auth/callback?next=/panel`;
 }
 
 function getMessage(error: unknown, fallback: string) {
@@ -69,6 +82,54 @@ function normalizeAuthError(raw: string) {
   return value;
 }
 
+function normalizeAuthErrorMessage(raw: string) {
+  const value = decodeURIComponent(raw.replace(/\+/g, " ")).trim();
+  const lower = value.toLowerCase();
+
+  if (!value) return "No se pudo iniciar sesion.";
+  if (
+    lower.includes("auth_link_expired") ||
+    lower.includes("expired") ||
+    lower.includes("token has expired")
+  ) {
+    return "El enlace expiro, solicita uno nuevo.";
+  }
+  if (
+    lower.includes("auth_invalid_code") ||
+    lower.includes("invalid token") ||
+    lower.includes("invalid otp") ||
+    lower.includes("verifyotp") ||
+    lower.includes("token not found")
+  ) {
+    return "El codigo no es valido.";
+  }
+  if (
+    lower.includes("auth_redirect_not_allowed") ||
+    lower.includes("redirect") ||
+    lower.includes("not allowed") ||
+    lower.includes("unauthorized")
+  ) {
+    return "La URL de redireccion no esta autorizada en Supabase.";
+  }
+  if (lower.includes("auth_missing_params") || lower.includes("missing_code")) {
+    return "El enlace de acceso no es valido. Solicita uno nuevo.";
+  }
+  if (lower.includes("exchange") || lower.includes("auth_exchange_failed")) {
+    return "No se pudo completar la sesion. Intenta nuevamente.";
+  }
+  if (lower.includes("email not confirmed")) {
+    return "Tu correo aun no esta confirmado. Revisa tu bandeja de entrada.";
+  }
+  if (lower.includes("invalid login credentials")) {
+    return "Correo o contrasena incorrectos.";
+  }
+  if (lower.includes("rate limit") || lower.includes("auth_rate_limited")) {
+    return "Demasiados intentos seguidos. Espera un momento y vuelve a probar.";
+  }
+
+  return value;
+}
+
 function isEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
@@ -95,7 +156,7 @@ export default function LoginPage() {
   const canSubmit = useMemo(() => {
     if (!isEmail(cleanEmail)) return false;
     if (passwordMode) return password.length > 0 && !loadingPass;
-    if (otpSent && otpCode.length >= 6) return !loadingOtpVerify;
+    if (otpSent && otpCode.length > 0) return otpCode.length === 6 && !loadingOtpVerify;
     return cooldown <= 0 && !loadingLink;
   }, [
     cleanEmail,
@@ -134,7 +195,7 @@ export default function LoginPage() {
 
     if (!rawError) return;
 
-    setErr(normalizeAuthError(rawError));
+    setErr(normalizeAuthErrorMessage(rawError));
     setOk(null);
     window.history.replaceState({}, "", "/login");
   }, []);
@@ -182,16 +243,18 @@ export default function LoginPage() {
 
       const { error } = await supabase.auth.signInWithOtp({
         email: cleanEmail,
-        options: { emailRedirectTo: getCallbackUrl() },
+        options: { emailRedirectTo: getConfirmUrl() },
       });
 
       if (error) throw error;
 
-      setOk("Acceso enviado. Revisa tu correo o escribe el código de 6 dígitos.");
+      setOk(
+        "El correo fue enviado, revisa spam o promociones. Abre el enlace de acceso; si tu correo trae un codigo, puedes ingresarlo aqui."
+      );
       setOtpSent(true);
       setCooldown(60);
     } catch (error) {
-      const msg = normalizeAuthError(getMessage(error, "No se pudo enviar el correo."));
+      const msg = normalizeAuthErrorMessage(getMessage(error, "No se pudo enviar el correo."));
       setErr(msg);
       setCooldown(msg.toLowerCase().includes("demasiados") ? 90 : 30);
     } finally {
@@ -207,7 +270,7 @@ export default function LoginPage() {
 
     if (!validateEmail()) return;
     if (token.length < 6) {
-      setErr("El código debe tener 6 dígitos.");
+      setErr("El codigo debe tener 6 digitos.");
       return;
     }
 
@@ -225,14 +288,14 @@ export default function LoginPage() {
         data?.session ?? (await supabase.auth.getSession()).data.session;
 
       if (!session?.access_token || !session?.refresh_token) {
-        throw new Error("No se pudo obtener la sesión.");
+        throw new Error("No se pudo obtener la sesion.");
       }
 
       await persistSession(session.access_token, session.refresh_token);
       setOk("Sesión verificada. Entrando al panel...");
       router.replace("/panel");
     } catch (error) {
-      setErr(normalizeAuthError(getMessage(error, "No se pudo verificar el código.")));
+      setErr(normalizeAuthErrorMessage(getMessage(error, "No se pudo verificar el codigo.")));
     } finally {
       setLoadingOtpVerify(false);
     }
@@ -244,7 +307,7 @@ export default function LoginPage() {
 
     if (!validateEmail()) return;
     if (!password) {
-      setErr("Escribe tu contraseña.");
+      setErr("Escribe tu contrasena.");
       return;
     }
 
@@ -261,14 +324,14 @@ export default function LoginPage() {
         data?.session ?? (await supabase.auth.getSession()).data.session;
 
       if (!session?.access_token || !session?.refresh_token) {
-        throw new Error("No se pudo obtener la sesión.");
+        throw new Error("No se pudo obtener la sesion.");
       }
 
       await persistSession(session.access_token, session.refresh_token);
       setOk("Sesión iniciada. Redirigiendo...");
       router.replace("/panel");
     } catch (error) {
-      setErr(normalizeAuthError(getMessage(error, "No se pudo iniciar sesión.")));
+      setErr(normalizeAuthErrorMessage(getMessage(error, "No se pudo iniciar sesion.")));
     } finally {
       setLoadingPass(false);
     }
@@ -282,12 +345,12 @@ export default function LoginPage() {
       setLoadingGoogle(true);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: getCallbackUrl() },
+        options: { redirectTo: getOAuthCallbackUrl() },
       });
 
       if (error) throw error;
     } catch (error) {
-      setErr(normalizeAuthError(getMessage(error, "Google aún no está configurado.")));
+      setErr(normalizeAuthErrorMessage(getMessage(error, "Google aun no esta configurado.")));
     } finally {
       setLoadingGoogle(false);
     }
@@ -302,7 +365,7 @@ export default function LoginPage() {
       return;
     }
 
-    if (otpSent && otpCode.length >= 6) {
+    if (otpSent && otpCode.length > 0) {
       await verifyOtpCode();
       return;
     }
@@ -430,8 +493,8 @@ export default function LoginPage() {
               Flujo de acceso
             </p>
             <p className="mt-2 text-sm leading-6 text-white/46">
-              Magic link para entrar rápido, código OTP para confirmar desde la
-              misma pantalla y contraseña para equipos que ya la tengan activa.
+              Magic link para entrar rapido, codigo OTP solo si Supabase lo incluye
+              en el correo y contrasena para equipos que ya la tengan activa.
             </p>
           </div>
         </div>
@@ -463,12 +526,12 @@ export default function LoginPage() {
                   Acceso privado
                 </div>
                 <h2 className="mt-2 text-3xl font-black tracking-[-0.045em] text-white">
-                  {passwordMode ? "Iniciar sesión" : "Acceder al panel"}
+                  {passwordMode ? "Iniciar sesion" : "Acceder al panel"}
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-white/48">
                   {passwordMode
                     ? "Usa tus credenciales para entrar a la consola."
-                    : "Recibe un enlace seguro o confirma con código de 6 dígitos."}
+                    : "Revisa tu correo y abre el enlace de acceso. Si tu correo trae un codigo, ingresalo aqui."}
                 </p>
               </div>
 
@@ -521,7 +584,7 @@ export default function LoginPage() {
 
             {passwordMode ? (
               <label className="mt-4 grid gap-2">
-                <span className="text-xs font-black text-white/66">Contraseña</span>
+                <span className="text-xs font-black text-white/66">Contrasena</span>
                 <span className="relative block">
                   <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                   <input
@@ -539,7 +602,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
                     className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center text-white/38 transition hover:text-white"
-                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -553,9 +616,18 @@ export default function LoginPage() {
 
             {!passwordMode && otpSent ? (
               <div className="mt-4 border border-white/[0.06] bg-white/[0.018] p-4">
+                <div className="mb-4 border-l border-cyan-300/35 pl-3">
+                  <p className="text-sm font-black text-white">
+                    Revisa tu correo y abre el enlace de acceso.
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-white/48">
+                    Si tu correo trae un codigo, ingresalo aqui. Si solo trae un
+                    boton o enlace, no necesitas escribir ningun codigo.
+                  </p>
+                </div>
                 <label className="grid gap-2">
                   <span className="text-xs font-black text-white/66">
-                    Código de 6 dígitos
+                    Codigo de 6 digitos opcional
                   </span>
                   <input
                     value={otpCode}
@@ -589,10 +661,12 @@ export default function LoginPage() {
                 ? loadingPass
                   ? "Entrando..."
                   : "Entrar al panel"
-                : otpSent && otpCode.length >= 6
-                ? loadingOtpVerify
-                  ? "Verificando..."
-                  : "Verificar y entrar"
+                : otpSent && otpCode.length > 0
+                ? otpCode.length === 6
+                  ? loadingOtpVerify
+                    ? "Verificando..."
+                    : "Verificar y entrar"
+                  : "Completa el codigo"
                 : loadingLink
                 ? "Enviando..."
                 : cooldown > 0
@@ -625,7 +699,7 @@ export default function LoginPage() {
               }}
               className="mt-3 inline-flex h-10 w-full items-center justify-center text-xs font-bold text-white/54 transition hover:bg-white/[0.025] hover:text-white"
             >
-              {passwordMode ? "Usar enlace/código por correo" : "Entrar con contraseña"}
+              {passwordMode ? "Usar enlace/codigo por correo" : "Entrar con contrasena"}
             </button>
 
             {ok ? (
