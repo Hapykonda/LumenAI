@@ -54,7 +54,7 @@ export async function GET() {
         items: itemsResult.data ?? [],
         empty:
           !feedsResult.data?.length && !itemsResult.data?.length
-            ? "Conecta fuentes de mercado para que Lumenite detecte senales relevantes."
+            ? "Conecta fuentes de mercado para que LumenAI detecte senales relevantes."
             : null,
       });
     } catch {
@@ -113,3 +113,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

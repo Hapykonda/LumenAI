@@ -24,7 +24,7 @@ function isInIframe(): boolean {
  * - Si no, intentamos deducir el origin desde document.referrer.
  * - Si nada existe, caemos en "*" para dev/local.
  */
-export function postToParent(message: any, allowedOrigin?: string | null) {
+export function postToParent(message: unknown, allowedOrigin?: string | null) {
   if (typeof window === "undefined") return;
   if (!isInIframe()) return; // si abres /widget directo, no spameamos postMessage
 

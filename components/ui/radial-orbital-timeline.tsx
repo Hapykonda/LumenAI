@@ -37,17 +37,7 @@ export default function RadialOrbitalTimeline({
   const [activeNodeId, setActiveNodeId] = useState<number | null>(null);
   const [orbitRadius, setOrbitRadius] = useState(160);
   const containerRef = useRef<HTMLDivElement>(null);
-  const orbitRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Record<number, HTMLDivElement | null>>({});
-
-  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === containerRef.current || e.target === orbitRef.current) {
-      setExpandedItems({});
-      setActiveNodeId(null);
-      setPulseEffect({});
-      setAutoRotate(true);
-    }
-  };
 
   const toggleItem = (id: number) => {
     setExpandedItems((prev) => {
@@ -185,12 +175,10 @@ export default function RadialOrbitalTimeline({
     <div
       className={`flex h-[390px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border border-white/[0.075] bg-white/[0.018] backdrop-blur-[8px] ${className}`}
       ref={containerRef}
-      onClick={handleContainerClick}
     >
       <div className="relative w-full max-w-4xl h-full flex items-center justify-center">
         <div
           className="absolute w-full h-full flex items-center justify-center"
-          ref={orbitRef}
           style={{
             perspective: "1000px",
             transform: `translate(${centerOffset.x}px, ${centerOffset.y}px)`,
@@ -234,12 +222,8 @@ export default function RadialOrbitalTimeline({
                 ref={(el) => {
                   nodeRefs.current[item.id] = el;
                 }}
-                className="absolute transition-all duration-700 cursor-pointer"
+                className="absolute transition-all duration-700"
                 style={nodeStyle}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleItem(item.id);
-                }}
               >
                 <div
                   className={`absolute rounded-full -inset-1 ${
@@ -254,7 +238,11 @@ export default function RadialOrbitalTimeline({
                   }}
                 ></div>
 
-                <div
+                <button
+                  type="button"
+                  aria-label={`${item.title}. Estado ${item.status}`}
+                  aria-expanded={isExpanded}
+                  onClick={() => toggleItem(item.id)}
                   className={`
                   w-10 h-10 rounded-full flex items-center justify-center
                   ${
@@ -276,8 +264,8 @@ export default function RadialOrbitalTimeline({
                   ${isExpanded ? "scale-150" : ""}
                 `}
                 >
-                  <Icon size={16} />
-                </div>
+                  <Icon size={16} aria-hidden="true" />
+                </button>
 
                 <div
                   className={`

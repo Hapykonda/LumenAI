@@ -74,9 +74,9 @@ export async function POST(
         .insert({
           business_id: ctx.businessId,
           campaign_id: id,
-          title: "Enviar campana a Config IA",
+          title: "Enviar campana a Config AI",
           description: prompt,
-          channel: "Config IA",
+          channel: "Config AI",
           priority: "medium",
           payload: { prompt },
         })

@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getSupabaseServerEnv } from "@/lib/env";
+import {
+  BusinessAuthorizationError,
+  businessAuthorizationErrorResponse,
+  getAuthorizedBusinessContext,
+} from "@/lib/auth/business-context";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,25 +14,23 @@ type Position = "br" | "bl" | "tr" | "tl";
 
 const POSITIONS: Position[] = ["br", "bl", "tr", "tl"];
 
-function supabaseAdmin() {
-  const env = getSupabaseServerEnv();
-
-  return createClient(env.url, env.serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
-
-function getBearer(req: Request) {
-  const raw = req.headers.get("authorization") || "";
-  const match = raw.match(/^Bearer\s+(.+)$/i);
-  return match?.[1] ?? null;
-}
-
 function clean(value: unknown) {
   return String(value ?? "").trim();
+}
+
+function normalizeImageUrl(value: unknown) {
+  const raw = clean(value);
+  if (!raw) return "";
+  if (raw.startsWith("/") && !raw.startsWith("//")) return raw.slice(0, 1200);
+
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.toString().slice(0, 1200)
+      : "";
+  } catch {
+    return "";
+  }
 }
 
 function isObj(value: unknown) {
@@ -46,92 +48,6 @@ function normalizeHex(value: unknown, fallback: string) {
 
   const withHash = raw.startsWith("#") ? raw : `#${raw}`;
   return /^#[0-9a-fA-F]{6}$/.test(withHash) ? withHash.toUpperCase() : fallback;
-}
-
-async function getUser(req: Request, admin: ReturnType<typeof supabaseAdmin>) {
-  const token = getBearer(req);
-  if (!token) return null;
-
-  const { data, error } = await admin.auth.getUser(token);
-  if (error || !data?.user) return null;
-
-  return data.user;
-}
-
-function pickBusinessIdFromProfile(profile: any) {
-  if (!profile || typeof profile !== "object") return null;
-
-  const keys = [
-    "active_business_id",
-    "business_id",
-    "current_business_id",
-    "selected_business_id",
-    "default_business_id",
-  ];
-
-  for (const key of keys) {
-    const value = clean(profile[key]);
-    if (value) return value;
-  }
-
-  return null;
-}
-
-async function readProfile(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const attempts = [
-    { table: "profiles", column: "id" },
-    { table: "profiles", column: "user_id" },
-    { table: "profiles", column: "owner_id" },
-  ];
-
-  for (const attempt of attempts) {
-    const { data, error } = await admin
-      .from(attempt.table)
-      .select("*")
-      .eq(attempt.column, userId)
-      .maybeSingle();
-
-    if (!error && data) return data;
-  }
-
-  return null;
-}
-
-async function readOwnedBusiness(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const attempts = ["owner_id", "user_id", "created_by", "profile_id"];
-
-  for (const column of attempts) {
-    const { data, error } = await admin
-      .from("businesses")
-      .select("id,name,public_key")
-      .eq(column, userId)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && data?.id) return data;
-  }
-
-  return null;
-}
-
-async function resolveBusiness(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const profile = await readProfile(admin, userId);
-  const profileBusinessId = pickBusinessIdFromProfile(profile);
-
-  if (profileBusinessId) {
-    const { data, error } = await admin
-      .from("businesses")
-      .select("id,name,public_key")
-      .eq("id", profileBusinessId)
-      .maybeSingle();
-
-    if (!error && data?.id) return data;
-  }
-
-  const owned = await readOwnedBusiness(admin, userId);
-  if (owned?.id) return owned;
-
-  return null;
 }
 
 async function readSettings(admin: ReturnType<typeof supabaseAdmin>, businessId: string) {
@@ -223,6 +139,8 @@ function normalizeWidgetPayload(business: any, settings: any) {
 
 function buildNextPublishedSettings(current: any, payload: Record<string, any>) {
   const base = isObj(current) ? { ...current } : {};
+  const calibration = isObj((base as any).calibration) ? { ...(base as any).calibration } : {};
+  const identity = isObj((calibration as any).identity) ? { ...(calibration as any).identity } : {};
   const widget = isObj((base as any).widget) ? { ...(base as any).widget } : {};
   const theme = isObj((widget as any).theme) ? { ...(widget as any).theme } : {};
   const brand = isObj((widget as any).brand) ? { ...(widget as any).brand } : {};
@@ -241,6 +159,20 @@ function buildNextPublishedSettings(current: any, payload: Record<string, any>) 
 
   if (payload.email !== undefined) {
     widget.email = payload.email;
+  }
+
+  if (payload.assistant_name !== undefined) {
+    const value = clean(payload.assistant_name) || "LumenAI";
+    widget.assistantName = value;
+    identity.assistantName = value;
+  }
+
+  if (payload.greeting !== undefined) {
+    widget.greeting = clean(payload.greeting);
+  }
+
+  if (payload.tone !== undefined) {
+    widget.tone = clean(payload.tone) || "neutral";
   }
 
   if (payload.primary_color !== undefined) {
@@ -282,27 +214,23 @@ function buildNextPublishedSettings(current: any, payload: Record<string, any>) 
 
   widget.theme = theme;
   widget.brand = brand;
+  calibration.identity = identity;
 
   return {
     ...base,
+    calibration,
     widget,
   };
 }
 
 export async function GET(req: Request) {
   try {
-    const admin = supabaseAdmin();
-    const user = await getUser(req, admin);
-
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-    }
-
-    const business = await resolveBusiness(admin, user.id);
-
-    if (!business?.id) {
-      return NextResponse.json({ ok: false, error: "missing_business" }, { status: 403 });
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:read",
+    });
+    const admin = context.admin;
+    const business = context.activeBusiness;
 
     const settings = await readSettings(admin, business.id);
 
@@ -311,6 +239,9 @@ export async function GET(req: Request) {
       ...normalizeWidgetPayload(business, settings),
     });
   } catch (error: any) {
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return NextResponse.json(
       { ok: false, error: error?.message || "widget_get_error" },
       { status: 500 }
@@ -320,18 +251,12 @@ export async function GET(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const admin = supabaseAdmin();
-    const user = await getUser(req, admin);
-
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-    }
-
-    const business = await resolveBusiness(admin, user.id);
-
-    if (!business?.id) {
-      return NextResponse.json({ ok: false, error: "missing_business" }, { status: 403 });
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:write",
+    });
+    const admin = context.admin;
+    const business = context.activeBusiness;
 
     const body = await req.json().catch(() => ({}));
     const current = await readSettings(admin, business.id);
@@ -356,6 +281,18 @@ export async function PATCH(req: Request) {
 
     if (body?.email !== undefined) {
       payload.email = clean(body.email) || null;
+    }
+
+    if (body?.assistantName !== undefined || body?.assistant_name !== undefined) {
+      payload.assistant_name = clean(body?.assistantName ?? body?.assistant_name) || "LumenAI";
+    }
+
+    if (body?.greeting !== undefined) {
+      payload.greeting = clean(body.greeting);
+    }
+
+    if (body?.tone !== undefined) {
+      payload.tone = clean(body.tone) || "neutral";
     }
 
     if (body?.primaryColor !== undefined || body?.primary_color !== undefined) {
@@ -391,11 +328,29 @@ export async function PATCH(req: Request) {
     }
 
     if (body?.avatarUrl !== undefined || body?.avatar_url !== undefined) {
-      publishedPatch.avatarUrl = clean(body?.avatarUrl ?? body?.avatar_url);
+      const raw = clean(body?.avatarUrl ?? body?.avatar_url);
+      const value = normalizeImageUrl(raw);
+      if (raw && !value) {
+        return NextResponse.json(
+          { ok: false, error: "La URL del avatar no es valida." },
+          { status: 400 }
+        );
+      }
+      payload.avatar_url = value || null;
+      publishedPatch.avatarUrl = value;
     }
 
     if (body?.brandLogoUrl !== undefined || body?.logoUrl !== undefined || body?.logo_url !== undefined) {
-      publishedPatch.brandLogoUrl = clean(body?.brandLogoUrl ?? body?.logoUrl ?? body?.logo_url);
+      const raw = clean(body?.brandLogoUrl ?? body?.logoUrl ?? body?.logo_url);
+      const value = normalizeImageUrl(raw);
+      if (raw && !value) {
+        return NextResponse.json(
+          { ok: false, error: "La URL del logo no es valida." },
+          { status: 400 }
+        );
+      }
+      payload.logo_url = value || null;
+      publishedPatch.brandLogoUrl = value;
     }
 
     payload.published_settings = buildNextPublishedSettings(
@@ -441,6 +396,9 @@ export async function PATCH(req: Request) {
       ...normalizeWidgetPayload(business, result),
     });
   } catch (error: any) {
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return NextResponse.json(
       { ok: false, error: error?.message || "widget_patch_error" },
       { status: 500 }

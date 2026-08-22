@@ -19,7 +19,7 @@ y Radar Ejecutivo en un panel operativo.
 - `/login` autenticacion
 - `/onboarding` alta inicial de negocio
 - `/panel/overview` centro de mando
-- `/panel/autoconfig` Config IA con Lumenite
+- `/panel/autoconfig` Config IA con LumenAI
 - `/panel/calibration` studio de calibracion
 - `/panel/knowledge` memoria operativa del negocio
 - `/panel/chat` inbox de conversaciones
@@ -98,3 +98,4 @@ Aplicar migraciones antes de QA productivo.
 8. Abrir widget publico.
 9. Preguntar precios, horarios y pedir humano.
 10. Confirmar chat, mensajes y lead en Supabase.
+

@@ -1,8 +1,6 @@
 // app/api/panel/calibration/_lib/defaults.ts
-export type CalibrationSettings = any;
-
 /** Default calibración para inicializar DB */
-export function defaultDraft(): CalibrationSettings {
+export function defaultDraft() {
   return {
     schemaVersion: 1,
     calibration: {
@@ -102,3 +100,5 @@ export function defaultDraft(): CalibrationSettings {
     },
   };
 }
+
+export type CalibrationSettings = ReturnType<typeof defaultDraft>;

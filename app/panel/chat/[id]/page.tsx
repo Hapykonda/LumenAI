@@ -1,9 +1,9 @@
  "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { panelFetch } from "@/lib/panel-fetch";
 import { usePanel } from "../../_components/panel-context";
 
 type MsgRow = {
@@ -43,7 +43,7 @@ type Lead = {
   summary: string | null;
   status: LeadStatus;
   score: number;
-  metadata: any;
+  metadata: unknown;
   created_at: string;
   updated_at: string;
 };
@@ -88,28 +88,6 @@ const STATUS_OPTIONS: LeadStatus[] = [
   "lost",
 ];
 
-async function apiFetch(path: string, init?: RequestInit) {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-
-  const headers = new Headers(init?.headers);
-
-  if (init?.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  return fetch(path, {
-    ...init,
-    headers,
-    cache: "no-store",
-    credentials: "include",
-  });
-}
-
 function formatDate(value?: string | null) {
   if (!value) return "—";
 
@@ -118,6 +96,48 @@ function formatDate(value?: string | null) {
   } catch {
     return "—";
   }
+}
+
+function renderMessageContent(value?: string | null): ReactNode {
+  const lines = String(value || "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (!lines.length) return null;
+
+  return (
+    <div className="lmn-chat-message-copy">
+      {lines.map((line, index) => {
+        const heading = line.replace(/^#{1,6}\s*/, "");
+        const bullet = heading.match(/^[-*]\s+(.+)/);
+        const text = bullet?.[1] || heading;
+
+        return (
+          <p
+            key={`${text}-${index}`}
+            className={
+              bullet
+                ? "lmn-chat-message-line is-bullet"
+                : line.startsWith("#")
+                ? "lmn-chat-message-line is-heading"
+                : "lmn-chat-message-line"
+            }
+          >
+            {bullet ? <span aria-hidden="true" /> : null}
+            {text.split(/(\*\*[^*]+\*\*)/g).map((part, partIndex) => {
+              if (part.startsWith("**") && part.endsWith("**")) {
+                return <strong key={partIndex}>{part.slice(2, -2)}</strong>;
+              }
+
+              return <span key={partIndex}>{part}</span>;
+            })}
+          </p>
+        );
+      })}
+    </div>
+  );
 }
 
 function statusColor(status: LeadStatus) {
@@ -138,17 +158,17 @@ function waLink(phone?: string | null) {
 function readLeadSignal(lead: Lead | null, key: string) {
   const meta =
     lead?.metadata && typeof lead.metadata === "object"
-      ? (lead.metadata as Record<string, any>)
+      ? (lead.metadata as Record<string, unknown>)
       : {};
   const last =
     meta.lastDetection && typeof meta.lastDetection === "object"
-      ? (meta.lastDetection as Record<string, any>)
+      ? (meta.lastDetection as Record<string, unknown>)
       : {};
   const signals =
     meta.signals && typeof meta.signals === "object"
-      ? (meta.signals as Record<string, any>)
+      ? (meta.signals as Record<string, unknown>)
       : last.signals && typeof last.signals === "object"
-      ? (last.signals as Record<string, any>)
+      ? (last.signals as Record<string, unknown>)
       : {};
 
   return meta[key] ?? last[key] ?? signals[key] ?? null;
@@ -233,7 +253,7 @@ export default function ChatDetailPage() {
     if (!chatId || loading) return;
 
     try {
-      const res = await apiFetch(
+      const res = await panelFetch(
         `/api/panel/chats/${encodeURIComponent(chatId)}/read`,
         { method: "POST" }
       );
@@ -253,7 +273,7 @@ export default function ChatDetailPage() {
     setFetching(true);
 
     try {
-      const res = await apiFetch(
+      const res = await panelFetch(
         `/api/panel/chat/messages?chat_id=${encodeURIComponent(chatId)}`,
         { method: "GET" }
       );
@@ -301,7 +321,7 @@ export default function ChatDetailPage() {
     setErr(null);
 
     try {
-      const res = await apiFetch("/api/panel/chat/messages", {
+      const res = await panelFetch("/api/panel/chat/messages", {
         method: "POST",
         body: JSON.stringify({
           chat_id: chatId,
@@ -349,7 +369,7 @@ export default function ChatDetailPage() {
     setErr(null);
 
     try {
-      const res = await apiFetch("/api/panel/chat/messages", {
+      const res = await panelFetch("/api/panel/chat/messages", {
         method: "PATCH",
         body: JSON.stringify({
           chat_id: chatId,
@@ -397,7 +417,7 @@ export default function ChatDetailPage() {
     setErr(null);
 
     try {
-      const res = await apiFetch("/api/panel/leads", {
+      const res = await panelFetch("/api/panel/leads", {
         method: "PATCH",
         body: JSON.stringify({
           id: lead.id,
@@ -444,8 +464,9 @@ export default function ChatDetailPage() {
   }, [loading, chatId]);
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div className="lmn-chat-detail-page" style={{ display: "grid", gap: 16 }}>
       <header
+        className="lmn-chat-detail-header"
         style={{
           padding: 16,
           borderRadius: 18,
@@ -609,6 +630,7 @@ export default function ChatDetailPage() {
 
       {err ? (
         <div
+          role="alert"
           style={{
             padding: 12,
             borderRadius: 14,
@@ -623,6 +645,7 @@ export default function ChatDetailPage() {
       ) : null}
 
       <section
+        className="lmn-chat-detail-layout"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(0,1fr) 360px",
@@ -631,6 +654,7 @@ export default function ChatDetailPage() {
         }}
       >
         <div
+          className="lmn-chat-conversation-card"
           style={{
             padding: 16,
             borderRadius: 20,
@@ -644,6 +668,7 @@ export default function ChatDetailPage() {
           }}
         >
           <div
+            className="lmn-chat-message-stream"
             style={{
               overflow: "auto",
               display: "grid",
@@ -665,6 +690,11 @@ export default function ChatDetailPage() {
 
                 return (
                   <div
+                    className={
+                      isAssistant
+                        ? "lmn-chat-message-row is-assistant"
+                        : "lmn-chat-message-row is-customer"
+                    }
                     key={message.id}
                     style={{
                       display: "flex",
@@ -672,6 +702,11 @@ export default function ChatDetailPage() {
                     }}
                   >
                     <div
+                      className={
+                        isAssistant
+                          ? "lmn-chat-message-bubble is-assistant"
+                          : "lmn-chat-message-bubble is-customer"
+                      }
                       style={{
                         maxWidth: 720,
                         padding: "11px 13px",
@@ -700,7 +735,7 @@ export default function ChatDetailPage() {
                         {formatDate(message.created_at)}
                       </div>
 
-                      {message.content ?? ""}
+                      {renderMessageContent(message.content)}
                     </div>
                   </div>
                 );
@@ -710,9 +745,10 @@ export default function ChatDetailPage() {
             <div ref={bottomRef} />
           </div>
 
-          <div style={{ display: "grid", gap: 10 }}>
+          <div className="lmn-chat-composer-zone" style={{ display: "grid", gap: 10 }}>
             {smartReplies.length ? (
               <div
+                className="lmn-chat-smart-replies"
                 style={{
                   display: "flex",
                   flexWrap: "wrap",
@@ -721,6 +757,7 @@ export default function ChatDetailPage() {
               >
                 {smartReplies.map((reply) => (
                   <button
+                    className="lmn-chat-smart-chip"
                     key={reply}
                     type="button"
                     onClick={() => setText(reply)}
@@ -747,6 +784,8 @@ export default function ChatDetailPage() {
             ) : null}
 
             <textarea
+              aria-label="Respuesta manual"
+              className="lmn-chat-reply-input"
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Responder manualmente como LumenAI / equipo…"
@@ -780,6 +819,7 @@ export default function ChatDetailPage() {
               }}
             >
               <div
+                className="lmn-chat-composer-note"
                 style={{
                   fontSize: 12,
                   color: "rgba(255,255,255,.42)",
@@ -789,6 +829,7 @@ export default function ChatDetailPage() {
               </div>
 
               <button
+                className="lmn-chat-send-button"
                 onClick={() => void sendAsAssistant()}
                 disabled={loading || sending || !text.trim()}
                 style={{
@@ -812,7 +853,7 @@ export default function ChatDetailPage() {
           </div>
         </div>
 
-        <aside style={{ display: "grid", gap: 12 }}>
+        <aside className="lmn-chat-detail-side" style={{ display: "grid", gap: 12 }}>
           <div
             style={{
               borderRadius: 20,
@@ -982,6 +1023,7 @@ export default function ChatDetailPage() {
                 </div>
 
                 <select
+                  aria-label="Estado del lead"
                   value={lead.status}
                   disabled={updatingLead}
                   onChange={(e) =>

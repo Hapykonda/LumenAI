@@ -1,118 +1,16 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getSupabaseServerEnv } from "@/lib/env";
+import {
+  BusinessAuthorizationError,
+  businessAuthorizationErrorResponse,
+  getAuthorizedBusinessContext,
+} from "@/lib/auth/business-context";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function supabaseAdmin() {
-  const env = getSupabaseServerEnv();
-
-  return createClient(env.url, env.serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
-
-function getBearer(req: Request) {
-  const raw = req.headers.get("authorization") || "";
-  const match = raw.match(/^Bearer\s+(.+)$/i);
-  return match?.[1] ?? null;
-}
-
 function clean(value: unknown) {
   return String(value ?? "").trim();
-}
-
-async function getUser(req: Request, admin: ReturnType<typeof supabaseAdmin>) {
-  const token = getBearer(req);
-
-  if (!token) return null;
-
-  const { data, error } = await admin.auth.getUser(token);
-
-  if (error || !data?.user) return null;
-
-  return data.user;
-}
-
-function pickBusinessIdFromProfile(profile: any) {
-  if (!profile || typeof profile !== "object") return null;
-
-  const keys = [
-    "active_business_id",
-    "business_id",
-    "current_business_id",
-    "selected_business_id",
-    "default_business_id",
-  ];
-
-  for (const key of keys) {
-    const value = clean(profile[key]);
-    if (value) return value;
-  }
-
-  return null;
-}
-
-async function readProfile(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const attempts = [
-    { table: "profiles", column: "id" },
-    { table: "profiles", column: "user_id" },
-    { table: "profiles", column: "owner_id" },
-  ];
-
-  for (const attempt of attempts) {
-    const { data, error } = await admin
-      .from(attempt.table)
-      .select("*")
-      .eq(attempt.column, userId)
-      .maybeSingle();
-
-    if (!error && data) return data;
-  }
-
-  return null;
-}
-
-async function readOwnedBusiness(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const attempts = ["owner_id", "user_id", "created_by", "profile_id"];
-
-  for (const column of attempts) {
-    const { data, error } = await admin
-      .from("businesses")
-      .select("id")
-      .eq(column, userId)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && data?.id) return data.id as string;
-  }
-
-  return null;
-}
-
-async function resolveBusinessId(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const profile = await readProfile(admin, userId);
-  const profileBusinessId = pickBusinessIdFromProfile(profile);
-
-  if (profileBusinessId) {
-    const { data, error } = await admin
-      .from("businesses")
-      .select("id")
-      .eq("id", profileBusinessId)
-      .maybeSingle();
-
-    if (!error && data?.id) return data.id as string;
-  }
-
-  const ownedBusinessId = await readOwnedBusiness(admin, userId);
-
-  if (ownedBusinessId) return ownedBusinessId;
-
-  return null;
 }
 
 async function assertChatBelongsToBusiness(
@@ -129,15 +27,15 @@ async function assertChatBelongsToBusiness(
     .maybeSingle();
 
   if (error) {
-    return { ok: false, error: error.message, chat: null as any };
+    return { ok: false, error: error.message, chat: null };
   }
 
   if (!data?.id) {
-    return { ok: false, error: "chat_not_found", chat: null as any };
+    return { ok: false, error: "chat_not_found", chat: null };
   }
 
   if (data.business_id !== businessId) {
-    return { ok: false, error: "forbidden", chat: null as any };
+    return { ok: false, error: "forbidden", chat: null };
   }
 
   return { ok: true, error: null, chat: data };
@@ -145,18 +43,12 @@ async function assertChatBelongsToBusiness(
 
 export async function GET(req: Request) {
   try {
-    const admin = supabaseAdmin();
-    const user = await getUser(req, admin);
-
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-    }
-
-    const businessId = await resolveBusinessId(admin, user.id);
-
-    if (!businessId) {
-      return NextResponse.json({ ok: false, error: "no_business" }, { status: 403 });
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:read",
+    });
+    const admin = context.admin;
+    const businessId = context.businessId;
 
     const url = new URL(req.url);
     const chatId = clean(url.searchParams.get("chat_id"));
@@ -206,7 +98,11 @@ export async function GET(req: Request) {
       leads: leads ?? [],
       lead: Array.isArray(leads) && leads.length > 0 ? leads[0] : null,
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : new Error("messages_get_error");
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return NextResponse.json(
       { ok: false, error: error?.message || "messages_get_error" },
       { status: 500 }
@@ -216,18 +112,12 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const admin = supabaseAdmin();
-    const user = await getUser(req, admin);
-
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-    }
-
-    const businessId = await resolveBusinessId(admin, user.id);
-
-    if (!businessId) {
-      return NextResponse.json({ ok: false, error: "no_business" }, { status: 403 });
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:write",
+    });
+    const admin = context.admin;
+    const businessId = context.businessId;
 
     const body = await req.json().catch(() => ({}));
     const chatId = clean(body?.chat_id || body?.chatId);
@@ -291,7 +181,11 @@ export async function POST(req: Request) {
       message: inserted,
       humanTakeover: true,
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : new Error("messages_post_error");
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return NextResponse.json(
       { ok: false, error: error?.message || "messages_post_error" },
       { status: 500 }
@@ -301,18 +195,12 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const admin = supabaseAdmin();
-    const user = await getUser(req, admin);
-
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-    }
-
-    const businessId = await resolveBusinessId(admin, user.id);
-
-    if (!businessId) {
-      return NextResponse.json({ ok: false, error: "no_business" }, { status: 403 });
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:write",
+    });
+    const admin = context.admin;
+    const businessId = context.businessId;
 
     const body = await req.json().catch(() => ({}));
     const chatId = clean(body?.chat_id || body?.chatId);
@@ -369,7 +257,11 @@ export async function PATCH(req: Request) {
       ok: true,
       chat,
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : new Error("messages_patch_error");
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return NextResponse.json(
       { ok: false, error: error?.message || "messages_patch_error" },
       { status: 500 }

@@ -1,6 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import dynamic from "next/dynamic";
+import { ImageIcon, Upload, X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { usePanel } from "../_components/panel-context";
 import { PanelSectionHeader } from "../_components/ui/PanelSectionHeader";
@@ -11,11 +20,33 @@ import { SaveBar } from "../_components/ui/SaveBar";
 import { StatusBadge } from "../_components/ui/StatusBadge";
 import { ActionButton } from "../_components/ui/ActionButton";
 import { ChecklistItem } from "../_components/ui/ChecklistItem";
+import SectionIntroGate from "../_components/SectionIntroGate";
+import { OwnerProfileSettings } from "./OwnerProfileSettings";
+import {
+  deleteWidgetAsset,
+  uploadWidgetAsset,
+  validateWidgetImage,
+} from "@/lib/widget-assets-client";
 import styles from "./settings.module.css";
+
+const ImageCropDialog = dynamic(
+  () =>
+    import("@/components/ui/image-crop-dialog").then(
+      (module) => module.ImageCropDialog,
+    ),
+  { ssr: false },
+);
 
 type Tone = "formal" | "neutral" | "cercano";
 type Position = "br" | "bl" | "tr" | "tl";
-type TabKey = "general" | "messages" | "branding" | "position" | "embed" | "preview";
+type TabKey =
+  | "account"
+  | "general"
+  | "messages"
+  | "branding"
+  | "position"
+  | "embed"
+  | "preview";
 
 type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 type DayHours = { open: boolean; from: string; to: string };
@@ -32,6 +63,11 @@ type EditableSettings = {
   gradient_from: string;
   gradient_to: string;
   font_family: string;
+  avatar_url: string;
+};
+
+type WidgetSettingsData = Partial<EditableSettings> & {
+  published_settings?: unknown;
 };
 
 const DEFAULT_HOURS: BusinessHours = {
@@ -55,11 +91,14 @@ const DEFAULTS: Omit<EditableSettings, "business_id"> = {
   gradient_from: "#00E5FF",
   gradient_to: "#6C3BFF",
   font_family: "Inter",
+  avatar_url: "",
 };
 
 const PANEL_THEME_EVENT = "lumen-theme:update";
+const PANEL_AVATAR_EVENT = "lumenai:avatar-update";
 
 const TABS = [
+  { key: "account", label: "Mi perfil", description: "Identidad de cuenta" },
   { key: "general", label: "General", description: "Estado y tono" },
   { key: "messages", label: "Mensajes", description: "Saludo inicial" },
   { key: "branding", label: "Branding", description: "Colores y fuente" },
@@ -81,7 +120,7 @@ const FONT_PRESETS = [
 ];
 
 const COLOR_PRESETS = [
-  { name: "Lumen Pulse", primary: "#00E5FF", from: "#00E5FF", to: "#1B43FF" },
+  { name: "Pulse Radar", primary: "#00E5FF", from: "#00E5FF", to: "#1B43FF" },
   { name: "Kodex Earth", primary: "#68A7FF", from: "#102A7A", to: "#00D7FF" },
   { name: "Lunetra Beam", primary: "#8FD8FF", from: "#061423", to: "#3FA9F5" },
   { name: "Black Ice", primary: "#00E5FF", from: "#05070B", to: "#008CFF" },
@@ -128,6 +167,48 @@ function fontStack(name: string) {
   const family = needsQuotes ? `"${v}"` : v;
 
   return `${family}, system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+}
+
+function normalizeImageUrl(input: unknown) {
+  const value = String(input ?? "").trim();
+
+  if (!value) return "";
+  if (value.startsWith("/")) return value;
+
+  try {
+    const url = new URL(value);
+
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
+function isValidImageUrl(input: unknown) {
+  const value = String(input ?? "").trim();
+  return !value || Boolean(normalizeImageUrl(value));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function pickAvatarUrl(row: unknown) {
+  const source = isRecord(row) ? row : {};
+  const published = isRecord(source.published_settings) ? source.published_settings : {};
+  const widget = isRecord(published.widget) ? published.widget : {};
+  const brand = isRecord(widget.brand) ? widget.brand : {};
+
+  return (
+    normalizeImageUrl(source.avatar_url) ||
+    normalizeImageUrl(brand.avatarUrl) ||
+    normalizeImageUrl(widget.avatarUrl) ||
+    ""
+  );
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 function stableStringify(value: unknown) {
@@ -228,6 +309,35 @@ async function copyToClipboard(text: string) {
   }
 }
 
+async function panelWidgetRequest(payload: Record<string, unknown>) {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const headers = new Headers({ "Content-Type": "application/json" });
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch("/api/panel/widget", {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(payload),
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  const json = (await response.json().catch(() => ({}))) as {
+    ok?: boolean;
+    error?: string;
+  };
+
+  if (!response.ok || json?.ok === false) {
+    throw new Error(json?.error || "No se pudo guardar la configuracion.");
+  }
+
+  return json;
+}
+
 export default function SettingsPage() {
   const { businessId, loading } = usePanel();
 
@@ -243,8 +353,11 @@ export default function SettingsPage() {
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [hydrated, setHydrated] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   const lastSavedRef = useRef("");
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   const [tab, setTab] = useState<TabKey>(() => {
     if (typeof window === "undefined") return "general";
@@ -277,26 +390,28 @@ export default function SettingsPage() {
       setHydrated(false);
       setDirty(false);
 
-      const { data: bizData } = await supabase
-        .from("businesses")
-        .select("name,public_key")
-        .eq("id", businessId!)
-        .maybeSingle();
+      const [bizResult, settingsResult] = await Promise.all([
+        supabase
+          .from("businesses")
+          .select("name,public_key")
+          .eq("id", businessId!)
+          .maybeSingle(),
+        supabase
+          .from("widget_settings")
+          .select(
+            "business_id,widget_enabled,greeting,assistant_name,tone,position,primary_color,gradient_from,gradient_to,font_family,avatar_url,published_settings"
+          )
+          .eq("business_id", businessId!)
+          .maybeSingle(),
+      ]);
 
       if (!alive) return;
+
+      const { data: bizData } = bizResult;
+      const { data, error } = settingsResult;
 
       if (bizData?.name) setBizName(String(bizData.name));
       if (bizData?.public_key) setBizPublicKey(String(bizData.public_key));
-
-      const { data, error } = await supabase
-        .from("widget_settings")
-        .select(
-          "business_id,widget_enabled,greeting,assistant_name,tone,position,primary_color,gradient_from,gradient_to,font_family"
-        )
-        .eq("business_id", businessId!)
-        .maybeSingle();
-
-      if (!alive) return;
 
       if (error) {
         setErr(error.message);
@@ -335,7 +450,7 @@ export default function SettingsPage() {
         return;
       }
 
-      const loaded = data as any;
+      const loaded = data as WidgetSettingsData;
 
       const normalized: EditableSettings = {
         business_id: loaded.business_id ?? businessId!,
@@ -348,6 +463,7 @@ export default function SettingsPage() {
         gradient_from: clampHex(loaded.gradient_from, DEFAULTS.gradient_from),
         gradient_to: clampHex(loaded.gradient_to, DEFAULTS.gradient_to),
         font_family: safeText(loaded.font_family, DEFAULTS.font_family),
+        avatar_url: pickAvatarUrl(loaded),
       };
 
       setRow(normalized);
@@ -369,14 +485,21 @@ export default function SettingsPage() {
     ensureGoogleFontLoaded(row.font_family);
   }, [row?.font_family]);
 
-  useEffect(() => {
-    if (!row) return;
+  const activeThemePrimary = row?.primary_color;
+  const activeThemeFrom = row?.gradient_from;
+  const activeThemeTo = row?.gradient_to;
 
-    const primary = clampHex(row.primary_color, DEFAULTS.primary_color);
-    const secondary = clampHex(row.gradient_to || row.gradient_from, DEFAULTS.gradient_to);
+  useEffect(() => {
+    if (!activeThemePrimary) return;
+
+    const primary = clampHex(activeThemePrimary, DEFAULTS.primary_color);
+    const secondary = clampHex(
+      activeThemeTo || activeThemeFrom,
+      DEFAULTS.gradient_to
+    );
 
     syncPanelTheme(primary, secondary);
-  }, [row?.primary_color, row?.gradient_from, row?.gradient_to]);
+  }, [activeThemeFrom, activeThemePrimary, activeThemeTo]);
 
   useEffect(() => {
     if (!hydrated || !row) {
@@ -399,6 +522,15 @@ export default function SettingsPage() {
   async function save() {
     if (!row || !businessId) return;
 
+    let previousAvatar = "";
+    try {
+      previousAvatar = normalizeImageUrl(
+        (JSON.parse(lastSavedRef.current) as Partial<EditableSettings>)?.avatar_url
+      );
+    } catch {
+      previousAvatar = "";
+    }
+
     setSaving(true);
     setStatus("saving");
     setErr(null);
@@ -413,20 +545,19 @@ export default function SettingsPage() {
       gradient_from: clampHex(row.gradient_from, DEFAULTS.gradient_from),
       gradient_to: clampHex(row.gradient_to, DEFAULTS.gradient_to),
       font_family: safeText(row.font_family, DEFAULTS.font_family),
+      avatar_url: normalizeImageUrl(row.avatar_url) || "",
     };
 
-    const { error } = await supabase
-      .from("widget_settings")
-      .update(payload)
-      .eq("business_id", businessId);
-
-    setSaving(false);
-
-    if (error) {
-      setErr(error.message);
+    try {
+      await panelWidgetRequest(payload);
+    } catch (error: unknown) {
+      setSaving(false);
+      setErr(getErrorMessage(error, "No se pudo guardar la configuracion."));
       setStatus("error");
       return;
     }
+
+    setSaving(false);
 
     const next: EditableSettings = { business_id: businessId, ...payload };
 
@@ -436,6 +567,16 @@ export default function SettingsPage() {
     setDirty(false);
     setStatus("saved");
     setFlash("Guardado ✅");
+
+    window.dispatchEvent(
+      new CustomEvent(PANEL_AVATAR_EVENT, {
+        detail: { avatarUrl: next.avatar_url },
+      })
+    );
+
+    if (previousAvatar && previousAvatar !== next.avatar_url) {
+      void deleteWidgetAsset(previousAvatar).catch(() => {});
+    }
   }
 
   function resetDefaults() {
@@ -445,6 +586,7 @@ export default function SettingsPage() {
       ...row,
       ...DEFAULTS,
       business_id: row.business_id,
+      avatar_url: row.avatar_url,
     };
 
     setRow(next);
@@ -466,6 +608,91 @@ export default function SettingsPage() {
     syncPanelTheme(next.primary_color, next.gradient_to || next.gradient_from);
   }
 
+  function markAvatarAsSaved(avatarUrl: string) {
+    setRow((current) => (current ? { ...current, avatar_url: avatarUrl } : current));
+
+    try {
+      const saved = JSON.parse(lastSavedRef.current) as EditableSettings;
+      lastSavedRef.current = stableStringify({ ...saved, avatar_url: avatarUrl });
+    } catch {
+      if (row) {
+        lastSavedRef.current = stableStringify({ ...row, avatar_url: avatarUrl });
+      }
+    }
+
+    window.dispatchEvent(
+      new CustomEvent(PANEL_AVATAR_EVENT, {
+        detail: { avatarUrl },
+      })
+    );
+  }
+
+  async function uploadAvatar(file: File | null) {
+    if (!file || !row || uploadingAvatar) return;
+
+    const validation = validateWidgetImage(file);
+    if (validation) {
+      setErr(validation);
+      setStatus("error");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setErr(null);
+    const previousAvatar = normalizeImageUrl(row.avatar_url);
+    let uploadedUrl = "";
+
+    try {
+      const asset = await uploadWidgetAsset(file, "avatar");
+      const url = normalizeImageUrl(asset.url);
+
+      if (!url) {
+        throw new Error("La URL recibida no es valida.");
+      }
+
+      uploadedUrl = url;
+      await panelWidgetRequest({ avatarUrl: url });
+      markAvatarAsSaved(url);
+      setFlash("Foto actualizada y publicada.");
+
+      if (previousAvatar && previousAvatar !== url) {
+        void deleteWidgetAsset(previousAvatar).catch(() => {});
+      }
+    } catch (error: unknown) {
+      if (uploadedUrl) {
+        void deleteWidgetAsset(uploadedUrl).catch(() => {});
+      }
+      setErr(getErrorMessage(error, "No se pudo subir la imagen."));
+      setStatus("error");
+    } finally {
+      setUploadingAvatar(false);
+      setCropFile(null);
+    }
+  }
+
+  async function clearAvatar() {
+    if (!row || uploadingAvatar) return;
+
+    const previousAvatar = normalizeImageUrl(row.avatar_url);
+    setUploadingAvatar(true);
+    setErr(null);
+
+    try {
+      await panelWidgetRequest({ avatarUrl: "" });
+      markAvatarAsSaved("");
+      setFlash("Foto retirada del perfil.");
+
+      if (previousAvatar) {
+        void deleteWidgetAsset(previousAvatar).catch(() => {});
+      }
+    } catch (error: unknown) {
+      setErr(getErrorMessage(error, "No se pudo retirar la imagen."));
+      setStatus("error");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
   const pv = {
     enabled: row?.widget_enabled ?? DEFAULTS.widget_enabled,
     greeting: row?.greeting ?? DEFAULTS.greeting,
@@ -476,15 +703,16 @@ export default function SettingsPage() {
     gFrom: clampHex(row?.gradient_from ?? DEFAULTS.gradient_from, DEFAULTS.gradient_from),
     gTo: clampHex(row?.gradient_to ?? DEFAULTS.gradient_to, DEFAULTS.gradient_to),
     font: row?.font_family ?? DEFAULTS.font_family,
+    avatar: normalizeImageUrl(row?.avatar_url) || "",
   };
 
-  const cssVars = {
-    ["--primary" as any]: pv.primary,
-    ["--gFrom" as any]: pv.gFrom,
-    ["--gTo" as any]: pv.gTo,
-    ["--pRgb" as any]: hexToRgbCsv(pv.primary, DEFAULTS.primary_color),
-    ["--gfRgb" as any]: hexToRgbCsv(pv.gFrom, DEFAULTS.gradient_from),
-    ["--gtRgb" as any]: hexToRgbCsv(pv.gTo, DEFAULTS.gradient_to),
+  const cssVars: CSSProperties & Record<`--${string}`, string> = {
+    "--primary": pv.primary,
+    "--gFrom": pv.gFrom,
+    "--gTo": pv.gTo,
+    "--pRgb": hexToRgbCsv(pv.primary, DEFAULTS.primary_color),
+    "--gfRgb": hexToRgbCsv(pv.gFrom, DEFAULTS.gradient_from),
+    "--gtRgb": hexToRgbCsv(pv.gTo, DEFAULTS.gradient_to),
   };
 
   const pageFont = fontStack(pv.font);
@@ -520,6 +748,7 @@ export default function SettingsPage() {
       if (!isValidHex(row.primary_color)) w.push("Color principal inválido.");
       if (!isValidHex(row.gradient_from)) w.push("Gradiente inicial inválido.");
       if (!isValidHex(row.gradient_to)) w.push("Gradiente final inválido.");
+      if (!isValidImageUrl(row.avatar_url)) w.push("URL de foto invalida.");
       if (String(row.greeting || "").length > 260) {
         w.push("Saludo largo: ideal menos de 220 caracteres.");
       }
@@ -559,16 +788,37 @@ export default function SettingsPage() {
   }
 
   return (
-    <div
-      className={`${styles.page} ${saveBarVisible ? styles.pageWithBar : ""}`}
-      style={{ ...cssVars, fontFamily: pageFont }}
+    <>
+      <SectionIntroGate
+      title="Settings define la identidad principal del negocio."
+      description="Este módulo controla los datos base que LumenAI usa para verse, presentarse e instalarse correctamente en la experiencia pública."
+      bullets={[
+        "Gestiona la identidad y la foto del dueño del panel sin alterar el avatar público.",
+        "Edita nombre del asistente, saludo, tono y estado del widget.",
+        "Sincroniza colores, fuente y presets visuales del panel y del asistente.",
+        "Obtén los códigos de instalación y revisa el preview real antes de publicar.",
+      ]}
+      primaryActionLabel="Entrar al área"
+      skipActionLabel="Omitir"
+      storageKey="lumenai:intro:settings:v1"
     >
+      <div
+        className={`${styles.page} ${saveBarVisible && tab !== "account" ? styles.pageWithBar : ""}`}
+        style={{ ...cssVars, fontFamily: pageFont }}
+      >
       <PanelSectionHeader
-        eyebrow="Configurador visual"
-        title="Control del Widget"
-        description="Personaliza cómo se ve, saluda y se instala tu asistente en la web del negocio."
+        variant="hero"
+        eyebrow={tab === "account" ? "Cuenta y acceso" : "Configurador visual"}
+        title={tab === "account" ? "Perfil del propietario" : "Control del Widget"}
+        description={
+          tab === "account"
+            ? "Define cómo se presenta el dueño dentro del panel y mantén su identidad separada del asistente público."
+            : "Personaliza cómo se ve, saluda y se instala tu asistente en la web del negocio."
+        }
         status={
-          saving
+          tab === "account"
+            ? "Cuenta activa"
+            : saving
             ? "Guardando…"
             : status === "dirty"
             ? "Cambios sin guardar"
@@ -578,23 +828,35 @@ export default function SettingsPage() {
             ? "Error"
             : "Listo"
         }
-        statusTone={status === "error" ? "danger" : status === "dirty" ? "warning" : "active"}
-        actionLabel={previewUrl ? "Abrir widget real" : undefined}
-        actionHref={previewUrl ?? undefined}
+        statusTone={
+          tab === "account"
+            ? "active"
+            : status === "error"
+              ? "danger"
+              : status === "dirty"
+                ? "warning"
+                : "active"
+        }
+        actionLabel={tab !== "account" && previewUrl ? "Abrir widget real" : undefined}
+        actionHref={tab !== "account" ? previewUrl ?? undefined : undefined}
         secondary={
-          <StatusBadge tone={pv.enabled ? "active" : "muted"}>
-            {pv.enabled ? "Widget activo" : "Widget desactivado"}
+          <StatusBadge tone={tab === "account" || pv.enabled ? "active" : "muted"}>
+            {tab === "account"
+              ? "Identidad interna"
+              : pv.enabled
+                ? "Widget activo"
+                : "Widget desactivado"}
           </StatusBadge>
         }
       />
 
-      {err ? (
+      {tab !== "account" && err ? (
         <StatusBadge tone="danger" className="w-fit">
           {err}
         </StatusBadge>
       ) : null}
 
-      {flash ? (
+      {tab !== "account" && flash ? (
         <StatusBadge tone="active" className="w-fit">
           {flash}
         </StatusBadge>
@@ -606,6 +868,9 @@ export default function SettingsPage() {
         onChange={(next) => setTab(next as TabKey)}
       />
 
+      {tab === "account" ? (
+        <OwnerProfileSettings />
+      ) : (
       <div className={styles.grid}>
         <div className={styles.leftCol}>
           {warnings.length ? (
@@ -650,6 +915,7 @@ export default function SettingsPage() {
                   <div className={styles.row2}>
                     <Field label="Nombre del asistente" hint="Se muestra dentro del widget.">
                       <input
+                        aria-label="Nombre del asistente"
                         className={styles.input}
                         value={row.assistant_name}
                         onChange={(e) => setRow({ ...row, assistant_name: e.target.value })}
@@ -723,6 +989,7 @@ export default function SettingsPage() {
                 <>
                   <Field label="Saludo" hint="Soporta **negrita** y {business}. Primera línea = título.">
                     <textarea
+                      aria-label="Saludo del widget"
                       className={styles.textarea}
                       value={row.greeting}
                       onChange={(e) => setRow({ ...row, greeting: e.target.value })}
@@ -739,6 +1006,47 @@ export default function SettingsPage() {
 
           {tab === "branding" ? (
             <>
+              <FieldGroup
+                title="Foto del perfil"
+                description="Elige la imagen que veran los clientes en el boton flotante y dentro del chat."
+              >
+                {busy || !row ? (
+                  <Skeleton />
+                ) : (
+                  <>
+                    <input
+                      aria-label="Seleccionar imagen del widget"
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className={styles.hiddenFileInput}
+                      onChange={(event) => {
+                        const file = event.currentTarget.files?.[0] ?? null;
+                        event.currentTarget.value = "";
+                        const validation = file ? validateWidgetImage(file) : null;
+                        if (validation) {
+                          setErr(validation);
+                          setStatus("error");
+                          return;
+                        }
+                        setCropFile(file);
+                      }}
+                    />
+
+                    <ProfilePhotoStudio
+                      avatarUrl={row.avatar_url}
+                      businessName={bizName}
+                      assistantName={pv.assistant}
+                      uploading={uploadingAvatar}
+                      disabled={busy || saving}
+                      onUpload={() => avatarInputRef.current?.click()}
+                      onClear={() => void clearAvatar()}
+                      onUrlChange={(value) => setRow({ ...row, avatar_url: value })}
+                    />
+                  </>
+                )}
+              </FieldGroup>
+
               <FieldGroup
                 title="Colorimetría"
                 description="El color elegido se refleja en el panel, el fondo, los bordes, CTAs y el widget."
@@ -789,6 +1097,7 @@ export default function SettingsPage() {
 
                     <Field label="Fuente personalizada" hint="Se intentará cargar desde Google Fonts.">
                       <input
+                        aria-label="Fuente personalizada"
                         className={styles.input}
                         value={row.font_family}
                         onChange={(e) => setRow({ ...row, font_family: e.target.value })}
@@ -884,6 +1193,7 @@ export default function SettingsPage() {
                 gFrom={pv.gFrom}
                 gTo={pv.gTo}
                 fontFamily={pv.font}
+                avatarUrl={pv.avatar}
               />
             </FieldGroup>
           ) : null}
@@ -944,11 +1254,14 @@ export default function SettingsPage() {
               gFrom={pv.gFrom}
               gTo={pv.gTo}
               fontFamily={pv.font}
+              avatarUrl={pv.avatar}
             />
           </PreviewShell>
         </aside>
       </div>
+      )}
 
+      {tab !== "account" ? (
       <SaveBar
         visible={saveBarVisible}
         title={
@@ -968,7 +1281,19 @@ export default function SettingsPage() {
         primaryDisabled={!row || busy || saving || !dirty}
         secondaryDisabled={!row || busy || saving}
       />
-    </div>
+      ) : null}
+      </div>
+      </SectionIntroGate>
+
+      {cropFile ? (
+        <ImageCropDialog
+          file={cropFile}
+          title="Encuadrar foto del asistente"
+          onCancel={() => setCropFile(null)}
+          onConfirm={uploadAvatar}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -1031,6 +1356,87 @@ function ColorField({
   );
 }
 
+function ProfilePhotoStudio({
+  avatarUrl,
+  businessName,
+  assistantName,
+  uploading,
+  disabled,
+  onUpload,
+  onClear,
+  onUrlChange,
+}: {
+  avatarUrl: string;
+  businessName: string;
+  assistantName: string;
+  uploading: boolean;
+  disabled: boolean;
+  onUpload: () => void;
+  onClear: () => void;
+  onUrlChange: (value: string) => void;
+}) {
+  const initial = String(assistantName || businessName || "L").slice(0, 1).toUpperCase();
+  const previewUrl = normalizeImageUrl(avatarUrl);
+  const hasInput = Boolean(String(avatarUrl || "").trim());
+
+  return (
+    <div className={styles.photoStudio}>
+      <div className={styles.photoPreview}>
+        <div className={styles.photoHalo} aria-hidden="true" />
+        <div className={styles.photoFrame}>
+          {previewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt=""
+              className={styles.photoImg}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span>{initial}</span>
+          )}
+        </div>
+        <div className={styles.photoCopy}>
+          <div className={styles.photoTitle}>{assistantName || "LumenAI"}</div>
+          <div className={styles.photoSub}>{businessName || "Tu negocio"}</div>
+        </div>
+      </div>
+
+      <div className={styles.photoControls}>
+        <div className={styles.photoActions}>
+          <ActionButton type="button" variant="primary" onClick={onUpload} disabled={disabled || uploading}>
+            {uploading ? <Upload className="h-4 w-4 animate-pulse" /> : <ImageIcon className="h-4 w-4" />}
+            {uploading ? "Subiendo" : "Elegir foto"}
+          </ActionButton>
+
+          <ActionButton
+            type="button"
+            variant="secondary"
+            onClick={onClear}
+            disabled={disabled || uploading || !hasInput}
+          >
+            <X className="h-4 w-4" />
+            Quitar
+          </ActionButton>
+        </div>
+
+        <Field label="URL de imagen" hint="Opcional: pega una URL publica si ya tienes la foto.">
+          <input
+            aria-label="URL de imagen del widget"
+            className={styles.input}
+            value={avatarUrl}
+            onChange={(event) => onUrlChange(event.target.value)}
+            placeholder="https://..."
+            disabled={disabled || uploading}
+          />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
 function GradientStudio({
   row,
   busy,
@@ -1048,16 +1454,17 @@ function GradientStudio({
   const from = clampHex(row.gradient_from, DEFAULTS.gradient_from);
   const to = clampHex(row.gradient_to, DEFAULTS.gradient_to);
   const disabled = busy || saving;
+  const gradientStyle: CSSProperties & Record<`--${string}`, string> = {
+    "--studioPrimary": primary,
+    "--studioFrom": from,
+    "--studioTo": to,
+  };
 
   return (
     <div className={styles.gradientStudio}>
       <div
         className={styles.gradientHero}
-        style={{
-          ["--studioPrimary" as any]: primary,
-          ["--studioFrom" as any]: from,
-          ["--studioTo" as any]: to,
-        }}
+        style={gradientStyle}
       >
         <div className={styles.gradientAurora} />
         <div className={styles.gradientHeroTop}>
@@ -1122,7 +1529,7 @@ function GradientStudio({
           onChange={(value) => onPatch({ gradient_to: value })}
         />
       </div>
-    </div>
+      </div>
   );
 }
 
@@ -1135,6 +1542,30 @@ function GreetingPreview({ title, body }: { title: string; body: string }) {
   );
 }
 
+function PositionDot({
+  pos,
+  x,
+  y,
+  active,
+  onChange,
+}: {
+  pos: Position;
+  x: string;
+  y: string;
+  active: boolean;
+  onChange: (position: Position) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={active ? styles.posDotActive : styles.posDot}
+      onClick={() => onChange(pos)}
+      style={{ left: x, top: y }}
+      aria-label={`Posición ${pos}`}
+    />
+  );
+}
+
 function PositionPicker({
   value,
   onChange,
@@ -1142,20 +1573,6 @@ function PositionPicker({
   value: Position;
   onChange: (position: Position) => void;
 }) {
-  const Dot = ({ pos, x, y }: { pos: Position; x: string; y: string }) => {
-    const active = value === pos;
-
-    return (
-      <button
-        type="button"
-        className={active ? styles.posDotActive : styles.posDot}
-        onClick={() => onChange(pos)}
-        style={{ left: x, top: y }}
-        aria-label={`Posición ${pos}`}
-      />
-    );
-  };
-
   return (
     <div className={styles.posWrap}>
       <div className={styles.posTop}>
@@ -1165,10 +1582,10 @@ function PositionPicker({
 
       <div className={styles.posBox}>
         <div className={styles.posBg} />
-        <Dot pos="tl" x="12%" y="18%" />
-        <Dot pos="tr" x="88%" y="18%" />
-        <Dot pos="bl" x="12%" y="82%" />
-        <Dot pos="br" x="88%" y="82%" />
+        <PositionDot pos="tl" x="12%" y="18%" active={value === "tl"} onChange={onChange} />
+        <PositionDot pos="tr" x="88%" y="18%" active={value === "tr"} onChange={onChange} />
+        <PositionDot pos="bl" x="12%" y="82%" active={value === "bl"} onChange={onChange} />
+        <PositionDot pos="br" x="88%" y="82%" active={value === "br"} onChange={onChange} />
         <div className={styles.posDash} />
       </div>
 
@@ -1212,6 +1629,7 @@ function RealWidgetPreviewMock(props: {
   gFrom: string;
   gTo: string;
   fontFamily: string;
+  avatarUrl?: string | null;
 }) {
   const fs = fontStack(props.fontFamily);
   const isMobile = props.mode === "mobile";
@@ -1228,7 +1646,19 @@ function RealWidgetPreviewMock(props: {
             style={{ background: `linear-gradient(135deg, ${props.gFrom}, ${props.gTo})` }}
             aria-hidden="true"
           >
-            {String(props.businessName || "B").slice(0, 1).toUpperCase()}
+            {props.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={props.avatarUrl}
+                alt=""
+                className={styles.mockAvatarImg}
+                loading="lazy"
+                decoding="async"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              String(props.businessName || "B").slice(0, 1).toUpperCase()
+            )}
           </div>
 
           <div className={styles.mockTitleWrap}>
@@ -1240,7 +1670,7 @@ function RealWidgetPreviewMock(props: {
                 style={{ background: props.primary, boxShadow: `0 0 16px ${props.primary}55` }}
               />
               <span>Online</span>
-              <span className={styles.mockSep}>•</span>
+              <span className={styles.mockSep} aria-hidden="true">•</span>
               <span className={styles.mockMuted}>Asistente: {props.assistantName}</span>
             </div>
           </div>

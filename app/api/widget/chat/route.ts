@@ -6,6 +6,7 @@ import { buildDefaultSalesSystemPrompt } from "@/lib/ai/defaultSalesPrompt";
 import { callGroqChat } from "@/lib/ai/groq";
 import { resolveCountryName } from "@/lib/geo/countries";
 import { getSupabaseServerEnv } from "@/lib/env";
+import { requireUserBusiness } from "@/app/api/panel/calibration/_lib";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -20,7 +21,15 @@ type RateLimitEntry = {
   lastSeen: number;
 };
 
-const widgetChatRateLimit = new Map<string, RateLimitEntry>();
+type WidgetRateLimitGlobal = typeof globalThis & {
+  __lumenWidgetChatRateLimit?: Map<string, RateLimitEntry>;
+};
+
+const rateLimitGlobal = globalThis as WidgetRateLimitGlobal;
+const widgetChatRateLimit =
+  rateLimitGlobal.__lumenWidgetChatRateLimit ?? new Map<string, RateLimitEntry>();
+
+rateLimitGlobal.__lumenWidgetChatRateLimit = widgetChatRateLimit;
 
 type Biz = {
   id: string;
@@ -298,11 +307,9 @@ function normalizeNameForCompare(value: unknown) {
 
 async function resolveBusiness(
   sb: ReturnType<typeof admin>,
-  key: string,
-  businessId?: string | null
+  key: string
 ): Promise<Biz | null> {
   const cleanKey = String(key || "").trim();
-  const cleanBusinessId = String(businessId || "").trim();
 
   if (cleanKey) {
     const { data: byPublicKey, error: publicKeyError } = await sb
@@ -336,29 +343,6 @@ async function resolveBusiness(
       if (byWidgetBusiness) return byWidgetBusiness as Biz;
     }
 
-    if (isUuid(cleanKey)) {
-      const { data: byId, error: idError } = await sb
-        .from("businesses")
-        .select("id,name,public_key")
-        .eq("id", cleanKey)
-        .limit(1)
-        .maybeSingle();
-
-      if (idError) throw new Error(idError.message);
-      if (byId) return byId as Biz;
-    }
-  }
-
-  if (cleanBusinessId && isUuid(cleanBusinessId)) {
-    const { data: byBodyId, error: bodyIdError } = await sb
-      .from("businesses")
-      .select("id,name,public_key")
-      .eq("id", cleanBusinessId)
-      .limit(1)
-      .maybeSingle();
-
-    if (bodyIdError) throw new Error(bodyIdError.message);
-    if (byBodyId) return byBodyId as Biz;
   }
 
   return null;
@@ -965,7 +949,7 @@ async function ensureWidgetChat(input: {
   for (const payload of attempts) {
     const { data, error } = await sb
       .from("chats")
-      .insert(payload)
+      .insert(payload as any)
       .select("id")
       .maybeSingle();
 
@@ -1044,7 +1028,7 @@ async function insertMessage(input: {
   ];
 
   for (const payload of attempts) {
-    const { error } = await sb.from("chat_messages").insert(payload);
+    const { error } = await sb.from("chat_messages").insert(payload as any);
     if (!error) break;
   }
 
@@ -1244,6 +1228,79 @@ function detectCommercialSignals(message: string, history: ChatHistoryItem[]) {
     objections,
     nextBestAction,
     opportunityLostRisk: sentiment === "riesgo" || (urgency === "alta" && !text.includes("@")),
+  };
+}
+
+function buildPreviewDiagnostics(input: {
+  calibration: any;
+  knowledgeText: string;
+  message: string;
+  history: ChatHistoryItem[];
+}) {
+  const { calibration, knowledgeText, message, history } = input;
+  const personality = isObj(calibration?.personality) ? calibration.personality : {};
+  const personalityRules = isObj(personality?.rules) ? personality.rules : {};
+  const sales = isObj(calibration?.sales) ? calibration.sales : {};
+  const guardrails = isObj(calibration?.guardrails) ? calibration.guardrails : {};
+  const escalation = isObj(guardrails?.escalate) ? guardrails.escalate : {};
+  const lexicon = isObj(calibration?.lexicon) ? calibration.lexicon : {};
+  const signals = detectCommercialSignals(message, history);
+  const rules: string[] = [];
+
+  if (personalityRules.reflectUnderstandingFirst) {
+    rules.push("Reflejar comprensión antes de responder");
+  }
+  if (personalityRules.endWithQuestionOrCTA) {
+    rules.push("Finalizar con pregunta o siguiente paso");
+  }
+  if (Number(personalityRules.maxOptions) > 0) {
+    rules.push(`Máximo ${Number(personalityRules.maxOptions)} opciones principales`);
+  }
+  if (sales.allowUrgency === false) {
+    rules.push("No utilizar urgencia comercial artificial");
+  }
+  if (cleanString(sales.profileId)) {
+    rules.push(`Perfil comercial ${cleanString(sales.profileId)}`);
+  }
+
+  const activeGuardrails: string[] = [];
+  const normalizedMessage = message.toLowerCase();
+  const escalationTerms = asList(escalation.when).map((item) =>
+    cleanString(item).toLowerCase()
+  );
+  const asksForHuman =
+    normalizedMessage.includes("humano") ||
+    normalizedMessage.includes("persona") ||
+    normalizedMessage.includes("asesor");
+  const escalationSuggested =
+    Boolean(escalation.enabled) &&
+    (signals.sentiment === "riesgo" ||
+      (asksForHuman &&
+        escalationTerms.some((term) =>
+          ["pide_humano", "humano", "persona", "asesor"].includes(term)
+        )));
+
+  if (escalationSuggested) activeGuardrails.push("Escalamiento humano");
+
+  for (const phrase of asList(lexicon.forbiddenPhrases)) {
+    const normalizedPhrase = cleanString(phrase).toLowerCase();
+    if (normalizedPhrase && normalizedMessage.includes(normalizedPhrase)) {
+      activeGuardrails.push(`Lenguaje restringido: ${cleanString(phrase)}`);
+    }
+  }
+
+  return {
+    source: "draft",
+    rules: rules.slice(0, 6),
+    objections: signals.objections,
+    knowledge: {
+      contextIncluded: Boolean(knowledgeText.trim()),
+      characters: knowledgeText.length,
+    },
+    guardrails: {
+      active: activeGuardrails,
+      escalationSuggested,
+    },
   };
 }
 
@@ -1472,17 +1529,18 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => null);
 
     const key = cleanString(body?.publicKey || body?.key || "");
-    const businessIdFromBody = cleanString(body?.businessId || "");
     const visitorId = cleanString(body?.visitorId || `visitor_${crypto.randomUUID()}`);
     const incomingChatId = cleanString(body?.chatId || "");
     const message = cut(body?.message, 4000);
     const history = sanitizeHistory(body?.history);
     const visitorContext = isObj(body?.visitorContext) ? body.visitorContext : {};
     const geo = readVisitorGeo(req, visitorContext);
+    const previewRequested = body?.preview === true;
+    let previewBusinessId: string | null = null;
 
-    if (!key && !businessIdFromBody) {
+    if (!key) {
       return NextResponse.json(
-        { ok: false, error: "Falta publicKey/key o businessId." },
+        { ok: false, error: "Falta publicKey/key." },
         { status: 400, headers }
       );
     }
@@ -1494,32 +1552,47 @@ export async function POST(req: Request) {
       );
     }
 
-    const rateLimit = checkWidgetChatRateLimit({
-      req,
-      publicKey: key,
-      businessId: businessIdFromBody,
-      visitorId,
-    });
+    if (previewRequested) {
+      const previewContext = await requireUserBusiness();
+      if (
+        previewContext.error ||
+        !previewContext.business?.id ||
+        previewContext.business.public_key !== key
+      ) {
+        return NextResponse.json(
+          { ok: false, error: "Preview no autorizado." },
+          { status: 403, headers }
+        );
+      }
+      previewBusinessId = previewContext.business.id;
+    } else {
+      const rateLimit = checkWidgetChatRateLimit({
+        req,
+        publicKey: key,
+        businessId: key,
+        visitorId,
+      });
 
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Demasiadas consultas seguidas. Intenta nuevamente en unos segundos.",
-          retryAfter: rateLimit.retryAfter,
-        },
-        {
-          status: 429,
-          headers: {
-            ...headers,
-            "Retry-After": String(rateLimit.retryAfter),
+      if (!rateLimit.allowed) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "Demasiadas consultas seguidas. Intenta nuevamente en unos segundos.",
+            retryAfter: rateLimit.retryAfter,
           },
-        }
-      );
+          {
+            status: 429,
+            headers: {
+              ...headers,
+              "Retry-After": String(rateLimit.retryAfter),
+            },
+          }
+        );
+      }
     }
 
     const sb = admin();
-    const business = await resolveBusiness(sb, key, businessIdFromBody);
+    const business = await resolveBusiness(sb, key);
 
     if (!business?.id) {
       return NextResponse.json(
@@ -1528,14 +1601,81 @@ export async function POST(req: Request) {
       );
     }
 
+    if (previewRequested && previewBusinessId !== business.id) {
+      return NextResponse.json(
+        { ok: false, error: "El negocio del preview no coincide con la sesión." },
+        { status: 403, headers }
+      );
+    }
+
     const settings = await getSettings(sb, business.id);
-    const source = pickPublishedSource(settings);
+    const source =
+      previewRequested && isObj(settings?.draft_settings)
+        ? settings?.draft_settings
+        : pickPublishedSource(settings);
 
     const runtime = normalizeRuntimeConfig({
       business,
       settings,
       source,
     });
+
+    if (previewRequested) {
+      const knowledgeText = await getKnowledgeText(sb, business.id);
+      const businessContext = buildBusinessContext({
+        businessName: runtime.businessName,
+        assistantName: runtime.assistantName,
+        tone: cleanString(settings?.tone, "neutral"),
+        whatsapp: runtime.whatsapp,
+        email: runtime.email,
+        businessHours: runtime.businessHours,
+        timeZone: runtime.timeZone,
+      });
+      const systemPrompt = buildCalibrationPrompt({
+        businessName: runtime.businessName,
+        assistantName: runtime.assistantName,
+        calibration: runtime.calibration,
+        knowledgeText,
+        businessContextText: businessContext.systemBusinessBlock,
+        whatsapp: runtime.whatsapp,
+        email: runtime.email,
+      });
+      const aiReply = await callGroq({
+        systemPrompt,
+        history,
+        message,
+      });
+      const rawReply =
+        aiReply ||
+        buildFallbackReply({
+          message,
+          knowledgeText,
+          businessName: runtime.businessName,
+          assistantName: runtime.assistantName,
+          whatsapp: runtime.whatsapp,
+          email: runtime.email,
+        });
+      const reply = ensureStructuredWidgetReply(rawReply, message);
+
+      return NextResponse.json(
+        {
+          ok: true,
+          reply,
+          chatId: null,
+          chat_id: null,
+          businessId: business.id,
+          assistantName: runtime.assistantName,
+          preview: true,
+          previewDiagnostics: buildPreviewDiagnostics({
+            calibration: runtime.calibration,
+            knowledgeText,
+            message,
+            history,
+          }),
+        },
+        { headers }
+      );
+    }
 
     if (runtime.widgetEnabled === false) {
       return NextResponse.json(

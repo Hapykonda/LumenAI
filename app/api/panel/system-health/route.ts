@@ -83,7 +83,7 @@ export async function GET() {
       },
       {
         key: "snapshots",
-        label: "Snapshots Config IA",
+        label: "Snapshots Config AI",
         status: status(Array.isArray(snapshots.data) && snapshots.data.length > 0, true),
         detail: `${Array.isArray(snapshots.data) ? snapshots.data.length : 0} snapshot(s) recientes.`,
       },

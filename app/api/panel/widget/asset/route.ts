@@ -1,105 +1,25 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getSupabaseServerEnv } from "@/lib/env";
+import {
+  BusinessAuthorizationError,
+  businessAuthorizationErrorResponse,
+  getAuthorizedBusinessContext,
+} from "@/lib/auth/business-context";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const BUCKET = "lumenai-widget-assets";
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
-
-function supabaseAdmin() {
-  const env = getSupabaseServerEnv();
-
-  return createClient(env.url, env.serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
-
-function getBearer(req: Request) {
-  const raw = req.headers.get("authorization") || "";
-  const match = raw.match(/^Bearer\s+(.+)$/i);
-  return match?.[1] ?? null;
-}
+const ALLOWED_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+] as const;
 
 function clean(value: unknown) {
   return String(value ?? "").trim();
-}
-
-function pickBusinessIdFromProfile(profile: any) {
-  if (!profile || typeof profile !== "object") return null;
-
-  for (const key of [
-    "active_business_id",
-    "business_id",
-    "current_business_id",
-    "selected_business_id",
-    "default_business_id",
-  ]) {
-    const value = clean(profile[key]);
-    if (value) return value;
-  }
-
-  return null;
-}
-
-async function getUser(req: Request, admin: ReturnType<typeof supabaseAdmin>) {
-  const token = getBearer(req);
-  if (!token) return null;
-
-  const { data, error } = await admin.auth.getUser(token);
-  if (error || !data?.user) return null;
-
-  return data.user;
-}
-
-async function readProfile(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  for (const column of ["id", "user_id", "owner_id"]) {
-    const { data, error } = await admin
-      .from("profiles")
-      .select("*")
-      .eq(column, userId)
-      .maybeSingle();
-
-    if (!error && data) return data;
-  }
-
-  return null;
-}
-
-async function readOwnedBusiness(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  for (const column of ["owner_id", "user_id", "created_by", "profile_id"]) {
-    const { data, error } = await admin
-      .from("businesses")
-      .select("id,name,public_key")
-      .eq(column, userId)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && data?.id) return data;
-  }
-
-  return null;
-}
-
-async function resolveBusiness(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const profile = await readProfile(admin, userId);
-  const profileBusinessId = pickBusinessIdFromProfile(profile);
-
-  if (profileBusinessId) {
-    const { data, error } = await admin
-      .from("businesses")
-      .select("id,name,public_key")
-      .eq("id", profileBusinessId)
-      .maybeSingle();
-
-    if (!error && data?.id) return data;
-  }
-
-  return readOwnedBusiness(admin, userId);
 }
 
 function extensionFromType(type: string) {
@@ -107,6 +27,33 @@ function extensionFromType(type: string) {
   if (type === "image/webp") return "webp";
   if (type === "image/gif") return "gif";
   return "jpg";
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function getOwnedStoragePath(value: unknown, businessId: string) {
+  const raw = clean(value);
+  if (!raw) return null;
+
+  let candidate = raw;
+
+  try {
+    const url = new URL(raw);
+    const marker = `/storage/v1/object/public/${BUCKET}/`;
+    const markerIndex = url.pathname.indexOf(marker);
+    if (markerIndex < 0) return null;
+    candidate = decodeURIComponent(url.pathname.slice(markerIndex + marker.length));
+  } catch {
+    candidate = raw.replace(/^\/+/, "");
+  }
+
+  const normalized = candidate.replaceAll("\\", "/").replace(/^\/+/, "");
+  if (!normalized.startsWith(`${businessId}/`)) return null;
+  if (normalized.includes("../") || normalized.includes("/..")) return null;
+
+  return normalized;
 }
 
 async function ensureBucket(admin: ReturnType<typeof supabaseAdmin>) {
@@ -124,18 +71,12 @@ async function ensureBucket(admin: ReturnType<typeof supabaseAdmin>) {
 
 export async function POST(req: Request) {
   try {
-    const admin = supabaseAdmin();
-    const user = await getUser(req, admin);
-
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-    }
-
-    const business = await resolveBusiness(admin, user.id);
-
-    if (!business?.id) {
-      return NextResponse.json({ ok: false, error: "missing_business" }, { status: 403 });
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:write",
+    });
+    const admin = context.admin;
+    const business = context.activeBusiness;
 
     const form = await req.formData();
     const file = form.get("file");
@@ -144,7 +85,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "missing_file" }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (!ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number])) {
       return NextResponse.json({ ok: false, error: "invalid_file_type" }, { status: 400 });
     }
 
@@ -154,8 +95,9 @@ export async function POST(req: Request) {
 
     await ensureBucket(admin);
 
+    const kind = clean(form.get("kind")) === "logo" ? "logo" : "avatar";
     const ext = extensionFromType(file.type);
-    const path = `${business.id}/widget-avatar-${Date.now()}.${ext}`;
+    const path = `${business.id}/widget-${kind}-${Date.now()}-${crypto.randomUUID()}.${ext}`;
     const bytes = await file.arrayBuffer();
 
     const { error } = await admin.storage
@@ -163,7 +105,7 @@ export async function POST(req: Request) {
       .upload(path, new Uint8Array(bytes), {
         contentType: file.type,
         cacheControl: "31536000",
-        upsert: true,
+        upsert: false,
       });
 
     if (error) throw new Error(error.message);
@@ -175,9 +117,46 @@ export async function POST(req: Request) {
       url: data.publicUrl,
       path,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return NextResponse.json(
-      { ok: false, error: error?.message || "widget_asset_upload_error" },
+      { ok: false, error: getErrorMessage(error, "widget_asset_upload_error") },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:write",
+    });
+    const admin = context.admin;
+    const business = context.activeBusiness;
+
+    const body = await req.json().catch(() => ({}));
+    const path = getOwnedStoragePath(body?.path ?? body?.url, business.id);
+
+    if (!path) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_or_external_asset" },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await admin.storage.from(BUCKET).remove([path]);
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json({ ok: true });
+  } catch (error: unknown) {
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
+    return NextResponse.json(
+      { ok: false, error: getErrorMessage(error, "widget_asset_delete_error") },
       { status: 500 }
     );
   }

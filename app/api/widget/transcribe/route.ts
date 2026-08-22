@@ -89,7 +89,8 @@ export async function POST(req: Request) {
       },
       { headers }
     );
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : new Error("transcription_error");
     return NextResponse.json(
       { ok: false, error: error?.message || "transcription_error" },
       { status: 500, headers }

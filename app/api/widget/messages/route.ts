@@ -161,7 +161,8 @@ export async function GET(req: Request) {
       },
       { headers }
     );
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : new Error("messages_error");
     return NextResponse.json(
       {
         ok: false,

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import dynamic from "next/dynamic";
 import {
   BarChart3,
   Globe2,
@@ -19,7 +20,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/carousel";
-import { Globe } from "@/components/ui/cobe-globe";
+
+const Globe = dynamic(
+  () => import("@/components/ui/cobe-globe").then((module) => module.Globe),
+  { ssr: false },
+);
 
 const accentA = "var(--lmn-accent-rgb, 0,229,255)";
 const accentB = "var(--lmn-accent-2-rgb, 27,67,255)";

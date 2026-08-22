@@ -47,7 +47,8 @@ export async function PUT(req: Request) {
       draft,
       draftUpdatedAt: now,
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : null;
     return jsonError(error?.message || "Error guardando borrador", 500);
   }
 }

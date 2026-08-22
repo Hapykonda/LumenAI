@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 import { ActionButton } from "./ActionButton";
+import { LumenSectionHero } from "@/components/ui/lumen-section-hero";
 
 type PanelSectionHeaderProps = {
   eyebrow?: string;
@@ -13,10 +14,12 @@ type PanelSectionHeaderProps = {
   actionIcon?: ReactNode;
   secondary?: ReactNode;
   children?: ReactNode;
+  variant?: "section" | "hero";
+  headingLevel?: 1 | 2;
 };
 
 export function PanelSectionHeader({
-  eyebrow: _eyebrow = "LumenAI",
+  eyebrow = "LumenAI",
   title,
   description,
   status,
@@ -26,8 +29,38 @@ export function PanelSectionHeader({
   actionIcon,
   secondary,
   children,
+  variant = "section",
+  headingLevel = 2,
 }: PanelSectionHeaderProps) {
-  void _eyebrow;
+  const action =
+    actionLabel && actionHref ? (
+      <ActionButton href={actionHref} variant="primary">
+        {actionLabel}
+        {actionIcon ?? <ArrowRight className="h-3.5 w-3.5" />}
+      </ActionButton>
+    ) : null;
+
+  if (variant === "hero") {
+    return (
+      <LumenSectionHero
+        eyebrow={eyebrow}
+        title={title}
+        subtitle={description}
+        status={
+          status ? (
+            <span className="lmn-section-status" data-tone={statusTone}>
+              {status}
+            </span>
+          ) : null
+        }
+        action={action}
+        secondary={secondary}
+        animatedLights
+      >
+        {children}
+      </LumenSectionHero>
+    );
+  }
 
   return (
     <section
@@ -37,9 +70,15 @@ export function PanelSectionHeader({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="min-w-0">
           <div className="lmn-section-title-wrap">
-            <h2 className="lmn-section-title">
-              <span>{title}</span>
-            </h2>
+            {headingLevel === 1 ? (
+              <h1 className="lmn-section-title">
+                <span>{title}</span>
+              </h1>
+            ) : (
+              <h2 className="lmn-section-title">
+                <span>{title}</span>
+              </h2>
+            )}
             <div className="lmn-section-title-line" aria-hidden="true">
               <span />
             </div>
@@ -60,16 +99,10 @@ export function PanelSectionHeader({
 
         </div>
 
-        {secondary || (actionLabel && actionHref) ? (
+        {secondary || action ? (
           <div className="lmn-section-actions flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
             {secondary}
-
-            {actionLabel && actionHref ? (
-              <ActionButton href={actionHref} variant="primary">
-                {actionLabel}
-                {actionIcon ?? <ArrowRight className="h-3.5 w-3.5" />}
-              </ActionButton>
-            ) : null}
+            {action}
           </div>
         ) : null}
       </div>

@@ -7,9 +7,9 @@ export type PanelThemeColors = {
 
 export const PANEL_THEME_EVENT = "lumen-theme:update";
 
-const DEFAULT_BASE = "#050607";
-const DEFAULT_PRIMARY = "#D7FF2F";
-const DEFAULT_SECONDARY = "#111318";
+const DEFAULT_BASE = "#05070b";
+const DEFAULT_PRIMARY = "#00e5ff";
+const DEFAULT_SECONDARY = "#1b43ff";
 
 function normalizeHex(hex?: string) {
   if (!hex) return null;
@@ -58,7 +58,7 @@ export function applyPanelThemeToRoot(input?: Partial<PanelThemeColors>) {
   const root = document.documentElement;
   const theme = getSafePanelTheme(input);
 
-  const baseRgb = hexToRgbString(theme.base) || "5, 6, 7";
+  const baseRgb = hexToRgbString(theme.base) || "5, 7, 11";
   const primaryRgb = hexToRgbString(theme.primary) || "0, 229, 255";
   const secondaryRgb = hexToRgbString(theme.secondary) || "27, 67, 255";
   const resolvedMode =
@@ -75,8 +75,10 @@ export function applyPanelThemeToRoot(input?: Partial<PanelThemeColors>) {
   root.style.setProperty("--lmn-accent-rgb", primaryRgb);
   root.style.setProperty("--lmn-accent-2-rgb", secondaryRgb);
   root.dataset.lmnTheme = resolvedMode;
+  root.dataset.theme = resolvedMode;
   root.classList.toggle("lmn-theme-light", resolvedMode === "light");
   root.classList.toggle("lmn-theme-dark", resolvedMode !== "light");
+  root.classList.toggle("dark", resolvedMode !== "light");
 }
 
 export function savePanelThemeToStorage(input?: Partial<PanelThemeColors>) {

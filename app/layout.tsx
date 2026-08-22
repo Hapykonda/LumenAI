@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import "./lumenai-obsidian.css";
 
 export const metadata: Metadata = {
-  title: "LumenAI",
-  description: "LumenAI",
+  title: {
+    default: "LumenAI Obsidian Intelligence OS",
+    template: "%s | LumenAI",
+  },
+  description:
+    "Sistema de inteligencia comercial y soporte para observar senales, priorizar oportunidades y actuar con contexto.",
 };
 
 export default function RootLayout({

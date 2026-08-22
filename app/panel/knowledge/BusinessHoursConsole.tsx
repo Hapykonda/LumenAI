@@ -436,6 +436,7 @@ export function BusinessHoursConsole({
 
             <div className="mt-3 grid gap-2">
               <input
+                aria-label="Motivo del cierre especial"
                 value={reasonDraft}
                 disabled={saving || !onClosedDateChange}
                 onChange={(event) => setReasonDraft(event.target.value)}

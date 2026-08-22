@@ -1,39 +1,23 @@
 import { NextResponse } from "next/server";
-import { requireLumeniteBusiness } from "@/lib/ai/lumenite/permissions";
-import { recordLumeniteActionRun } from "@/lib/ai/lumenite/audit";
+import { undoLumeniteAction } from "@/lib/ai/lumenite/action-engine";
+import { isRecord, isUuid } from "@/lib/ai/lumenite/core";
 import { safeErrorMessage, safeErrorStatus } from "@/lib/ai/lumenite/errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    const ctx = await requireLumeniteBusiness();
-
-    await recordLumeniteActionRun({
-      admin: ctx.admin,
-      businessId: ctx.businessId,
-      userId: ctx.userId,
-      agent: "System QA Agent",
-      actionName: "lumenite.rollback.requested",
-      payload: { module: "generic" },
-      result: {
-        message:
-          "Rollback generico no aplica cambios directos. Usa rollback de Config IA para revertir configuracion del widget/calibracion.",
-      },
-      status: "success",
-    });
-
-    return NextResponse.json({
-      ok: true,
-      applied: false,
-      message:
-        "Rollback generico registrado. Para configuracion usa el boton Revertir en Config IA.",
-    });
+    const body = await req.json().catch(() => null);
+    if (!isRecord(body) || !isUuid(body.runId)) {
+      return NextResponse.json({ ok: false, error: "Falta un runId valido." }, { status: 400 });
+    }
+    const result = await undoLumeniteAction(String(body.runId), req);
+    return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, error: safeErrorMessage(error, "No se pudo registrar rollback.") },
-      { status: safeErrorStatus(error) }
+      { ok: false, error: safeErrorMessage(error, "No se pudo deshacer la accion.") },
+      { status: safeErrorStatus(error) },
     );
   }
 }

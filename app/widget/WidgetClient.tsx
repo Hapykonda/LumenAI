@@ -43,7 +43,7 @@ function applyPlaceholders(text: string, vars: Record<string, string>) {
   return out;
 }
 
-function buildGreetingFromCfgLike(cfgLike: any) {
+function buildGreetingFromCfgLike(cfgLike: WidgetConfig | null) {
   const raw =
     String(cfgLike?.greeting ?? "").trim() ||
     "Hola 👋 ¿En qué puedo ayudarte?";
@@ -83,7 +83,7 @@ type WidgetMessagesResponse = {
   error?: string;
 };
 
-function buildGreetingMessage(cfgLike: any, publicKey: string): Msg {
+function buildGreetingMessage(cfgLike: WidgetConfig | null, publicKey: string): Msg {
   return {
     id: `welcome:${String(publicKey || "no_key")}`,
     role: "assistant",
@@ -303,7 +303,7 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
 
   useEffect(() => {
     function onMsg(e: MessageEvent) {
-      const d: any = e.data;
+      const d = e.data as { type?: unknown; open?: unknown } | null;
 
       if (!d) return;
 
@@ -324,7 +324,7 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
   const theme: WidgetTheme = cfg?.theme ?? {};
 
   const primary =
-    theme.primaryColor ?? (cfg as any)?.primary_color ?? "#00E5FF";
+    theme.primaryColor ?? cfg?.primary_color ?? "#00E5FF";
 
   const gFrom = theme.gradientFrom ?? primary;
   const gTo = theme.gradientTo ?? "#1B43FF";
@@ -334,25 +334,25 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
     `-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, system-ui, Segoe UI, Roboto, Arial`;
 
   const assistantName =
-    (cfg as any)?.assistantName ?? (cfg as any)?.assistant_name ?? "LumenAI";
+    cfg?.assistantName ?? cfg?.assistant_name ?? "LumenAI";
 
   const businessName =
-    (cfg as any)?.businessName ?? (cfg as any)?.business_name ?? null;
+    cfg?.businessName ?? cfg?.business_name ?? null;
   const avatarUrl =
     String(
-      (cfg as any)?.avatarUrl ??
-        (cfg as any)?.avatar_url ??
-        (cfg as any)?.brandLogoUrl ??
-        (cfg as any)?.logo_url ??
+      cfg?.avatarUrl ??
+        cfg?.avatar_url ??
+        cfg?.brandLogoUrl ??
+        cfg?.logo_url ??
         ""
     ).trim() || null;
 
   const widgetEnabled =
-    (typeof (cfg as any)?.widgetEnabled === "boolean"
-      ? (cfg as any).widgetEnabled
+    (typeof cfg?.widgetEnabled === "boolean"
+      ? cfg.widgetEnabled
       : undefined) ??
-    (typeof (cfg as any)?.widget_enabled === "boolean"
-      ? (cfg as any).widget_enabled
+    (typeof cfg?.widget_enabled === "boolean"
+      ? cfg.widget_enabled
       : undefined) ??
     true;
 
@@ -360,27 +360,27 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
   const gfrgb = useMemo(() => hexToRgb(gFrom), [gFrom]);
   const gtrgb = useMemo(() => hexToRgb(gTo), [gTo]);
 
-  const radiusToken = Number((theme as any)?.radius ?? 18);
-  const blurToken = Number((theme as any)?.blurStrength ?? 18);
-  const surfaceOpacityToken = Number((theme as any)?.surfaceOpacity ?? 0.14);
-  const glowStrengthToken = Number((theme as any)?.glowStrength ?? 0.55);
+  const radiusToken = Number(theme.radius ?? 18);
+  const blurToken = Number(theme.blurStrength ?? 18);
+  const surfaceOpacityToken = Number(theme.surfaceOpacity ?? 0.14);
+  const glowStrengthToken = Number(theme.glowStrength ?? 0.55);
 
   const vars = useMemo(
     () =>
       ({
-        ["--lmn-accent" as any]: primary,
-        ["--lmn-accent-2" as any]: gTo,
-        ["--lmn-accent2" as any]: gTo,
-        ["--lmn-accent-rgb" as any]: `${prgb.r} ${prgb.g} ${prgb.b}`,
-        ["--lmn-gfrom-rgb" as any]: `${gfrgb.r} ${gfrgb.g} ${gfrgb.b}`,
-        ["--lmn-accent-2-rgb" as any]: `${gtrgb.r} ${gtrgb.g} ${gtrgb.b}`,
-        ["--lmn-accent2-rgb" as any]: `${gtrgb.r} ${gtrgb.g} ${gtrgb.b}`,
-        ["--lmn-font" as any]: fontFamily,
-        ["--lmn-radius" as any]: `${radiusToken}px`,
-        ["--lmn-blur" as any]: `${blurToken}px`,
-        ["--lmn-surface-opacity" as any]: String(surfaceOpacityToken),
-        ["--lmn-glow-strength" as any]: String(glowStrengthToken),
-      }) as React.CSSProperties,
+        "--lmn-accent": primary,
+        "--lmn-accent-2": gTo,
+        "--lmn-accent2": gTo,
+        "--lmn-accent-rgb": `${prgb.r} ${prgb.g} ${prgb.b}`,
+        "--lmn-gfrom-rgb": `${gfrgb.r} ${gfrgb.g} ${gfrgb.b}`,
+        "--lmn-accent-2-rgb": `${gtrgb.r} ${gtrgb.g} ${gtrgb.b}`,
+        "--lmn-accent2-rgb": `${gtrgb.r} ${gtrgb.g} ${gtrgb.b}`,
+        "--lmn-font": fontFamily,
+        "--lmn-radius": `${radiusToken}px`,
+        "--lmn-blur": `${blurToken}px`,
+        "--lmn-surface-opacity": String(surfaceOpacityToken),
+        "--lmn-glow-strength": String(glowStrengthToken),
+      }) as React.CSSProperties & Record<`--${string}`, string>,
     [
       primary,
       gTo,
@@ -395,7 +395,7 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
     ]
   );
 
-  const allowedOrigin = (cfg as any)?.allowedParentOrigin ?? null;
+  const allowedOrigin = cfg?.allowedParentOrigin ?? null;
 
   const firstAssistantId = useMemo(
     () => messages.find((m) => m.role === "assistant")?.id ?? null,
@@ -455,10 +455,10 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
       setMessages((prev) =>
         prev.length ? prev : [buildGreetingMessage(j, publicKey)]
       );
-    } catch (e: any) {
-      if (e?.name === "AbortError") return;
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
 
-      setErr(e?.message ?? "Error cargando el widget.");
+      setErr(error instanceof Error ? error.message : "Error cargando el widget.");
     } finally {
       setCfgLoading(false);
     }
@@ -504,9 +504,9 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
         {
           type: "LUMENAI_WIDGET_SIZE",
           open: false,
-          width: hostedEmbed ? "0px" : "64px",
-          height: hostedEmbed ? "0px" : "64px",
-          radius: hostedEmbed ? "0px" : "18px",
+          width: hostedEmbed ? "0px" : "238px",
+          height: hostedEmbed ? "0px" : "78px",
+          radius: hostedEmbed ? "0px" : "999px",
         },
         allowedOrigin
       );
@@ -517,8 +517,8 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
     const vw = typeof window !== "undefined" ? window.innerWidth : 420;
     const vh = typeof window !== "undefined" ? window.innerHeight : 720;
 
-    const targetW = expanded ? 480 : 420;
-    const targetH = expanded ? 760 : 640;
+    const targetW = expanded ? 500 : 440;
+    const targetH = expanded ? 790 : 710;
 
     const w = mobile ? Math.min(vw - 18, 420) : Math.min(targetW, vw - 18);
     const h = mobile ? Math.min(vh - 18, 680) : Math.min(targetH, vh - 18);
@@ -586,10 +586,10 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
       }
     };
 
-    el.addEventListener("scroll", onScroll, { passive: true } as any);
+    el.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
 
-    return () => el.removeEventListener("scroll", onScroll as any);
+    return () => el.removeEventListener("scroll", onScroll);
   }, [open]);
 
   useEffect(() => {
@@ -687,11 +687,15 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
       ];
 
       setMessages(nextMessages);
-    } catch (error: any) {
-      if (error?.name === "AbortError") return;
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
 
       if (!opts?.silent) {
-        setErr(error?.message || "No se pudieron sincronizar los mensajes.");
+        setErr(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron sincronizar los mensajes.",
+        );
       }
     }
   }
@@ -852,8 +856,12 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
 
       setInput(text);
       await send(text);
-    } catch (error: any) {
-      setErr(error?.message || "No se pudo interpretar el audio.");
+    } catch (error: unknown) {
+      setErr(
+        error instanceof Error
+          ? error.message
+          : "No se pudo interpretar el audio.",
+      );
       setToast("Audio no procesado");
     } finally {
       setTranscribing(false);
@@ -954,7 +962,6 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
       const payload = {
         publicKey,
         key: publicKey,
-        businessId: (cfg as any)?.businessId ?? null,
         visitorId,
         chatId,
         message: text,
@@ -997,10 +1004,10 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
       }
 
       setSrAnnouncement("Respuesta recibida");
-    } catch (e: any) {
-      if (e?.name === "AbortError") return;
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
 
-      setErr(e?.message ?? "No se pudo enviar.");
+      setErr(error instanceof Error ? error.message : "No se pudo enviar.");
 
       setMessages((prev) => [
         ...prev,
@@ -1021,13 +1028,13 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
     }
   }
 
-  const wa = normalizeWhatsAppLink((cfg as any)?.whatsapp ?? "");
-  const em = String((cfg as any)?.email ?? "").trim() || null;
+  const wa = normalizeWhatsAppLink(cfg?.whatsapp ?? "");
+  const em = String(cfg?.email ?? "").trim() || null;
 
   const hasAnyUserMsg = messages.some((m) => m.role === "user");
 
-  const configuredQuickActions: string[] = Array.isArray((cfg as any)?.quickActions)
-    ? ((cfg as any).quickActions as unknown[])
+  const configuredQuickActions: string[] = Array.isArray(cfg?.quickActions)
+    ? cfg.quickActions
         .map((x) => String(x ?? "").trim())
         .filter((x): x is string => x.length > 0)
     : [];
@@ -1045,7 +1052,7 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
     : [];
 
   const connectionLabel = cfgLoading ? "Conectando…" : err ? "Problema" : "Online";
-  const launcherText = String((theme as any)?.launcherText ?? "¿En qué te ayudo?").trim();
+  const launcherText = String(theme.launcherText ?? "¿En qué te ayudo?").trim();
 
   return (
     <div className="lmn-root" style={vars} data-open={open ? "true" : "false"}>
@@ -1053,14 +1060,17 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
         {srAnnouncement}
       </span>
 
-      {!open ? (
-        hostedEmbed ? null : (
-          <div className="lmn-orbWrap">
+      {!hostedEmbed ? (
+        <div className={`lmn-orbWrap ${open ? "is-docked" : ""}`}>
           <button
             className="lmn-orbBtn"
-            onClick={() => setOpen(true)}
-            aria-label="Abrir chat"
+            onClick={() => {
+              setMenuOpen(false);
+              setOpen((value) => !value);
+            }}
+            aria-label={open ? "Cerrar chat" : "Abrir chat"}
             title={launcherText || "Abrir chat"}
+            data-open={open ? "true" : "false"}
           >
             <div className="lmn-orbCore">
               {avatarUrl ? (
@@ -1099,9 +1109,13 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
               )}
             </div>
           </button>
-          </div>
-        )
-      ) : (
+          <span className="lmn-orbSignal">
+            {open ? "Chat activo" : launcherText || "Abrir chat"}
+          </span>
+        </div>
+      ) : null}
+
+      {open ? (
         <div className="lmn-pop" style={{ width: "100%", height: "100%" }}>
           <div
             ref={panelRef}
@@ -1295,7 +1309,7 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
 
               <div className="lmn-bodyInner">
                 {err && (
-                  <div className="lmn-banner lmn-bannerErr">
+                  <div className="lmn-banner lmn-bannerErr" role="alert">
                     <span>{err}</span>
                     <button className="lmn-retry" onClick={loadConfig}>
                       Reintentar
@@ -1489,7 +1503,7 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

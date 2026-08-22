@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Bot,
   CheckCircle2,
@@ -14,14 +15,29 @@ import {
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Upload,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import { panelFetch } from "@/lib/panel-fetch";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { MagicCard } from "@/components/ui/magic-card";
 import { GlassCard } from "../_components/ui/GlassCard";
 import { PanelSectionHeader } from "../_components/ui/PanelSectionHeader";
 import { StatusBadge } from "../_components/ui/StatusBadge";
+import SectionIntroGate from "../_components/SectionIntroGate";
+import {
+  deleteWidgetAsset,
+  uploadWidgetAsset,
+  validateWidgetImage,
+} from "@/lib/widget-assets-client";
+
+const ImageCropDialog = dynamic(
+  () =>
+    import("@/components/ui/image-crop-dialog").then(
+      (module) => module.ImageCropDialog,
+    ),
+  { ssr: false },
+);
 
 type Position = "br" | "bl" | "tr" | "tl";
 
@@ -58,28 +74,6 @@ const POSITION_LABELS: Record<Position, string> = {
   tl: "Arriba izquierda",
 };
 
-async function apiFetch(path: string, init?: RequestInit) {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-
-  const headers = new Headers(init?.headers);
-
-  if (init?.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  return fetch(path, {
-    ...init,
-    headers,
-    cache: "no-store",
-    credentials: "include",
-  });
-}
-
 function formatDate(value?: string | null) {
   if (!value) return "—";
 
@@ -101,21 +95,22 @@ export default function PanelWidgetPage() {
   const [avatarInput, setAvatarInput] = useState("");
   const [logoInput, setLogoInput] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   const business = data?.business ?? null;
   const widget = data?.widget ?? null;
 
   const installKey = business?.install_key ?? "";
-  const appUrl = origin || "http://localhost:3000";
+  const appUrl = origin;
   const position = widget?.position ?? "br";
 
   const directWidgetUrl = useMemo(() => {
-    if (!installKey) return "";
+    if (!installKey || !appUrl) return "";
     return `${appUrl}/widget?key=${encodeURIComponent(installKey)}&preview=1`;
   }, [appUrl, installKey]);
 
   const embedCode = useMemo(() => {
-    if (!installKey) return "";
+    if (!installKey || !appUrl) return "";
 
     return `<script
   src="${appUrl}/widget.js"
@@ -160,7 +155,7 @@ export default function PanelWidgetPage() {
     setLoading(true);
 
     try {
-      const res = await apiFetch("/api/panel/widget", {
+      const res = await panelFetch("/api/panel/widget", {
         method: "GET",
       });
 
@@ -182,7 +177,7 @@ export default function PanelWidgetPage() {
   }
 
   async function patchWidget(payload: Record<string, unknown>) {
-    if (saving) return;
+    if (saving) return false;
 
     setSaving(true);
     setErr(null);
@@ -213,7 +208,7 @@ export default function PanelWidgetPage() {
     });
 
     try {
-      const res = await apiFetch("/api/panel/widget", {
+      const res = await panelFetch("/api/panel/widget", {
         method: "PATCH",
         body: JSON.stringify(payload),
       });
@@ -223,13 +218,15 @@ export default function PanelWidgetPage() {
       if (!res.ok || json.ok === false) {
         setData(previous);
         setErr(json.error || "No se pudo guardar Widget.");
-        return;
+        return false;
       }
 
       setData(json);
+      return true;
     } catch {
       setData(previous);
       setErr("No se pudo conectar para guardar Widget.");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -248,42 +245,73 @@ export default function PanelWidgetPage() {
   async function uploadAvatar(file: File | null) {
     if (!file || uploading) return;
 
+    const validation = validateWidgetImage(file);
+    if (validation) {
+      setErr(validation);
+      return;
+    }
+
+    setUploading(true);
+    setErr(null);
+    const previousAvatar = widget?.avatarUrl ?? "";
+    let uploadedUrl = "";
+
+    try {
+      const asset = await uploadWidgetAsset(file, "avatar");
+      uploadedUrl = asset.url;
+      const saved = await patchWidget({ avatarUrl: asset.url });
+
+      if (!saved) {
+        await deleteWidgetAsset(asset.url).catch(() => {});
+        return;
+      }
+
+      setAvatarInput(asset.url);
+      window.dispatchEvent(
+        new CustomEvent("lumenai:avatar-update", {
+          detail: { avatarUrl: asset.url },
+        })
+      );
+
+      if (previousAvatar && previousAvatar !== asset.url) {
+        void deleteWidgetAsset(previousAvatar).catch(() => {});
+      }
+    } catch (error) {
+      if (uploadedUrl) {
+        void deleteWidgetAsset(uploadedUrl).catch(() => {});
+      }
+      setErr(
+        error instanceof Error
+          ? error.message
+          : "No se pudo subir la imagen del widget."
+      );
+    } finally {
+      setUploading(false);
+      setCropFile(null);
+    }
+  }
+
+  async function clearAvatar() {
+    if (uploading || saving) return;
+
+    const previousAvatar = widget?.avatarUrl ?? avatarInput;
     setUploading(true);
     setErr(null);
 
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      const form = new FormData();
+      const saved = await patchWidget({ avatarUrl: "" });
+      if (!saved) return;
 
-      form.set("file", file);
-      form.set("kind", "avatar");
+      setAvatarInput("");
+      window.dispatchEvent(
+        new CustomEvent("lumenai:avatar-update", {
+          detail: { avatarUrl: "" },
+        })
+      );
 
-      const headers = new Headers();
-      if (token) headers.set("Authorization", `Bearer ${token}`);
-
-      const res = await fetch("/api/panel/widget/asset", {
-        method: "POST",
-        headers,
-        body: form,
-        credentials: "include",
-      });
-
-      const json = (await res.json().catch(() => ({}))) as {
-        ok?: boolean;
-        url?: string;
-        error?: string;
-      };
-
-      if (!res.ok || json.ok === false || !json.url) {
-        setErr(json.error || "No se pudo subir la imagen del widget.");
-        return;
+      if (previousAvatar) {
+        void deleteWidgetAsset(previousAvatar).catch(() => {});
       }
-
-      setAvatarInput(json.url);
-      await patchWidget({ avatarUrl: json.url });
-    } catch {
-      setErr("No se pudo subir la imagen del widget.");
     } finally {
       setUploading(false);
     }
@@ -292,10 +320,25 @@ export default function PanelWidgetPage() {
   const enabled = widget?.enabled ?? false;
 
   return (
-    <div className="flex flex-col gap-5">
+    <>
+      <SectionIntroGate
+      title="Widget instala el asistente donde atienden tus clientes."
+      description="Aquí se personaliza, prueba e instala el asistente de LumenAI en la web del negocio con el script público y sus ajustes visuales."
+      bullets={[
+        "Activa o desactiva la visibilidad del widget para clientes.",
+        "Copia el script instalable y revisa una prueba segura antes de publicarlo.",
+        "Ajusta avatar, logo, posición y experiencia visual del asistente.",
+      ]}
+      primaryActionLabel="Entrar al área"
+      skipActionLabel="Omitir"
+      storageKey="lumenai:intro:widget:v1"
+      reverseLayout
+    >
+      <div className="flex flex-col gap-5">
       <PanelSectionHeader
         eyebrow="Instalación pública"
         title="Instalación del Widget"
+        headingLevel={1}
         description="Copia el script instalable de LumenAI y pégalo en cualquier web para activar el asistente."
         status={loading ? "Cargando…" : enabled ? "Widget activo" : "Widget desactivado"}
         statusTone={enabled ? "active" : "warning"}
@@ -321,7 +364,7 @@ export default function PanelWidgetPage() {
       />
 
       {err ? (
-        <div className="rounded-[16px] border border-red-400/25 bg-red-500/10 p-4 text-sm font-bold text-red-100">
+        <div className="rounded-[16px] border border-red-400/25 bg-red-500/10 p-4 text-sm font-bold text-red-100" role="alert">
           {err}
         </div>
       ) : null}
@@ -550,18 +593,33 @@ export default function PanelWidgetPage() {
 
                       <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.025] px-3 text-xs font-black text-white/82 transition hover:bg-white/[0.05]">
                         <Upload className="h-3.5 w-3.5" />
-                        {uploading ? "Subiendo..." : "Subir imagen"}
+                        {uploading ? "Procesando..." : "Subir y recortar"}
                         <input
                           type="file"
+                          aria-label="Subir imagen del avatar del widget"
                           accept="image/png,image/jpeg,image/webp,image/gif"
                           className="hidden"
                           onChange={(event) => {
                             const file = event.target.files?.[0] ?? null;
-                            void uploadAvatar(file);
                             event.currentTarget.value = "";
+                            const validation = file ? validateWidgetImage(file) : null;
+                            if (validation) {
+                              setErr(validation);
+                              return;
+                            }
+                            setCropFile(file);
                           }}
                         />
                       </label>
+                      <button
+                        type="button"
+                        onClick={() => void clearAvatar()}
+                        disabled={saving || uploading || !avatarInput}
+                        className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-white/10 bg-white/[0.025] px-3 text-xs font-black text-white/72 transition hover:border-red-200/20 hover:text-white disabled:opacity-40"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Quitar
+                      </button>
                     </div>
                   </label>
 
@@ -715,7 +773,18 @@ export default function PanelWidgetPage() {
           </section>
         </>
       )}
-    </div>
+      </div>
+      </SectionIntroGate>
+
+      {cropFile ? (
+        <ImageCropDialog
+          file={cropFile}
+          title="Encuadrar foto del widget"
+          onCancel={() => setCropFile(null)}
+          onConfirm={uploadAvatar}
+        />
+      ) : null}
+    </>
   );
 }
 

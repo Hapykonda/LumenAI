@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
   ArrowRight,
+  Activity,
   Maximize2,
   MessageCircle,
   Phone,
@@ -18,12 +19,13 @@ import {
 } from "lucide-react";
 import SearchComponent from "@/components/animated-glowing-search-bar";
 import { BorderBeam } from "@/components/ui/border-beam";
+import { useModalAccessibility } from "@/components/ui/use-modal-accessibility";
 import {
   COUNTRY_COORDS,
   resolveCountryDisplay,
   resolveCountryKey,
 } from "@/lib/geo/countries";
-import { supabase } from "@/lib/supabase/client";
+import { panelFetch } from "@/lib/panel-fetch";
 import { usePanel } from "../_components/panel-context";
 import { PanelSectionHeader } from "../_components/ui/PanelSectionHeader";
 import { ActionButton } from "../_components/ui/ActionButton";
@@ -114,28 +116,6 @@ const STATUS_OPTIONS: { value: LeadStatus | "all"; label: string }[] = [
   { value: "won", label: "Ganados" },
   { value: "lost", label: "Perdidos" },
 ];
-
-async function apiFetch(path: string, init?: RequestInit) {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-
-  const headers = new Headers(init?.headers);
-
-  if (init?.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  return fetch(path, {
-    ...init,
-    headers,
-    cache: "no-store",
-    credentials: "include",
-  });
-}
 
 function clean(value: unknown) {
   return String(value ?? "").trim();
@@ -328,7 +308,7 @@ export default function LeadsPage() {
 
     try {
       const queryString = status !== "all" ? `?status=${status}` : "";
-      const res = await apiFetch(`/api/panel/leads${queryString}`, {
+      const res = await panelFetch(`/api/panel/leads${queryString}`, {
         method: "GET",
       });
 
@@ -372,7 +352,7 @@ export default function LeadsPage() {
     );
 
     try {
-      const res = await apiFetch("/api/panel/leads", {
+      const res = await panelFetch("/api/panel/leads", {
         method: "PATCH",
         body: JSON.stringify({
           id,
@@ -417,7 +397,7 @@ export default function LeadsPage() {
     setErr(null);
 
     try {
-      const res = await apiFetch("/api/panel/leads", {
+      const res = await panelFetch("/api/panel/leads", {
         method: "POST",
         body: JSON.stringify({
           name: clean(name),
@@ -482,6 +462,7 @@ export default function LeadsPage() {
   return (
     <main className="grid gap-5 pb-10">
       <PanelSectionHeader
+        variant="hero"
         eyebrow="CRM comercial"
         title="Pipeline comercial"
         description="Gestiona oportunidades detectadas por LumenAI: contacto, intención, score, conversación y estado de cierre."
@@ -513,7 +494,7 @@ export default function LeadsPage() {
       />
 
       {err ? (
-        <div className="rounded-[16px] border border-red-400/25 bg-red-500/10 p-4 text-sm font-bold text-red-100">
+        <div className="rounded-[16px] border border-red-400/25 bg-red-500/10 p-4 text-sm font-bold text-red-100" role="alert">
           {err}
         </div>
       ) : null}
@@ -550,6 +531,37 @@ export default function LeadsPage() {
         />
       </section>
 
+      <GlassCard variant="soft" className="lmn-leads-intel-bridge p-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid h-10 w-10 place-items-center border border-white/[0.055] bg-white/[0.018]">
+              <Activity className="h-4 w-4 text-white/62" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/34">
+                Inteligencia conectada
+              </div>
+              <h3 className="mt-1 text-lg font-black tracking-[-0.035em] text-white">
+                Pulse Radar y Lumen Eye detectaron señales relacionadas.
+              </h3>
+              <p className="mt-1 text-sm leading-6 text-white/46">
+                Usa Lumen Eye para ver zonas y señales; usa Pulse Radar para decidir la siguiente mejor accion.
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <ActionButton href="/panel/lumen-eye" variant="secondary">
+              Abrir Lumen Eye
+              <ArrowRight className="h-3.5 w-3.5" />
+            </ActionButton>
+            <ActionButton href="/panel/radar" variant="primary">
+              Abrir Pulse Radar
+              <ArrowRight className="h-3.5 w-3.5" />
+            </ActionButton>
+          </div>
+        </div>
+      </GlassCard>
+
       <LeadCommandCenter stats={stats} priorityLead={priorityLead} />
 
       <LeadGeoInsights leads={leads} />
@@ -563,6 +575,7 @@ export default function LeadsPage() {
           />
 
           <select
+            aria-label="Filtrar leads por estado"
             value={status}
             onChange={(e) => setStatus(e.target.value as LeadStatus | "all")}
             className="h-12 rounded-[14px] border border-white/[0.07] bg-black/20 px-3 text-sm text-white outline-none"
@@ -778,6 +791,10 @@ function CommandStat({ label, value }: { label: string; value: string | number }
 
 function LeadGeoInsights({ leads }: { leads: Lead[] }) {
   const [expanded, setExpanded] = useState(false);
+  const expandedDialogRef = useModalAccessibility<HTMLDivElement>({
+    active: expanded,
+    onClose: () => setExpanded(false),
+  });
   const countries = useMemo(() => {
     const map = new Map<
       string,
@@ -835,24 +852,6 @@ function LeadGeoInsights({ leads }: { leads: Lead[] }) {
           label: item.label,
         }))
       : [];
-
-  useEffect(() => {
-    if (!expanded) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setExpanded(false);
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [expanded]);
 
   return (
     <>
@@ -949,14 +948,14 @@ function LeadGeoInsights({ leads }: { leads: Lead[] }) {
 
               <div className="pointer-events-none absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/22 px-3 py-2 text-[11px] font-black text-white/58 backdrop-blur-xl transition group-hover:text-white">
                 <Maximize2 className="size-3.5" />
-                Click para expandir radar
+                Click para expandir mapa
               </div>
             </div>
           </div>
 
           <div className="relative p-5 md:p-7 xl:p-8">
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/36">
-              Radar comercial
+              Inteligencia comercial
             </div>
             <h3 className="mt-3 max-w-[680px] text-3xl font-black tracking-[-0.055em] text-white md:text-5xl">
               Mapa de demanda global
@@ -1033,7 +1032,7 @@ function LeadGeoInsights({ leads }: { leads: Lead[] }) {
                   })
                 ) : (
                   <div className="lmn-geo-country-card p-4 text-sm leading-6 text-white/48">
-                    Aun no hay paises asociados a leads reales. Cuando el widget registre ubicacion por headers del hosting, este radar mostrara donde hay mas intencion comercial.
+                    Aun no hay paises asociados a leads reales. Cuando el widget registre ubicacion por headers del hosting, este mapa mostrara donde hay mas intencion comercial.
                   </div>
                 )}
               </div>
@@ -1045,10 +1044,12 @@ function LeadGeoInsights({ leads }: { leads: Lead[] }) {
 
     {expanded ? (
       <div
+        ref={expandedDialogRef}
         className="lmn-leads-globe-expanded fixed inset-0 z-[200] overflow-hidden"
         role="dialog"
         aria-modal="true"
-        aria-label="Radar global de leads"
+        aria-label="Mapa global de leads"
+        tabIndex={-1}
       >
         <div
           className="lmn-globe-expanded-backdrop absolute inset-0 bg-black/78 backdrop-blur-2xl"
@@ -1087,7 +1088,7 @@ function LeadGeoInsights({ leads }: { leads: Lead[] }) {
           type="button"
           onClick={() => setExpanded(false)}
           className="lmn-geo-close absolute right-5 top-5 z-20 inline-flex size-11 items-center justify-center text-white"
-          aria-label="Cerrar radar global"
+          aria-label="Cerrar mapa global"
         >
           <X className="size-5" />
         </button>
@@ -1323,6 +1324,7 @@ function LeadCard({
 
         <div className="flex shrink-0 flex-wrap gap-2 xl:justify-end">
           <select
+            aria-label={`Estado de ${lead.name || "lead"}`}
             value={lead.status}
             disabled={updating}
             onChange={(e) => onStatus(e.target.value as LeadStatus)}

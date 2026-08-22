@@ -21,11 +21,8 @@ import {
   Workflow,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
-import { BorderBeam } from "@/components/ui/border-beam";
-import { GridPattern } from "@/components/ui/grid-pattern";
-import { Meteors } from "@/components/ui/meteors";
-import { ShimmerButton } from "@/components/ui/shimmer-button";
+import { LumenLogo } from "@/components/brand/lumen-logo";
+import { AnimatedHeroLights } from "@/components/ui/animated-hero-lights";
 import { getAppUrl } from "@/lib/env";
 
 function getBaseUrl() {
@@ -53,33 +50,6 @@ function getOAuthCallbackUrl() {
 
 function getMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
-}
-
-function normalizeAuthError(raw: string) {
-  const value = decodeURIComponent(raw.replace(/\+/g, " ")).trim();
-  const lower = value.toLowerCase();
-
-  if (!value) return "No se pudo iniciar sesión.";
-  if (lower.includes("missing_code") || lower.includes("missing callback")) {
-    return "El enlace de acceso no es válido o ya expiró. Solicita uno nuevo.";
-  }
-  if (lower.includes("verifyotp") || lower.includes("token")) {
-    return "El código o enlace no pudo verificarse. Solicita un nuevo acceso.";
-  }
-  if (lower.includes("exchange")) {
-    return "No se pudo completar la sesión. Intenta nuevamente.";
-  }
-  if (lower.includes("email not confirmed")) {
-    return "Tu correo aún no está confirmado. Revisa tu bandeja de entrada.";
-  }
-  if (lower.includes("invalid login credentials")) {
-    return "Correo o contraseña incorrectos.";
-  }
-  if (lower.includes("rate limit")) {
-    return "Demasiados intentos seguidos. Espera un momento y vuelve a probar.";
-  }
-
-  return value;
 }
 
 function normalizeAuthErrorMessage(raw: string) {
@@ -144,6 +114,7 @@ export default function LoginPage() {
   const [loadingLink, setLoadingLink] = useState(false);
   const [loadingPass, setLoadingPass] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const [loadingRecovery, setLoadingRecovery] = useState(false);
   const [loadingOtpVerify, setLoadingOtpVerify] = useState(false);
   const [ok, setOk] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -152,7 +123,7 @@ export default function LoginPage() {
   const [cooldown, setCooldown] = useState(0);
 
   const cleanEmail = email.trim().toLowerCase();
-  const busy = loadingLink || loadingPass || loadingGoogle || loadingOtpVerify;
+  const busy = loadingLink || loadingPass || loadingGoogle || loadingRecovery || loadingOtpVerify;
   const canSubmit = useMemo(() => {
     if (!isEmail(cleanEmail)) return false;
     if (passwordMode) return password.length > 0 && !loadingPass;
@@ -337,6 +308,33 @@ export default function LoginPage() {
     }
   }
 
+  async function recoverPassword() {
+    setErr(null);
+    setOk(null);
+
+    if (!validateEmail()) return;
+
+    try {
+      setLoadingRecovery(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: getOAuthCallbackUrl(),
+      });
+
+      if (error) throw error;
+
+      setOk("Te enviamos un correo para recuperar tu contrasena.");
+      setCooldown(45);
+    } catch (error) {
+      setErr(
+        normalizeAuthErrorMessage(
+          getMessage(error, "No se pudo enviar la recuperacion de contrasena.")
+        )
+      );
+    } finally {
+      setLoadingRecovery(false);
+    }
+  }
+
   async function loginWithGoogle() {
     setErr(null);
     setOk(null);
@@ -374,7 +372,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#05070B] text-white">
+    <main className="lmn-auth-shell relative min-h-screen overflow-hidden bg-[#05070B] text-white">
+      <a className="lmn-skip-link" href="#login-form">
+        Ir al formulario de acceso
+      </a>
       <div
         aria-hidden="true"
         className="absolute inset-0"
@@ -383,6 +384,7 @@ export default function LoginPage() {
             "radial-gradient(circle at 96% 0%, rgba(0,229,255,.10), transparent 36%), radial-gradient(circle at 0% 22%, rgba(27,67,255,.075), transparent 40%), radial-gradient(circle at 84% 100%, rgba(108,59,255,.055), transparent 52%), linear-gradient(180deg, #05070B 0%, #030408 100%)",
         }}
       />
+      <AnimatedHeroLights intensity="low" className="opacity-70" />
       <div
         aria-hidden="true"
         className="absolute inset-0 opacity-[.16]"
@@ -394,34 +396,14 @@ export default function LoginPage() {
             "radial-gradient(circle at 50% 30%, black, transparent 70%)",
         }}
       />
-      <GridPattern
-        width={64}
-        height={64}
-        strokeDasharray="3 8"
-        className="opacity-[.13] [mask-image:radial-gradient(circle_at_50%_22%,black,transparent_68%)]"
-      />
-      <Meteors
-        number={9}
-        minDelay={0.8}
-        maxDelay={5.2}
-        minDuration={4}
-        maxDuration={9}
-        angle={218}
-        className="bg-cyan-100/70 shadow-[0_0_0_1px_rgba(0,229,255,.14),0_0_22px_rgba(0,229,255,.20)]"
-      />
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,.28)_58%,rgba(0,0,0,.76)_100%)]"
       />
 
       <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-8">
-        <Link href="/" className="group flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center border border-white/[0.08] bg-white/[0.035] text-sm font-black shadow-[inset_0_1px_0_rgba(255,255,255,.08)] transition group-hover:border-white/14">
-            L
-          </span>
-          <span className="text-sm font-black tracking-[-0.02em] text-white">
-            LumenAI
-          </span>
+        <Link href="/" aria-label="Volver a LumenAI">
+          <LumenLogo label="LumenAI" subline="Obsidian Intelligence OS" priority />
         </Link>
 
         <Link
@@ -433,8 +415,8 @@ export default function LoginPage() {
         </Link>
       </nav>
 
-      <section className="relative z-10 mx-auto grid min-h-[calc(100svh-82px)] max-w-7xl grid-cols-1 gap-8 px-5 pb-10 md:px-8 lg:grid-cols-[minmax(0,.95fr)_minmax(390px,456px)] lg:items-center">
-        <div className="hidden lg:block">
+      <section className="lmn-auth-layout relative z-10 mx-auto grid min-h-[calc(100svh-82px)] max-w-7xl grid-cols-1 gap-8 px-5 pb-10 md:px-8 lg:grid-cols-[minmax(0,.95fr)_minmax(390px,456px)] lg:items-center">
+        <div className="lmn-auth-intro hidden lg:block">
           <div className="inline-flex items-center gap-2 border border-white/[0.07] bg-white/[0.025] px-3 py-2 text-xs font-bold text-white/60">
             <ShieldCheck className="h-3.5 w-3.5 text-[#00E5FF]" />
             Acceso seguro para equipos comerciales
@@ -442,13 +424,7 @@ export default function LoginPage() {
 
           <h1 className="mt-7 max-w-3xl text-6xl font-black leading-[.9] tracking-[-0.055em] text-white xl:text-7xl">
             Entra a la consola que convierte conversaciones en{" "}
-            <AnimatedGradientText
-              colorFrom="#00E5FF"
-              colorTo="#1B43FF"
-              speed={0.8}
-            >
-              ventas
-            </AnimatedGradientText>
+            <span className="lmn-auth-accent">ventas</span>
             .
           </h1>
 
@@ -499,14 +475,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="apex-panel relative border border-white/[0.07] bg-[#0B0F16]/82 p-4 shadow-[0_24px_70px_rgba(0,0,0,.46)]">
-          <BorderBeam
-            size={140}
-            duration={11}
-            colorFrom="#00E5FF"
-            colorTo="#1B43FF"
-            borderWidth={1}
-          />
+        <div className="lmn-auth-card apex-panel relative border border-white/[0.07] bg-[#0B0F16]/82 p-4 shadow-[0_24px_70px_rgba(0,0,0,.46)]">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0"
@@ -517,12 +486,15 @@ export default function LoginPage() {
           />
 
           <form
+            id="login-form"
+            tabIndex={-1}
             onSubmit={handleSubmit}
-            className="apex-cut relative border border-white/[0.065] bg-[#080B12]/92 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,.035)] md:p-6"
+            aria-busy={busy}
+            className="lmn-auth-form apex-cut relative border border-white/[0.065] bg-[#080B12]/92 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,.035)] md:p-6"
           >
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
+                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/68">
                   Acceso privado
                 </div>
                 <h2 className="mt-2 text-3xl font-black tracking-[-0.045em] text-white">
@@ -568,26 +540,34 @@ export default function LoginPage() {
               <span className="text-xs font-black text-white/66">Correo de trabajo</span>
               <span className="relative block">
                 <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
-                <input
-                  value={email}
+                  <input
+                    type="email"
+                    name="email"
+                    value={email}
                   onChange={(event) => {
                     setEmail(event.target.value);
                     if (err) setErr(null);
                   }}
                   placeholder="tu@empresa.com"
                   inputMode="email"
-                  autoComplete="email"
+                    autoComplete="email"
+                    aria-invalid={Boolean(err)}
+                    aria-describedby={err ? "login-error" : undefined}
                   className="lmn-focus-ring h-12 w-full border border-white/[0.07] bg-black/24 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-white/24 focus:border-white/16"
                 />
               </span>
             </label>
 
             {passwordMode ? (
-              <label className="mt-4 grid gap-2">
-                <span className="text-xs font-black text-white/66">Contrasena</span>
+              <div className="mt-4 grid gap-2">
+                <label htmlFor="login-password" className="text-xs font-black text-white/66">
+                  Contrasena
+                </label>
                 <span className="relative block">
                   <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                   <input
+                    id="login-password"
+                    name="password"
                     value={password}
                     onChange={(event) => {
                       setPassword(event.target.value);
@@ -596,6 +576,8 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
+                    aria-invalid={Boolean(err)}
+                    aria-describedby={err ? "login-error" : undefined}
                     className="lmn-focus-ring h-12 w-full border border-white/[0.07] bg-black/24 pl-10 pr-12 text-sm text-white outline-none transition placeholder:text-white/24 focus:border-white/16"
                   />
                   <button
@@ -611,7 +593,15 @@ export default function LoginPage() {
                     )}
                   </button>
                 </span>
-              </label>
+                <button
+                  type="button"
+                  onClick={() => void recoverPassword()}
+                  disabled={loadingRecovery || !isEmail(cleanEmail)}
+                  className="justify-self-start text-xs font-bold text-white/46 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                >
+                  {loadingRecovery ? "Enviando recuperacion..." : "Recuperar contrasena"}
+                </button>
+              </div>
             ) : null}
 
             {!passwordMode && otpSent ? (
@@ -630,6 +620,7 @@ export default function LoginPage() {
                     Codigo de 6 digitos opcional
                   </span>
                   <input
+                    name="one-time-code"
                     value={otpCode}
                     onChange={(event) => {
                       setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6));
@@ -638,21 +629,18 @@ export default function LoginPage() {
                     placeholder="123456"
                     inputMode="numeric"
                     autoComplete="one-time-code"
+                    aria-invalid={Boolean(err)}
+                    aria-describedby={err ? "login-error" : undefined}
                     className="lmn-focus-ring h-12 border border-white/[0.07] bg-black/24 px-3 text-center text-lg font-black tracking-[0.34em] text-white outline-none placeholder:text-white/18 focus:border-white/16"
                   />
                 </label>
               </div>
             ) : null}
 
-            <ShimmerButton
+            <button
               type="submit"
               disabled={!canSubmit || busy}
-              shimmerColor="#F5F7FA"
-              shimmerDuration="2.8s"
-              shimmerSize="0.08em"
-              borderRadius="16px"
-              background="linear-gradient(135deg,#00E5FF,#008CFF 45%,#1B43FF 75%,#6C3BFF)"
-              className="lmn-focus-ring mt-5 h-12 w-full gap-2 border-cyan-200/35 text-sm font-black text-[#05070B] transition hover:translate-y-[-1px] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-55"
+              className="lmn-auth-submit lmn-focus-ring mt-5 inline-flex h-12 w-full items-center justify-center gap-2 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-55"
             >
               {loadingLink || loadingPass || loadingOtpVerify ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -675,7 +663,7 @@ export default function LoginPage() {
               {!loadingLink && !loadingPass && !loadingOtpVerify ? (
                 <ArrowRight className="h-4 w-4" />
               ) : null}
-            </ShimmerButton>
+            </button>
 
             {!passwordMode && otpSent ? (
               <button
@@ -703,14 +691,14 @@ export default function LoginPage() {
             </button>
 
             {ok ? (
-              <div className="mt-4 flex items-start gap-3 border border-emerald-300/16 bg-emerald-400/8 p-3 text-sm leading-6 text-emerald-100">
+              <div className="mt-4 flex items-start gap-3 border border-emerald-300/16 bg-emerald-400/8 p-3 text-sm leading-6 text-emerald-100" role="status" aria-live="polite">
                 <CheckCircle2 className="mt-1 h-4 w-4 shrink-0" />
                 <span>{ok}</span>
               </div>
             ) : null}
 
             {err ? (
-              <div className="mt-4 flex items-start gap-3 border border-red-300/16 bg-red-500/10 p-3 text-sm leading-6 text-red-100">
+              <div id="login-error" className="mt-4 flex items-start gap-3 border border-red-300/16 bg-red-500/10 p-3 text-sm leading-6 text-red-100" role="alert">
                 <AlertCircle className="mt-1 h-4 w-4 shrink-0" />
                 <span>{err}</span>
               </div>
@@ -730,6 +718,18 @@ export default function LoginPage() {
                   {label}
                 </div>
               ))}
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-[11px] font-bold text-white/36">
+              <Link href="/legal/terms" className="transition hover:text-white/70">
+                Terminos
+              </Link>
+              <Link href="/legal/privacy" className="transition hover:text-white/70">
+                Privacidad
+              </Link>
+              <Link href="/support" className="transition hover:text-white/70">
+                Soporte
+              </Link>
             </div>
           </form>
         </div>

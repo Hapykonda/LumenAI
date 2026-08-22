@@ -1,124 +1,26 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import {
+  BusinessAuthorizationError,
+  businessAuthorizationErrorResponse,
+  getAuthorizedBusinessContext,
+} from "@/lib/auth/business-context";
+import { getLumenitePublicStatus, type LumeniteAgentKey } from "@/lib/ai/lumenite/env";
 import { resolveCountryDisplay, resolveCountryKey } from "@/lib/geo/countries";
-import { getSupabaseServerEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function supabaseAdmin() {
-  const env = getSupabaseServerEnv();
-
-  return createClient(env.url, env.serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
-
-function getBearer(req: Request) {
-  const raw = req.headers.get("authorization") || "";
-  const match = raw.match(/^Bearer\s+(.+)$/i);
-  return match?.[1] ?? null;
-}
+type OverviewRow = Record<string, unknown>;
 
 function clean(value: unknown) {
   return String(value ?? "").trim();
 }
 
-async function getUser(req: Request, admin: ReturnType<typeof supabaseAdmin>) {
-  const token = getBearer(req);
-  if (!token) return null;
-
-  const { data, error } = await admin.auth.getUser(token);
-
-  if (error || !data?.user) return null;
-
-  return data.user;
-}
-
-function pickBusinessIdFromProfile(profile: any) {
-  if (!profile || typeof profile !== "object") return null;
-
-  const keys = [
-    "active_business_id",
-    "business_id",
-    "current_business_id",
-    "selected_business_id",
-    "default_business_id",
-  ];
-
-  for (const key of keys) {
-    const value = clean(profile[key]);
-    if (value) return value;
-  }
-
-  return null;
-}
-
-async function readProfile(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const attempts = [
-    { table: "profiles", column: "id" },
-    { table: "profiles", column: "user_id" },
-    { table: "profiles", column: "owner_id" },
-  ];
-
-  for (const attempt of attempts) {
-    const { data, error } = await admin
-      .from(attempt.table)
-      .select("*")
-      .eq(attempt.column, userId)
-      .maybeSingle();
-
-    if (!error && data) return data;
-  }
-
-  return null;
-}
-
-async function readOwnedBusiness(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const attempts = ["owner_id", "user_id", "created_by", "profile_id"];
-
-  for (const column of attempts) {
-    const { data, error } = await admin
-      .from("businesses")
-      .select("id,name,public_key")
-      .eq(column, userId)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && data?.id) return data;
-  }
-
-  return null;
-}
-
-async function resolveBusiness(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const profile = await readProfile(admin, userId);
-  const profileBusinessId = pickBusinessIdFromProfile(profile);
-
-  if (profileBusinessId) {
-    const { data, error } = await admin
-      .from("businesses")
-      .select("id,name,public_key")
-      .eq("id", profileBusinessId)
-      .maybeSingle();
-
-    if (!error && data?.id) return data;
-  }
-
-  const owned = await readOwnedBusiness(admin, userId);
-  if (owned?.id) return owned;
-
-  return null;
-}
-
-function countByStatus(leads: any[], status: string) {
+function countByStatus(leads: OverviewRow[], status: string) {
   return leads.filter((lead) => String(lead.status || "") === status).length;
 }
 
-function countKbByType(items: any[], type: string) {
+function countKbByType(items: OverviewRow[], type: string) {
   return items.filter(
     (item) => item.is_published && String(item.type || "").toLowerCase() === type
   ).length;
@@ -180,6 +82,32 @@ function dayKeyFrom(value: unknown) {
   return date.toISOString().slice(0, 10);
 }
 
+function dateValue(value: unknown) {
+  const date = value ? new Date(String(value)) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0;
+}
+
+function newestDate(rows: OverviewRow[], fields = ["updated_at", "created_at"]) {
+  let latest = 0;
+  for (const row of rows) {
+    for (const field of fields) latest = Math.max(latest, dateValue(row?.[field]));
+  }
+  return latest ? new Date(latest).toISOString() : null;
+}
+
+function sevenDayComparison(rows: OverviewRow[], field = "created_at") {
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  const currentStart = now - 7 * day;
+  const previousStart = now - 14 * day;
+  const current = rows.filter((row) => dateValue(row?.[field]) >= currentStart).length;
+  const previous = rows.filter((row) => {
+    const timestamp = dateValue(row?.[field]);
+    return timestamp >= previousStart && timestamp < currentStart;
+  }).length;
+  return { current, previous, label: `7 dias: ${current}; periodo anterior: ${previous}` };
+}
+
 function buildDayKeys(days = 14) {
   const end = new Date();
   end.setUTCHours(0, 0, 0, 0);
@@ -201,11 +129,11 @@ function buildDayKeys(days = 14) {
 }
 
 function buildPerformance(input: {
-  chats: any[];
-  leads: any[];
-  kbItems: any[];
-  messages: any[];
-  chatGeoRows: any[];
+  chats: OverviewRow[];
+  leads: OverviewRow[];
+  kbItems: OverviewRow[];
+  messages: OverviewRow[];
+  chatGeoRows: OverviewRow[];
 }) {
   const { chats, leads, kbItems, messages, chatGeoRows } = input;
   const totalLeads = Math.max(leads.length, 1);
@@ -267,7 +195,7 @@ function buildPerformance(input: {
   }
 
   messages.forEach((message) => {
-    const date = message.created_at ? new Date(message.created_at) : null;
+    const date = message.created_at ? new Date(String(message.created_at)) : null;
     if (!date || Number.isNaN(date.getTime())) return;
     const item = hourMap.get(date.getHours());
     if (!item) return;
@@ -403,20 +331,13 @@ function buildPerformance(input: {
 
 export async function GET(req: Request) {
   try {
-    const admin = supabaseAdmin();
-    const user = await getUser(req, admin);
-
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-    }
-
-    const business = await resolveBusiness(admin, user.id);
-
-    if (!business?.id) {
-      return NextResponse.json({ ok: false, error: "missing_business" }, { status: 403 });
-    }
-
-    const businessId = business.id as string;
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:read",
+    });
+    const admin = context.admin;
+    const business = context.activeBusiness;
+    const businessId = context.businessId;
 
     const [
       chatsResult,
@@ -424,6 +345,10 @@ export async function GET(req: Request) {
       kbResult,
       widgetResult,
       messagesResult,
+      actionRunsResult,
+      approvalsResult,
+      pulseResult,
+      auditResult,
     ] = await Promise.all([
       admin
         .from("chats")
@@ -464,14 +389,64 @@ export async function GET(req: Request) {
         .eq("business_id", businessId)
         .order("created_at", { ascending: false })
         .limit(160),
+
+      admin
+        .from("lumenai_action_runs")
+        .select(
+          "id,capability,status,risk_level,source,error_message,created_at,updated_at,completed_at,failed_at"
+        )
+        .eq("business_id", businessId)
+        .order("created_at", { ascending: false })
+        .limit(100),
+
+      admin
+        .from("lumenai_action_approvals")
+        .select("id,action_run_id,decision,expires_at,created_at,decided_at")
+        .eq("business_id", businessId)
+        .eq("decision", "pending")
+        .order("created_at", { ascending: false })
+        .limit(100),
+
+      admin
+        .from("lumenai_pulse_signals")
+        .select(
+          "id,title,severity,status,source_label,period_label,recommended_capability,action_run_id,last_error,snoozed_until,last_refreshed_at,created_at,updated_at"
+        )
+        .eq("business_id", businessId)
+        .order("last_refreshed_at", { ascending: false })
+        .limit(100),
+
+      admin
+        .from("lumenai_audit_log")
+        .select("id,action,target_table,target_id,metadata,created_at")
+        .eq("business_id", businessId)
+        .order("created_at", { ascending: false })
+        .limit(100),
     ]);
+
+    const failedQuery = [
+      chatsResult,
+      leadsResult,
+      kbResult,
+      widgetResult,
+      messagesResult,
+      actionRunsResult,
+      approvalsResult,
+      pulseResult,
+      auditResult,
+    ].find((result) => result.error);
+    if (failedQuery?.error) throw failedQuery.error;
 
     const chats = Array.isArray(chatsResult.data) ? chatsResult.data : [];
     const leads = Array.isArray(leadsResult.data) ? leadsResult.data : [];
     const kbItems = Array.isArray(kbResult.data) ? kbResult.data : [];
     const messages = Array.isArray(messagesResult.data) ? messagesResult.data : [];
+    const actionRuns = Array.isArray(actionRunsResult.data) ? actionRunsResult.data : [];
+    const approvals = Array.isArray(approvalsResult.data) ? approvalsResult.data : [];
+    const pulseSignals = Array.isArray(pulseResult.data) ? pulseResult.data : [];
+    const auditRows = Array.isArray(auditResult.data) ? auditResult.data : [];
     const widget = widgetResult.data ?? null;
-    let chatGeoRows: any[] = [];
+    let chatGeoRows: OverviewRow[] = [];
 
     try {
       const { data, error } = await admin
@@ -560,6 +535,217 @@ export async function GET(req: Request) {
       messages,
       chatGeoRows,
     });
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    const activeApprovals = approvals.filter(
+      (approval) => !approval.expires_at || dateValue(approval.expires_at) > now,
+    );
+    const expiredApprovals = approvals.filter(
+      (approval) => approval.expires_at && dateValue(approval.expires_at) <= now,
+    );
+    const activeActionStatuses = new Set([
+      "awaiting_approval",
+      "approved",
+      "queued",
+      "executing",
+      "verifying",
+    ]);
+    const activeActionRuns = actionRuns.filter((run) => activeActionStatuses.has(run.status));
+    const completedActions7d = actionRuns.filter(
+      (run) =>
+        ["completed", "undo_available", "reverted"].includes(run.status) &&
+        dateValue(run.completed_at || run.updated_at) >= now - 7 * day,
+    );
+    const failedActions24h = actionRuns.filter(
+      (run) =>
+        ["failed", "partially_completed"].includes(run.status) &&
+        dateValue(run.failed_at || run.updated_at) >= now - day,
+    );
+    const inactivePulseStatuses = new Set(["resolved", "dismissed", "reverted"]);
+    const activePulseSignals = pulseSignals.filter(
+      (signal) =>
+        !inactivePulseStatuses.has(signal.status) &&
+        (!signal.snoozed_until || dateValue(signal.snoozed_until) <= now),
+    );
+    const criticalPulseSignals = activePulseSignals.filter(
+      (signal) => signal.severity === "critical" || signal.status === "failed",
+    );
+    const criticalAlerts =
+      criticalPulseSignals.length + failedActions24h.length + expiredApprovals.length;
+    const opportunityLeads = leads.filter((lead) =>
+      ["new", "qualified"].includes(String(lead.status || "")),
+    );
+    const chatComparison = sevenDayComparison(chats);
+    const leadComparison = sevenDayComparison(leads);
+    const activity24h = auditRows.filter((row) => dateValue(row.created_at) >= now - day);
+    const lumeniteAgents: LumeniteAgentKey[] = [
+      "widget",
+      "autoconfig",
+      "panel",
+      "radar",
+      "growth",
+      "twin",
+      "campaigns",
+    ];
+    const environmentStatus = lumeniteAgents.map((agent) => ({
+      agent,
+      ...getLumenitePublicStatus(agent),
+    }));
+    const missingEnvironment = environmentStatus.filter((item) => !item.configured);
+    const healthCritical = missingEnvironment.some((item) => item.agent === "widget");
+    const healthWarnings =
+      Object.values(checks).filter((ready) => !ready).length +
+      missingEnvironment.filter((item) => item.agent !== "widget").length;
+    const healthState = healthCritical
+      ? "critical"
+      : healthWarnings > 0
+        ? "warning"
+        : "ready";
+    const generatedAt = new Date(now).toISOString();
+    const metric = (input: Record<string, unknown>) => ({
+      updatedAt: generatedAt,
+      ...input,
+    });
+    const commandCenter = {
+      generatedAt,
+      summary: {
+        health: healthState,
+        criticalAlerts,
+        pendingApprovals: activeApprovals.length,
+        activeLumeniteActions: activeActionRuns.length,
+      },
+      metrics: [
+        metric({
+          key: "health",
+          label: "Salud del sistema",
+          value: healthState === "ready" ? "Operativo" : healthState === "warning" ? "Atencion" : "Critico",
+          meaning: "Disponibilidad funcional, configuracion esencial y cobertura de agentes.",
+          source: "System Health + configuracion del workspace",
+          period: "Estado actual",
+          comparison: `${healthWarnings} advertencia(s); ${missingEnvironment.length} entorno(s) pendiente(s)`,
+          state: healthState,
+          href: "/panel/system-health",
+          actionLabel: "Abrir salud",
+        }),
+        metric({
+          key: "alerts",
+          label: "Alertas criticas",
+          value: criticalAlerts,
+          meaning: "Senales criticas, ejecuciones fallidas recientes y aprobaciones vencidas.",
+          source: "Pulse Radar + Lumenite + Approval Inbox",
+          period: "Activas; fallos de las ultimas 24 h",
+          updatedAt: newestDate([...pulseSignals, ...actionRuns, ...approvals]) || generatedAt,
+          comparison: `${criticalPulseSignals.length} Pulse; ${failedActions24h.length} ejecucion(es); ${expiredApprovals.length} vencida(s)`,
+          state: criticalAlerts > 0 ? "critical" : "ready",
+          href: criticalPulseSignals.length ? "/panel/radar" : "/panel/system-health",
+          actionLabel: criticalAlerts > 0 ? "Resolver alertas" : "Ver estado",
+        }),
+        metric({
+          key: "approvals",
+          label: "Aprobaciones pendientes",
+          value: activeApprovals.length,
+          meaning: "Acciones de Lumenite que requieren una decision humana antes de ejecutarse.",
+          source: "Lumenite Approval Inbox",
+          period: "Pendientes y no vencidas",
+          updatedAt: newestDate(approvals) || generatedAt,
+          comparison: `${expiredApprovals.length} solicitud(es) vencida(s) detectada(s)`,
+          state: activeApprovals.length > 0 ? "warning" : "ready",
+          href: "/panel/approvals",
+          actionLabel: "Revisar inbox",
+        }),
+        metric({
+          key: "lumenite",
+          label: "Acciones Lumenite",
+          value: activeActionRuns.length,
+          meaning: "Planes actualmente esperando, en cola, ejecutandose o verificandose.",
+          source: "Lumenite Action OS",
+          period: "Estado actual; comparacion 7 dias",
+          updatedAt: newestDate(actionRuns) || generatedAt,
+          comparison: `${completedActions7d.length} completada(s) o revertida(s) en 7 dias`,
+          state: failedActions24h.length ? "critical" : activeActionRuns.length ? "active" : "ready",
+          href: "/panel/lumenite",
+          actionLabel: "Abrir Lumenite",
+        }),
+        metric({
+          key: "pulse",
+          label: "Senales Pulse",
+          value: activePulseSignals.length,
+          meaning: "Condiciones operativas con evidencia que todavia requieren lectura o accion.",
+          source: "Pulse Radar persistido",
+          period: "Activas y no pospuestas",
+          updatedAt: newestDate(pulseSignals, ["last_refreshed_at", "updated_at"]) || generatedAt,
+          comparison: `${criticalPulseSignals.length} critica(s); ${pulseSignals.length - activePulseSignals.length} cerrada(s) o pospuesta(s)`,
+          state: criticalPulseSignals.length ? "critical" : activePulseSignals.length ? "warning" : "ready",
+          href: "/panel/radar",
+          actionLabel: "Abrir Radar",
+        }),
+        metric({
+          key: "opportunities",
+          label: "Oportunidades",
+          value: opportunityLeads.length,
+          meaning: "Leads nuevos o calificados que conservan potencial comercial abierto.",
+          source: "Pipeline de leads",
+          period: "Acumulado actual",
+          updatedAt: newestDate(leads) || generatedAt,
+          comparison: `${stats.leads_won} ganada(s); ${stats.leads_lost} perdida(s)`,
+          state: opportunityLeads.length ? "active" : "muted",
+          href: "/panel/leads",
+          actionLabel: "Priorizar leads",
+        }),
+        metric({
+          key: "conversations",
+          label: "Conversaciones",
+          value: chats.length,
+          meaning: "Conversaciones reales registradas en los canales del workspace.",
+          source: "Chats del panel y widget",
+          period: "Total; comparacion movil de 7 dias",
+          updatedAt: newestDate(chats) || generatedAt,
+          comparison: chatComparison.label,
+          state: stats.chats_unread > 0 ? "warning" : chats.length ? "active" : "muted",
+          href: "/panel/chat",
+          actionLabel: "Abrir conversaciones",
+        }),
+        metric({
+          key: "leads",
+          label: "Leads",
+          value: leads.length,
+          meaning: "Contactos comerciales captados y almacenados en el negocio activo.",
+          source: "CRM interno de LumenAI",
+          period: "Total; comparacion movil de 7 dias",
+          updatedAt: newestDate(leads) || generatedAt,
+          comparison: leadComparison.label,
+          state: leads.length ? "active" : "muted",
+          href: "/panel/leads",
+          actionLabel: "Ver pipeline",
+        }),
+        metric({
+          key: "activity",
+          label: "Actividad reciente",
+          value: activity24h.length,
+          meaning: "Eventos auditados producidos por usuarios, agentes y ciclos operativos.",
+          source: "Audit Log inmutable",
+          period: "Ultimas 24 horas",
+          updatedAt: newestDate(auditRows, ["created_at"]) || generatedAt,
+          comparison: `${auditRows.length} evento(s) disponibles en la ventana consultada`,
+          state: activity24h.length ? "active" : "muted",
+          href: "/panel/system-health",
+          actionLabel: "Revisar actividad",
+        }),
+        metric({
+          key: "coverage",
+          label: "Cobertura operativa",
+          value: `${launchPercent}%`,
+          meaning: "Configuracion de Knowledge, contacto y canal publico necesaria para operar.",
+          source: "Widget Settings + Knowledge",
+          period: "Estado actual",
+          updatedAt: newestDate([...(widget ? [widget] : []), ...kbItems]) || generatedAt,
+          comparison: `${done} de ${total} controles esenciales completos`,
+          state: launchPercent >= 80 ? "ready" : launchPercent >= 55 ? "warning" : "critical",
+          href: "/panel/autoconfig",
+          actionLabel: "Completar configuracion",
+        }),
+      ],
+    };
 
     return NextResponse.json({
       ok: true,
@@ -580,12 +766,19 @@ export async function GET(req: Request) {
       checks,
       stats,
       performance,
+      commandCenter,
       recentLeads,
       recentMessages,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return NextResponse.json(
-      { ok: false, error: error?.message || "overview_error" },
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "overview_error",
+      },
       { status: 500 }
     );
   }

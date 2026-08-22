@@ -1,121 +1,41 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getSupabaseServerEnv } from "@/lib/env";
+import {
+  BusinessAuthorizationError,
+  businessAuthorizationErrorResponse,
+  getAuthorizedBusinessContext,
+} from "@/lib/auth/business-context";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function supabaseAdmin() {
-  const env = getSupabaseServerEnv();
+type ChatSummary = {
+  title?: unknown;
+  channel?: unknown;
+};
 
-  return createClient(env.url, env.serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
+type LeadSummary = {
+  name?: unknown;
+  phone?: unknown;
+  email?: unknown;
+  status?: string | null;
+  score?: number | null;
+};
 
-function getBearer(req: Request) {
-  const raw = req.headers.get("authorization") || "";
-  const match = raw.match(/^Bearer\s+(.+)$/i);
-  return match?.[1] ?? null;
-}
+type MessageSummary = {
+  content?: unknown;
+  created_at?: string | null;
+  sender_type?: string | null;
+};
 
 function clean(value: unknown) {
   return String(value ?? "").trim();
 }
 
-async function getUser(req: Request, admin: ReturnType<typeof supabaseAdmin>) {
-  const token = getBearer(req);
-
-  if (!token) return null;
-
-  const { data, error } = await admin.auth.getUser(token);
-
-  if (error || !data?.user) return null;
-
-  return data.user;
-}
-
-function pickBusinessIdFromProfile(profile: any) {
-  if (!profile || typeof profile !== "object") return null;
-
-  const keys = [
-    "active_business_id",
-    "business_id",
-    "current_business_id",
-    "selected_business_id",
-    "default_business_id",
-  ];
-
-  for (const key of keys) {
-    const value = clean(profile[key]);
-    if (value) return value;
-  }
-
-  return null;
-}
-
-async function readProfile(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const attempts = [
-    { table: "profiles", column: "id" },
-    { table: "profiles", column: "user_id" },
-    { table: "profiles", column: "owner_id" },
-  ];
-
-  for (const attempt of attempts) {
-    const { data, error } = await admin
-      .from(attempt.table)
-      .select("*")
-      .eq(attempt.column, userId)
-      .maybeSingle();
-
-    if (!error && data) return data;
-  }
-
-  return null;
-}
-
-async function readOwnedBusiness(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const attempts = ["owner_id", "user_id", "created_by", "profile_id"];
-
-  for (const column of attempts) {
-    const { data, error } = await admin
-      .from("businesses")
-      .select("id")
-      .eq(column, userId)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && data?.id) return data.id as string;
-  }
-
-  return null;
-}
-
-async function resolveBusinessId(admin: ReturnType<typeof supabaseAdmin>, userId: string) {
-  const profile = await readProfile(admin, userId);
-  const profileBusinessId = pickBusinessIdFromProfile(profile);
-
-  if (profileBusinessId) {
-    const { data, error } = await admin
-      .from("businesses")
-      .select("id")
-      .eq("id", profileBusinessId)
-      .maybeSingle();
-
-    if (!error && data?.id) return data.id as string;
-  }
-
-  const ownedBusinessId = await readOwnedBusiness(admin, userId);
-
-  if (ownedBusinessId) return ownedBusinessId;
-
-  return null;
-}
-
-function titleFromChat(chat: any, lead: any, lastMessage: any) {
+function titleFromChat(
+  chat: ChatSummary,
+  lead: LeadSummary | null,
+  lastMessage: MessageSummary | null,
+) {
   const leadLabel =
     clean(lead?.name) ||
     clean(lead?.phone) ||
@@ -128,13 +48,13 @@ function titleFromChat(chat: any, lead: any, lastMessage: any) {
   if (chat?.channel === "widget") return "Cliente del widget";
 
   if (clean(lastMessage?.content)) {
-    return clean(lastMessage.content).slice(0, 42);
+    return clean(lastMessage?.content).slice(0, 42);
   }
 
   return "Chat";
 }
 
-function previewFromMessage(message: any) {
+function previewFromMessage(message: MessageSummary | null) {
   const content = clean(message?.content);
 
   if (!content) return "Sin mensajes todavía.";
@@ -144,18 +64,12 @@ function previewFromMessage(message: any) {
 
 export async function GET(req: Request) {
   try {
-    const admin = supabaseAdmin();
-    const user = await getUser(req, admin);
-
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-    }
-
-    const businessId = await resolveBusinessId(admin, user.id);
-
-    if (!businessId) {
-      return NextResponse.json({ ok: false, error: "missing_business" }, { status: 403 });
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:read",
+    });
+    const admin = context.admin;
+    const businessId = context.businessId;
 
     const url = new URL(req.url);
     const rawLimit = Number(url.searchParams.get("limit") || 80);
@@ -182,8 +96,8 @@ export async function GET(req: Request) {
     const safeChats = Array.isArray(chats) ? chats : [];
     const chatIds = safeChats.map((chat) => chat.id).filter(Boolean);
 
-    let messagesByChat = new Map<string, any>();
-    let leadsByChat = new Map<string, any[]>();
+    const messagesByChat = new Map<string, MessageSummary>();
+    const leadsByChat = new Map<string, LeadSummary[]>();
 
     if (chatIds.length > 0) {
       const { data: messages } = await admin
@@ -253,7 +167,11 @@ export async function GET(req: Request) {
       chats: enriched,
       stats,
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : new Error("chats_get_error");
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return NextResponse.json(
       { ok: false, error: error?.message || "error_list_chats" },
       { status: 500 }
@@ -263,18 +181,12 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const admin = supabaseAdmin();
-    const user = await getUser(req, admin);
-
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-    }
-
-    const businessId = await resolveBusinessId(admin, user.id);
-
-    if (!businessId) {
-      return NextResponse.json({ ok: false, error: "missing_business" }, { status: 403 });
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:write",
+    });
+    const admin = context.admin;
+    const businessId = context.businessId;
 
     const body = await req.json().catch(() => ({}));
     const title = clean(body?.title) || "Nuevo chat";
@@ -305,7 +217,11 @@ export async function POST(req: Request) {
       id: created?.id,
       chat: created,
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : new Error("chats_post_error");
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return NextResponse.json(
       { ok: false, error: error?.message || "error_create_chat" },
       { status: 500 }

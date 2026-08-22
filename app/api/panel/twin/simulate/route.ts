@@ -20,12 +20,12 @@ function detectScenarioType(input: string) {
   const text = input.toLowerCase();
   if (/precio|valor|subir|bajar|cobrar/.test(text)) return "pricing_change";
   if (/producto|servicio|agregar|nuevo/.test(text)) return "new_product";
-  if (/promocion|promoci[oó]n|descuento|oferta/.test(text)) return "promotion";
-  if (/cta|whatsapp|boton|bot[oó]n/.test(text)) return "widget_cta";
+  if (/promocion|promoci[oÃ³]n|descuento|oferta/.test(text)) return "promotion";
+  if (/cta|whatsapp|boton|bot[oÃ³]n/.test(text)) return "widget_cta";
   if (/tono|vendedor|cercano|formal/.test(text)) return "tone_strategy";
-  if (/objecion|objeci[oó]n|precio caro|confianza/.test(text)) return "objection_handling";
+  if (/objecion|objeci[oÃ³]n|precio caro|confianza/.test(text)) return "objection_handling";
   if (/horario|agenda/.test(text)) return "schedule_change";
-  if (/campana|campa[nñ]a/.test(text)) return "campaign_idea";
+  if (/campana|campa[nÃ±]a/.test(text)) return "campaign_idea";
   return "market_response";
 }
 
@@ -63,7 +63,7 @@ function fallbackReport(input: string, snapshot: Awaited<ReturnType<typeof build
     next_actions: [
       {
         type: "send_to_config_ia",
-        label: "Enviar a Config IA",
+        label: "Enviar a Config AI",
         description: "Preparar cambios como prompt aplicable.",
         payload: { prompt: input },
       },
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
         {
           role: "system",
           content:
-            "Eres Lumenite Business Twin. Simula decisiones comerciales con supuestos, riesgos, oportunidad, confianza y acciones. No prometas predicciones exactas. Devuelve JSON con title, scenario_type, summary, current_state, proposed_change, assumptions, expected_impact, risks, opportunities, recommendation, confidence, missing_data, next_actions.",
+            "Eres LumenAI Business Twin. Simula decisiones comerciales con supuestos, riesgos, oportunidad, confianza y acciones. No prometas predicciones exactas. Devuelve JSON con title, scenario_type, summary, current_state, proposed_change, assumptions, expected_impact, risks, opportunities, recommendation, confidence, missing_data, next_actions.",
         },
         {
           role: "user",
@@ -149,7 +149,15 @@ export async function POST(req: Request) {
         },
       ],
     });
-    const report = sanitizeReport(safeJson(aiText, {}), fallback);
+    const generationMode = aiText ? "ai" : "evidence_rules";
+    const sanitizedReport = sanitizeReport(safeJson(aiText, {}), fallback);
+    const report = {
+      ...sanitizedReport,
+      raw_result: {
+        ...sanitizedReport.raw_result,
+        generation_mode: generationMode,
+      },
+    };
 
     await recordBusinessSnapshot({
       admin: ctx.admin,
@@ -212,6 +220,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       ai: getGroqStatus("twin"),
+      generationMode,
       scenario,
       report: simulationReport,
       generated: report,
@@ -223,3 +232,6 @@ export async function POST(req: Request) {
     );
   }
 }
+
+
+

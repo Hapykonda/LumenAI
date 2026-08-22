@@ -1,10 +1,10 @@
  "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePanel } from "../_components/panel-context";
-import { supabase } from "@/lib/supabase/client";
+import { panelFetch } from "@/lib/panel-fetch";
 import { PanelSectionHeader } from "../_components/ui/PanelSectionHeader";
 import { ActionButton } from "../_components/ui/ActionButton";
 
@@ -68,28 +68,6 @@ type ApiCreateResponse = {
   error?: string;
   detail?: string;
 };
-
-async function apiFetch(path: string, init?: RequestInit) {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-
-  const headers = new Headers(init?.headers);
-
-  if (init?.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  return fetch(path, {
-    ...init,
-    headers,
-    cache: "no-store",
-    credentials: "include",
-  });
-}
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -209,7 +187,7 @@ export default function ChatPage() {
     });
   }, [chats, filter, query]);
 
-  function markFlash(id: string) {
+  const markFlash = useCallback((id: string) => {
     setFlashIds((prev) => ({
       ...prev,
       [id]: Date.now(),
@@ -226,9 +204,9 @@ export default function ChatPage() {
         return copy;
       });
     }, 2200);
-  }
+  }, []);
 
-  async function loadChats(opts?: { silent?: boolean }) {
+  const loadChats = useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false;
 
     if (!silent) {
@@ -237,7 +215,7 @@ export default function ChatPage() {
     }
 
     try {
-      const res = await apiFetch("/api/panel/chats", {
+      const res = await panelFetch("/api/panel/chats", {
         method: "GET",
       });
 
@@ -296,13 +274,13 @@ export default function ChatPage() {
         setFetching(false);
       }
     }
-  }
+  }, [markFlash]);
 
   useEffect(() => {
     if (!loading) {
       void loadChats();
     }
-  }, [loading]);
+  }, [loadChats, loading]);
 
   useEffect(() => {
     if (loading) return;
@@ -328,7 +306,7 @@ export default function ChatPage() {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [loading]);
+  }, [loadChats, loading]);
 
   useEffect(() => {
     if (loading) return;
@@ -342,11 +320,12 @@ export default function ChatPage() {
     return () => {
       window.removeEventListener("lumen:unread-changed", onChanged);
     };
-  }, [loading]);
+  }, [loadChats, loading]);
 
   useEffect(() => {
+    const timers = flashTimer.current;
     return () => {
-      Object.values(flashTimer.current).forEach((timer) => clearTimeout(timer));
+      Object.values(timers).forEach((timer) => clearTimeout(timer));
     };
   }, []);
 
@@ -357,7 +336,7 @@ export default function ChatPage() {
     setCreating(true);
 
     try {
-      const res = await apiFetch("/api/panel/chats", {
+      const res = await panelFetch("/api/panel/chats", {
         method: "POST",
         body: JSON.stringify({
           title: "Nuevo chat",
@@ -437,6 +416,7 @@ export default function ChatPage() {
 
       <PanelSectionHeader
         title="Inbox comercial"
+        headingLevel={1}
         description="Conversaciones del widget, leads, mensajes no leidos y chats tomados por humano."
         secondary={
           <>
@@ -463,6 +443,7 @@ export default function ChatPage() {
 
       {err ? (
         <div
+          role="alert"
           style={{
             padding: 13,
             borderRadius: 15,
@@ -563,6 +544,7 @@ export default function ChatPage() {
           }}
         >
           <input
+            aria-label="Buscar conversaciones"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar por cliente, mensaje, teléfono, estado, canal…"

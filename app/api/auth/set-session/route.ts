@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getSupabaseBrowserEnv } from "@/lib/env";
 
@@ -21,7 +21,11 @@ export async function POST(req: Request) {
   const cookieStore = await cookies();
 
   // 3) Capturar cookies que Supabase quiera setear (sin escribir aún en response)
-  const pendingCookies: Array<{ name: string; value: string; options: any }> = [];
+  const pendingCookies: Array<{
+    name: string;
+    value: string;
+    options: CookieOptions;
+  }> = [];
   const env = getSupabaseBrowserEnv();
 
   const supabase = createServerClient(

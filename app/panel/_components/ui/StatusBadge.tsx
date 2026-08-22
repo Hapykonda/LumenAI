@@ -1,25 +1,31 @@
 import type { ReactNode } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  CircleDashed,
+  CircleX,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const accentA = "var(--lmn-accent-rgb, 0,229,255)";
-const accentB = "var(--lmn-accent-2-rgb, 27,67,255)";
 
 type StatusBadgeProps = {
   children: ReactNode;
   tone?: "default" | "active" | "warning" | "danger" | "muted";
   className?: string;
+  icon?: ReactNode;
 };
 
 export function StatusBadge({
   children,
   tone = "default",
   className,
+  icon,
 }: StatusBadgeProps) {
   const style =
     tone === "active"
       ? {
-          borderColor: `rgba(${accentA}, .22)`,
-          background: `linear-gradient(135deg, rgba(${accentA}, .085), rgba(${accentB}, .055))`,
+          borderColor: "rgba(var(--lmn-success-rgb, 67,230,160), .24)",
+          background: "rgba(var(--lmn-success-rgb, 67,230,160), .08)",
           color: "var(--lmn-text)",
         }
       : tone === "warning"
@@ -46,6 +52,20 @@ export function StatusBadge({
           color: "var(--lmn-text-soft)",
         };
 
+  const statusIcon =
+    icon ??
+    (tone === "active" ? (
+      <CheckCircle2 aria-hidden="true" />
+    ) : tone === "warning" ? (
+      <AlertTriangle aria-hidden="true" />
+    ) : tone === "danger" ? (
+      <CircleX aria-hidden="true" />
+    ) : tone === "muted" ? (
+      <CircleDashed aria-hidden="true" />
+    ) : (
+      <Activity aria-hidden="true" />
+    ));
+
   return (
     <span
       className={cn(
@@ -55,6 +75,7 @@ export function StatusBadge({
       data-tone={tone}
       style={style}
     >
+      {statusIcon}
       {children}
     </span>
   );

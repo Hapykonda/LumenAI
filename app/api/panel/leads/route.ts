@@ -1,11 +1,27 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getSupabaseServerEnv } from "@/lib/env";
+import {
+  BusinessAuthorizationError,
+  businessAuthorizationErrorResponse,
+  getAuthorizedBusinessContext,
+} from "@/lib/auth/business-context";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type LeadStatus = "new" | "contacted" | "qualified" | "won" | "lost";
+type LeadRow = Record<string, unknown> & {
+  chat_id?: string | null;
+  score?: number | string | null;
+  status?: string | null;
+};
+type ChatRow = Record<string, unknown> & { id: string };
+type MessageRow = Record<string, unknown> & {
+  chat_id?: string | null;
+  content?: unknown;
+  created_at?: string | null;
+  sender_type?: string | null;
+};
 
 const VALID_STATUSES: LeadStatus[] = [
   "new",
@@ -15,18 +31,7 @@ const VALID_STATUSES: LeadStatus[] = [
   "lost",
 ];
 
-function admin() {
-  const env = getSupabaseServerEnv();
-
-  return createClient(env.url, env.serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
-
-function json(data: any, status = 200) {
+function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
     status,
     headers: {
@@ -57,103 +62,7 @@ function clampScore(input: unknown) {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
-function getBearer(req: Request) {
-  const raw = req.headers.get("authorization") || "";
-  const match = raw.match(/^Bearer\s+(.+)$/i);
-
-  return match?.[1] ?? null;
-}
-
-async function getUser(req: Request, sb: ReturnType<typeof admin>) {
-  const token = getBearer(req);
-
-  if (!token) return null;
-
-  const { data, error } = await sb.auth.getUser(token);
-
-  if (error || !data?.user) return null;
-
-  return data.user;
-}
-
-function pickBusinessIdFromProfile(profile: any) {
-  if (!profile || typeof profile !== "object") return null;
-
-  const keys = [
-    "business_id",
-    "active_business_id",
-    "current_business_id",
-    "selected_business_id",
-    "default_business_id",
-  ];
-
-  for (const key of keys) {
-    const value = clean(profile[key]);
-    if (value) return value;
-  }
-
-  return null;
-}
-
-async function readProfile(sb: ReturnType<typeof admin>, userId: string) {
-  const attempts = [
-    { table: "profiles", column: "id" },
-    { table: "profiles", column: "user_id" },
-    { table: "profiles", column: "owner_id" },
-  ];
-
-  for (const attempt of attempts) {
-    const { data, error } = await sb
-      .from(attempt.table)
-      .select("*")
-      .eq(attempt.column, userId)
-      .maybeSingle();
-
-    if (!error && data) return data;
-  }
-
-  return null;
-}
-
-async function readOwnedBusiness(sb: ReturnType<typeof admin>, userId: string) {
-  const attempts = ["owner_id", "user_id", "created_by", "profile_id"];
-
-  for (const column of attempts) {
-    const { data, error } = await sb
-      .from("businesses")
-      .select("id")
-      .eq(column, userId)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && data?.id) return data;
-  }
-
-  return null;
-}
-
-async function resolveBusinessId(sb: ReturnType<typeof admin>, userId: string) {
-  const profile = await readProfile(sb, userId);
-  const profileBusinessId = pickBusinessIdFromProfile(profile);
-
-  if (profileBusinessId) {
-    const { data, error } = await sb
-      .from("businesses")
-      .select("id")
-      .eq("id", profileBusinessId)
-      .maybeSingle();
-
-    if (!error && data?.id) return data.id as string;
-  }
-
-  const owned = await readOwnedBusiness(sb, userId);
-
-  if (owned?.id) return owned.id as string;
-
-  return null;
-}
-
-function buildStats(leads: any[]) {
+function buildStats(leads: LeadRow[]) {
   const total = leads.length;
 
   const avgScore =
@@ -175,7 +84,7 @@ function buildStats(leads: any[]) {
   };
 }
 
-function previewFromMessage(message: any) {
+function previewFromMessage(message: MessageRow | null) {
   const content = clean(message?.content);
   if (!content) return null;
 
@@ -183,9 +92,9 @@ function previewFromMessage(message: any) {
 }
 
 async function enrichWithChats(
-  sb: ReturnType<typeof admin>,
+  sb: ReturnType<typeof supabaseAdmin>,
   businessId: string,
-  leads: any[]
+  leads: LeadRow[]
 ) {
   const chatIds = Array.from(new Set(leads
     .map((lead) => clean(lead.chat_id))
@@ -201,8 +110,8 @@ async function enrichWithChats(
     .eq("business_id", businessId)
     .in("id", chatIds);
 
-  const chatMap = new Map<string, any>();
-  const messagesByChat = new Map<string, any>();
+  const chatMap = new Map<string, ChatRow>();
+  const messagesByChat = new Map<string, MessageRow>();
   const leadCountByChat = new Map<string, number>();
 
   if (Array.isArray(chats)) {
@@ -262,24 +171,12 @@ async function enrichWithChats(
 
 export async function GET(req: Request) {
   try {
-    const sb = admin();
-    const user = await getUser(req, sb);
-
-    if (!user) {
-      return json({ ok: false, error: "No autorizado." }, 401);
-    }
-
-    const businessId = await resolveBusinessId(sb, user.id);
-
-    if (!businessId) {
-      return json(
-        {
-          ok: false,
-          error: "No se encontró negocio activo para listar leads.",
-        },
-        404
-      );
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:read",
+    });
+    const sb = context.admin;
+    const businessId = context.businessId;
 
     const url = new URL(req.url);
     const status = clean(url.searchParams.get("status"));
@@ -314,7 +211,11 @@ export async function GET(req: Request) {
       leads,
       stats: buildStats(leads),
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : new Error("leads_get_error");
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return json(
       {
         ok: false,
@@ -327,24 +228,12 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const sb = admin();
-    const user = await getUser(req, sb);
-
-    if (!user) {
-      return json({ ok: false, error: "No autorizado." }, 401);
-    }
-
-    const businessId = await resolveBusinessId(sb, user.id);
-
-    if (!businessId) {
-      return json(
-        {
-          ok: false,
-          error: "No se encontró negocio activo para crear lead.",
-        },
-        404
-      );
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:write",
+    });
+    const sb = context.admin;
+    const businessId = context.businessId;
 
     const body = await req.json().catch(() => ({}));
 
@@ -383,7 +272,11 @@ export async function POST(req: Request) {
       ok: true,
       lead: leads[0] ?? data,
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : new Error("leads_post_error");
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return json(
       {
         ok: false,
@@ -396,24 +289,12 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const sb = admin();
-    const user = await getUser(req, sb);
-
-    if (!user) {
-      return json({ ok: false, error: "No autorizado." }, 401);
-    }
-
-    const businessId = await resolveBusinessId(sb, user.id);
-
-    if (!businessId) {
-      return json(
-        {
-          ok: false,
-          error: "No se encontró negocio activo para actualizar lead.",
-        },
-        404
-      );
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requiredPermission: "resources:write",
+    });
+    const sb = context.admin;
+    const businessId = context.businessId;
 
     const body = await req.json().catch(() => ({}));
     const id = clean(body?.id || body?.leadId);
@@ -422,7 +303,7 @@ export async function PATCH(req: Request) {
       return json({ ok: false, error: "Falta id del lead." }, 400);
     }
 
-    const update: Record<string, any> = {
+    const update: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
 
@@ -456,7 +337,11 @@ export async function PATCH(req: Request) {
       ok: true,
       lead: leads[0] ?? data,
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : new Error("leads_patch_error");
+    if (error instanceof BusinessAuthorizationError) {
+      return businessAuthorizationErrorResponse(error);
+    }
     return json(
       {
         ok: false,

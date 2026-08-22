@@ -1,5 +1,6 @@
 import type { adminClient } from "@/app/api/panel/calibration/_lib";
-import type { LumeniteActionStatus } from "./schemas";
+import type { LumeniteActionStatus } from "./core";
+import type { LegacyLumeniteActionStatus } from "./schemas";
 
 type Admin = ReturnType<typeof adminClient>;
 
@@ -11,7 +12,7 @@ export async function recordLumeniteActionRun(input: {
   actionName: string;
   payload?: unknown;
   result?: unknown;
-  status?: LumeniteActionStatus;
+  status?: LumeniteActionStatus | LegacyLumeniteActionStatus;
   error?: string | null;
 }) {
   const {
@@ -22,9 +23,18 @@ export async function recordLumeniteActionRun(input: {
     actionName,
     payload = {},
     result = {},
-    status = "success",
+    status = "completed",
     error = null,
   } = input;
+
+  const normalizedStatus: LumeniteActionStatus =
+    status === "pending"
+      ? "queued"
+      : status === "success"
+        ? "completed"
+        : status === "error"
+          ? "failed"
+          : status;
 
   try {
     await admin.from("lumenai_action_runs").insert({
@@ -32,15 +42,39 @@ export async function recordLumeniteActionRun(input: {
       user_id: userId,
       agent,
       action_name: actionName,
+      capability: actionName,
       payload,
       result,
-      status,
+      status: normalizedStatus,
       error,
-      completed_at: status === "pending" ? null : new Date().toISOString(),
+      error_message: error,
+      completed_at: ["queued", "planning", "executing", "verifying"].includes(normalizedStatus)
+        ? null
+        : new Date().toISOString(),
     });
   } catch {
     // Action runs are operational telemetry; missing migration must not break the app.
   }
+}
+
+export async function recordRequiredAudit(input: {
+  admin: Admin;
+  businessId: string;
+  userId?: string | null;
+  action: string;
+  targetTable?: string | null;
+  targetId?: string | null;
+  metadata?: unknown;
+}) {
+  const { error } = await input.admin.from("lumenai_audit_log").insert({
+    business_id: input.businessId,
+    actor_user_id: input.userId ?? null,
+    action: input.action,
+    target_table: input.targetTable ?? null,
+    target_id: input.targetId ?? null,
+    metadata: input.metadata ?? {},
+  });
+  if (error) throw new Error("AUDIT_WRITE_FAILED");
 }
 
 export async function recordLumeniteAudit(input: {

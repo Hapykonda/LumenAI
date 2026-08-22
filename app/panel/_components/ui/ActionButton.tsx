@@ -1,14 +1,12 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@/lib/utils";
-
-const accentA = "var(--lmn-accent-rgb, 0,229,255)";
-const accentB = "var(--lmn-accent-2-rgb, 27,67,255)";
 
 type BaseProps = {
   children: ReactNode;
   className?: string;
-  variant?: "primary" | "secondary" | "ghost";
+  style?: CSSProperties;
+  variant?: "primary" | "secondary" | "ghost" | "subtle" | "danger" | "icon";
   disabled?: boolean;
 };
 
@@ -27,50 +25,20 @@ function isLinkProps(props: ActionButtonProps): props is LinkProps {
   return typeof (props as { href?: unknown }).href === "string";
 }
 
-function getStyle(variant: "primary" | "secondary" | "ghost") {
-  if (variant === "primary") {
-    return {
-      borderColor: `rgba(${accentA}, .34)`,
-      background: `linear-gradient(135deg, rgba(${accentA}, .86), rgba(${accentB}, .78))`,
-      boxShadow: `var(--lmn-glow), inset 0 1px 0 rgba(255,255,255,.20)`,
-      color: "var(--lmn-bg)",
-      borderRadius: "var(--lmn-radius-sm)",
-    };
-  }
-
-  if (variant === "secondary") {
-    return {
-      borderColor: "var(--lmn-border)",
-      background: "linear-gradient(145deg, rgba(255,255,255,.048), rgba(255,255,255,.012)), var(--lmn-surface)",
-      boxShadow: "var(--lmn-shadow-soft), inset 0 1px 0 rgba(255,255,255,.040)",
-      color: "var(--lmn-text)",
-      borderRadius: "var(--lmn-radius-sm)",
-    };
-  }
-
-  return {
-    borderColor: "var(--lmn-border)",
-    background: "transparent",
-    color: "var(--lmn-text-soft)",
-    borderRadius: "var(--lmn-radius-sm)",
-  };
-}
-
 export function ActionButton(props: ActionButtonProps) {
   const variant = props.variant ?? "secondary";
   const disabled = props.disabled;
 
   const baseClass = cn(
-    "apex-button lmn-action-button lmn-liquid-button lmn-focus-ring inline-flex h-10 items-center justify-center gap-2 border px-3 text-xs font-black transition duration-150",
-    "hover:bg-white/[0.035] active:translate-y-px",
+    "apex-button lmn-action-button lmn-focus-ring inline-flex h-10 items-center justify-center gap-2 border px-3 text-xs font-black transition duration-150",
+    "hover:bg-white/[0.055] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/35",
+    variant === "icon" && "w-10 px-0",
     disabled && "pointer-events-none opacity-50",
     props.className
   );
 
-  const style = getStyle(variant);
-
   if (isLinkProps(props)) {
-    const { href, children } = props;
+    const { href, children, style } = props;
 
     return (
       <Link href={href} className={baseClass} data-variant={variant} style={style}>
@@ -97,7 +65,6 @@ export function ActionButton(props: ActionButtonProps) {
       disabled={disabled}
       className={baseClass}
       data-variant={variant}
-      style={style}
       type={type}
     >
       {children}

@@ -4,7 +4,7 @@ import { getSupabaseBrowserEnv } from "@/lib/env";
 
 export async function createSupabaseServerClient() {
   // ✅ En tu Next, cookies() es async (Promise)
-  const cookieStore = await (cookies() as any);
+  const cookieStore = await cookies();
   const env = getSupabaseBrowserEnv();
 
   return createServerClient(
@@ -16,7 +16,7 @@ export async function createSupabaseServerClient() {
           // ya no revienta: ahora cookieStore NO es Promise
           return cookieStore.getAll?.() ?? [];
         },
-        setAll(cookiesToSet: any[]) {
+        setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set?.(name, value, options);

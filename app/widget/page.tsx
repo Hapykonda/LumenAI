@@ -1,3 +1,4 @@
+import "./widget.css";
 import WidgetClient from "./WidgetClient";
 
 type PageProps = {
@@ -118,7 +119,7 @@ function MissingKeyScreen() {
             overflowX: "auto",
           }}
         >
-          http://localhost:3000/widget?key=TU_PUBLIC_KEY
+          /widget?key=TU_PUBLIC_KEY
         </div>
 
         <p
@@ -129,9 +130,9 @@ function MissingKeyScreen() {
             lineHeight: 1.6,
           }}
         >
-          Puedes obtenerla desde{" "}
+          Puedes obtenerla desde el modulo{" "}
           <strong style={{ color: "rgba(255,255,255,.68)" }}>
-            /api/widget/config?debug=1
+            Widget del panel
           </strong>
         </p>
       </section>

@@ -12,10 +12,14 @@ export type WidgetTheme = {
   gradientFrom?: string;
   gradientTo?: string;
   fontFamily?: string;
+  radius?: number;
+  blurStrength?: number;
+  surfaceOpacity?: number;
+  glowStrength?: number;
+  launcherText?: string;
 };
 
 export type WidgetConfig = {
-  businessId?: string;
   businessName?: string | null;
   widgetEnabled?: boolean;
   greeting?: string | null;
@@ -39,4 +43,5 @@ export type WidgetConfig = {
 
   // seguridad postMessage
   allowedParentOrigin?: string | null;
+  quickActions?: string[];
 };

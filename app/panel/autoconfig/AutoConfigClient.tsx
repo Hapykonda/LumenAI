@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Rocket,
   CalendarClock,
-  Send,
   ShieldCheck,
   ShoppingBag,
   Sparkles,
@@ -20,8 +19,8 @@ import {
 } from "lucide-react";
 import { ActionButton } from "../_components/ui/ActionButton";
 import { GlassCard } from "../_components/ui/GlassCard";
-import { PanelSectionHeader } from "../_components/ui/PanelSectionHeader";
 import { StatusBadge } from "../_components/ui/StatusBadge";
+import { ConfigAiCommandCenter } from "@/components/ui/config-ai-command-center";
 
 type Role = "assistant" | "user";
 
@@ -181,6 +180,7 @@ export default function AutoConfigClient() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const bootPromptRef = useRef(false);
   const score = readiness(snapshot);
+  const showLegacyProposal = false;
 
   const assistantName =
     snapshot?.currentCalibration?.identity?.assistantName || "LumenAI";
@@ -209,7 +209,7 @@ export default function AutoConfigClient() {
       });
       const json = (await res.json().catch(() => null)) as ApiData | null;
       if (!res.ok || json?.ok === false) {
-        setError(json?.error || "No se pudo cargar Config IA.");
+        setError(json?.error || "No se pudo cargar Config AI.");
         return;
       }
       setAiStatus(json?.ai ?? null);
@@ -221,15 +221,15 @@ export default function AutoConfigClient() {
               {
                 ...items[0],
                 content: json?.ai?.configured
-                  ? "Lumenite esta conectado y leyendo este panel. Pideme un cambio concreto y puedo aplicarlo en calibracion, widget, Knowledge, productos, contacto o automatizaciones."
-                  : "Lumenite esta en modo seguro. Puedo revisar el panel y preparar propuestas, pero falta conectar el motor operativo externo.",
+                  ? "LumenAI esta conectado y leyendo este panel. Pideme un cambio concreto y puedo aplicarlo en calibracion, widget, Knowledge, productos, contacto o automatizaciones."
+                  : "LumenAI esta en modo seguro. Puedo revisar el panel y preparar propuestas, pero falta conectar el motor operativo externo.",
               },
             ]
           : items
       );
       setError(null);
     } catch {
-      setError("No se pudo conectar con Config IA.");
+      setError("No se pudo conectar con Config AI.");
     }
   }
 
@@ -250,7 +250,7 @@ export default function AutoConfigClient() {
         id: pendingId,
         role: "assistant",
         content: aiStatus?.configured
-          ? "Lumenite esta leyendo el panel antes de responder."
+          ? "LumenAI esta leyendo el panel antes de responder."
           : "Estoy leyendo el panel en modo seguro antes de responder.",
       },
     ]);
@@ -282,7 +282,7 @@ export default function AutoConfigClient() {
                   ...item,
                   content:
                     json.assistantMessage ||
-                    "Lumenite esta conectado. Dame una instruccion concreta para configurar el panel.",
+                    "LumenAI esta conectado. Dame una instruccion concreta para configurar el panel.",
                 }
               : item
           )
@@ -457,43 +457,67 @@ export default function AutoConfigClient() {
 
   return (
     <div className="lmn-autoconfig-page flex flex-col gap-5">
-      <PanelSectionHeader
-        title="Config IA"
-        description="Configura, calibra y prepara LumenAI hablando con el asistente del panel."
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge tone={aiStatus?.configured ? "active" : "warning"}>
-            {aiStatus?.configured ? "IA conectada" : "Modo seguro"}
-          </StatusBadge>
-          <StatusBadge tone={score >= 75 ? "active" : "warning"}>
-            {score}% listo
-          </StatusBadge>
-          <ActionButton onClick={() => void loadSnapshot()} variant="secondary">
-            <RefreshCw className="h-3.5 w-3.5" />
-            Actualizar
-          </ActionButton>
-          <ActionButton
-            onClick={() => void rollbackLastConfig()}
-            variant="secondary"
-            disabled={!lastSnapshotInfo || rollingBack}
-          >
-            {rollingBack ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Undo2 className="h-3.5 w-3.5" />
-            )}
-            Revertir
-          </ActionButton>
-        </div>
-      </PanelSectionHeader>
-
       {error ? (
-        <div className="lmn-autoconfig-error">{error}</div>
+        <div className="lmn-autoconfig-error" role="alert">{error}</div>
       ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
-        <GlassCard variant="strong" accent className="lmn-autoconfig-chat p-4 md:p-5">
-          <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] pb-4">
+      <ConfigAiCommandCenter
+        score={score}
+        aiConfigured={Boolean(aiStatus?.configured)}
+        businessName={businessName}
+        assistantName={assistantName}
+        proposal={proposal}
+        value={input}
+        suggestions={starterPrompts}
+        busy={busy}
+        publishing={publishing}
+        onChange={setInput}
+        onSubmit={(message) => void submit(message)}
+        onApply={() => void applyProposal()}
+        onPublish={() => void publishCalibration()}
+      />
+
+      <section className="lmn-autoconfig-primary-grid grid items-start gap-4">
+        <div className="lmn-config-room-header">
+          <div className="min-w-0">
+            <div className="lmn-config-room-kicker">
+              <WandSparkles className="h-3.5 w-3.5" />
+              LumenAI configuration layer
+            </div>
+            <h1>Config AI</h1>
+            <p>
+              Configura, calibra y prepara LumenAI hablando con el asistente del panel.
+            </p>
+          </div>
+
+          <div className="lmn-config-room-actions">
+            <StatusBadge tone={aiStatus?.configured ? "active" : "warning"}>
+              {aiStatus?.configured ? "IA conectada" : "Modo seguro"}
+            </StatusBadge>
+            <StatusBadge tone={score >= 75 ? "active" : "warning"}>
+              {score}% listo
+            </StatusBadge>
+            <ActionButton onClick={() => void loadSnapshot()} variant="secondary">
+              <RefreshCw className="h-3.5 w-3.5" />
+              Actualizar
+            </ActionButton>
+            <ActionButton
+              onClick={() => void rollbackLastConfig()}
+              variant="secondary"
+              disabled={!lastSnapshotInfo || rollingBack}
+            >
+              {rollingBack ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Undo2 className="h-3.5 w-3.5" />
+              )}
+              Revertir
+            </ActionButton>
+          </div>
+        </div>
+
+        <section className="lmn-autoconfig-chat lmn-config-gradient-card p-4 md:p-5">
+          <div className="lmn-config-console-head flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <div className="lmn-autoconfig-avatar">
                 <Bot className="h-4 w-4" />
@@ -511,9 +535,7 @@ export default function AutoConfigClient() {
           </div>
 
           <div className="lmn-ai-connection-strip">
-            <span>
-              Motor: Lumenite
-            </span>
+            <span>Motor: LumenAI</span>
             <span>
               {aiStatus?.configured
                 ? "Configuracion operativa activa"
@@ -522,63 +544,33 @@ export default function AutoConfigClient() {
             {aiStatus?.usingFallbackKey ? <span>Conexion compartida</span> : null}
           </div>
 
-          <div ref={scrollRef} className="lmn-autoconfig-thread">
-            {messages.map((message) => (
-              <article
-                key={message.id}
-                className={
-                  message.role === "user"
-                    ? "lmn-chat-bubble is-user"
-                    : "lmn-chat-bubble is-assistant"
-                }
-              >
-                <div className="whitespace-pre-line text-sm leading-6">
-                  {message.content}
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <div className="mt-4 grid gap-3">
-            <div className="flex flex-wrap gap-2">
-              {starterPrompts.map((prompt) => (
-                <button
-                  key={prompt}
-                  className="lmn-autoconfig-chip"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void submit(prompt)}
+          <div className="lmn-config-console">
+            <div ref={scrollRef} className="lmn-autoconfig-thread">
+              {messages.map((message) => (
+                <article
+                  key={message.id}
+                  className={
+                    message.role === "user"
+                      ? "lmn-chat-bubble is-user"
+                      : "lmn-chat-bubble is-assistant"
+                  }
                 >
-                  {prompt}
-                </button>
+                  <div className="whitespace-pre-line text-sm leading-6">
+                    {message.content}
+                  </div>
+                </article>
               ))}
             </div>
 
-            <form
-              className="lmn-autoconfig-composer"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void submit();
-              }}
-            >
-              <textarea
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder="Ej: Agrega un servicio de instalacion web desde $69.990, activa tono cercano y destaca WhatsApp como canal principal."
-                rows={3}
-              />
-              <button type="submit" disabled={busy || !input.trim()}>
-                {busy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </button>
-            </form>
+            <div className="lmn-config-prompt-stage">
+              <div className="lmn-config-command-note">
+                Usa el composer principal de arriba para generar un blueprint. Este bloque queda como historial operativo de Config AI.
+              </div>
+            </div>
           </div>
-        </GlassCard>
+        </section>
 
-        <div className="grid gap-4">
+        <div className="lmn-config-side-rail grid gap-3 lg:grid-cols-2">
           <GlassCard variant="soft" className="p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -609,7 +601,7 @@ export default function AutoConfigClient() {
               <p className="mt-2 text-xs leading-5 text-white/48">
                 {lastSnapshotInfo?.createdAt
                   ? `${lastSnapshotInfo.actionType || "configuracion"} guardada. Puedes revertir el borrador si el cambio no encaja.`
-                  : "Aun no hay snapshots. Se crearan cuando Config IA aplique cambios."}
+                  : "Aun no hay snapshots. Se crearan cuando Config AI aplique cambios."}
               </p>
             </div>
           </GlassCard>
@@ -650,7 +642,7 @@ export default function AutoConfigClient() {
         </div>
       </section>
 
-      {proposal ? (
+      {showLegacyProposal && proposal ? (
         <GlassCard variant="base" accent className="p-5">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div>
@@ -720,3 +712,4 @@ export default function AutoConfigClient() {
     </div>
   );
 }
+

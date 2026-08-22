@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import {
   ArrowRight,
   BrainCircuit,
@@ -38,6 +37,9 @@ type Report = {
   confidence?: number | null;
   next_actions?: Array<Record<string, unknown>> | null;
   missing_data?: string[] | null;
+  raw_result?: {
+    generation_mode?: string | null;
+  } | null;
 };
 
 type TwinData = {
@@ -216,7 +218,8 @@ export default function TwinPage() {
   return (
     <main className="grid gap-5 pb-10">
       <PanelSectionHeader
-        eyebrow="Lumenite Business Twin"
+        variant="hero"
+        eyebrow="LumenAI Business Twin"
         title="Gemelo comercial del negocio"
         description="Simula decisiones antes de aplicarlas. Entrega impacto, riesgos, supuestos y acciones preparadas."
         status={`${data?.confidence ?? 0}% confianza`}
@@ -229,7 +232,7 @@ export default function TwinPage() {
         }
       />
 
-      {error ? <div className="lmn-autoconfig-error">{error}</div> : null}
+      {error ? <div className="lmn-autoconfig-error" role="alert">{error}</div> : null}
 
       <section className="grid gap-3 md:grid-cols-5">
         <Metric label="Leads hot" value={Number(stats.hotLeads || 0)} />
@@ -247,7 +250,7 @@ export default function TwinPage() {
           </div>
           <h2 className="mt-2 text-xl font-black text-white">Simula antes de cambiar</h2>
           <p className="mt-2 text-sm leading-6 text-white/48">
-            Escribe una decision comercial. Lumenite usara datos del panel y guardara el reporte.
+            Escribe una decision comercial. LumenAI usara datos del panel y guardara el reporte.
           </p>
           <form
             className="mt-4 grid gap-3"
@@ -257,6 +260,7 @@ export default function TwinPage() {
             }}
           >
             <textarea
+              aria-label="Decisión comercial para simular"
               value={input}
               onChange={(event) => setInput(event.target.value)}
               rows={6}
@@ -299,9 +303,18 @@ export default function TwinPage() {
                     {activeReport.summary}
                   </p>
                 </div>
-                <StatusBadge tone={(activeReport.confidence ?? 0) >= 70 ? "active" : "warning"}>
-                  {activeReport.confidence ?? 0}% confianza
-                </StatusBadge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge tone="muted">
+                    {activeReport.raw_result?.generation_mode === "evidence_rules"
+                      ? "Reglas sobre datos reales"
+                      : activeReport.raw_result?.generation_mode === "ai"
+                        ? "IA sobre datos reales"
+                        : "Origen no registrado"}
+                  </StatusBadge>
+                  <StatusBadge tone={(activeReport.confidence ?? 0) >= 70 ? "active" : "warning"}>
+                    {activeReport.confidence ?? 0}% confianza
+                  </StatusBadge>
+                </div>
               </div>
 
               <div className="grid gap-3 md:grid-cols-4">
@@ -330,7 +343,7 @@ export default function TwinPage() {
           </div>
           <h3 className="mt-2 text-xl font-black text-white">Convertir en accion</h3>
           <p className="mt-2 text-sm leading-6 text-white/48">
-            El Twin prepara acciones internas. Los cambios sensibles pasan por Config IA.
+            El Twin prepara acciones internas. Los cambios sensibles pasan por Config AI.
           </p>
           <div className="mt-4 grid gap-2">
             <ActionButton
@@ -339,7 +352,7 @@ export default function TwinPage() {
               className={!activeReport ? "pointer-events-none opacity-50" : ""}
             >
               <Send className="h-3.5 w-3.5" />
-              Enviar a Config IA
+              Enviar a Config AI
             </ActionButton>
             <ActionButton onClick={() => void createKnowledgeDraft()} disabled={!activeReport || savingKnowledge} variant="secondary">
               <Save className="h-3.5 w-3.5" />
@@ -428,3 +441,4 @@ function Empty({ title, text }: { title: string; text: string }) {
     </div>
   );
 }
+

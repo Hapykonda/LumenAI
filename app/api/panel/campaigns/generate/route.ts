@@ -74,7 +74,7 @@ function fallbackCampaign(input: {
         priority: "high",
       },
       {
-        title: "Enviar campana a Config IA",
+        title: "Enviar campana a Config AI",
         description: "Preparar greeting y CTA temporal del widget.",
         channel: "Widget",
         priority: "medium",
@@ -202,7 +202,7 @@ export async function POST(req: Request) {
         {
           role: "system",
           content:
-            "Eres Lumenite Campaign Studio. Crea campanas comerciales concretas con assets listos para copiar. No digas que enviaste mensajes. Devuelve JSON: {campaign, assets, tasks, experiments, recommendations}.",
+            "Eres LumenAI Campaign Studio. Crea campanas comerciales concretas con assets listos para copiar. No digas que enviaste mensajes. Devuelve JSON: {campaign, assets, tasks, experiments, recommendations}.",
         },
         {
           role: "user",
@@ -236,7 +236,7 @@ export async function POST(req: Request) {
         status: "ready",
         summary: generated.campaign.summary,
         metadata: {
-          source: aiText ? "lumenite_ai" : "fallback",
+          source: aiText ? "lumenite_ai" : "evidence_rules",
           recommendations: generated.recommendations,
         },
       })
@@ -308,6 +308,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       ai: getGroqStatus("campaigns"),
+      generationMode: aiText ? "ai" : "evidence_rules",
       campaign,
       assets: assets.data ?? [],
       tasks: tasks.data ?? [],
@@ -321,3 +322,6 @@ export async function POST(req: Request) {
     );
   }
 }
+
+
+

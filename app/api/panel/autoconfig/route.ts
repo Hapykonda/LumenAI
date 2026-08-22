@@ -564,7 +564,7 @@ function sanitizePatch(raw: unknown, fallback: CalibrationDoc): Partial<Calibrat
             },
           }
         : {}),
-    };
+    } as CalibrationDoc["widget"];
   }
 
   return patch;
@@ -1041,19 +1041,24 @@ async function recordActionRun(input: {
 }) {
   const { ctx, actionName, payload, result, status = "success", error = null } = input;
   if (!ctx.admin || !ctx.business) return;
+  const normalizedStatus =
+    status === "pending" ? "queued" : status === "error" ? "failed" : "completed";
 
   try {
     await ctx.admin.from("lumenai_action_runs").insert({
       business_id: ctx.business.id,
       user_id: ctx.user?.id ?? null,
       action_name: actionName,
+      capability: actionName,
       payload: payload ?? null,
       result: result ?? null,
-      status,
+      status: normalizedStatus,
       error,
+      error_message: error,
+      completed_at: normalizedStatus === "queued" ? null : new Date().toISOString(),
     });
   } catch {
-    // Optional production table. Never break Config IA if the migration is pending.
+    // Optional production table. Never break Config AI if the migration is pending.
   }
 }
 
@@ -1571,7 +1576,7 @@ export async function GET() {
     });
   } catch (error: unknown) {
     return jsonError(
-      error instanceof Error ? error.message : "Error cargando Config IA",
+      error instanceof Error ? error.message : "Error cargando Config AI",
       500
     );
   }

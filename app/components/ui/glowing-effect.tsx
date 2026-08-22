@@ -45,8 +45,8 @@ export const GlowingEffect = memo(
           if (!element) return;
 
           const { left, top, width, height } = element.getBoundingClientRect();
-          const mouseX = (e as any)?.x ?? lastPosition.current.x;
-          const mouseY = (e as any)?.y ?? lastPosition.current.y;
+          const mouseX = e?.x ?? lastPosition.current.x;
+          const mouseY = e?.y ?? lastPosition.current.y;
 
           if (e) lastPosition.current = { x: mouseX, y: mouseY };
 
@@ -71,7 +71,7 @@ export const GlowingEffect = memo(
           const currentAngle =
             parseFloat(element.style.getPropertyValue("--start")) || currentAngleRef.current;
 
-          let targetAngle =
+          const targetAngle =
             (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
 
           const angleDiff = ((targetAngle - currentAngle + 180) % 360) - 180;

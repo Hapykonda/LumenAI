@@ -1,44 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { createServerClient } from "@supabase/ssr";
 import { callGroqChat } from "@/lib/ai/groq";
-import { getSupabaseBrowserEnv, getSupabaseServerEnv } from "@/lib/env";
+import {
+  BusinessAuthorizationError,
+  businessAuthorizationErrorResponse,
+  getAuthorizedBusinessContext,
+} from "@/lib/auth/business-context";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type PendingCookie = { name: string; value: string; options?: any };
-
-function supabaseAdmin() {
-  const env = getSupabaseServerEnv();
-
-  return createClient(env.url, env.serviceRoleKey, {
-    auth: { persistSession: false },
-  });
-}
-
-function supabaseSSR(req: NextRequest) {
-  const pending: PendingCookie[] = [];
-  const env = getSupabaseBrowserEnv();
-
-  const supabase = createServerClient(
-    env.url,
-    env.anonKey,
-    {
-      cookies: {
-        getAll() {
-          return req.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          pending.push(...(cookiesToSet as any));
-        },
-      },
-    }
-  );
-
-  return { supabase, pending };
-}
 
 function withCookies(res: NextResponse, pending: PendingCookie[]) {
   for (const c of pending) {
@@ -153,8 +125,7 @@ function fallbackAssistantFromKb(items: any[], message: string) {
 
 // ---------------- Route ----------------
 export async function POST(req: NextRequest) {
-  const { supabase, pending } = supabaseSSR(req);
-  const admin = supabaseAdmin();
+  const pending: PendingCookie[] = [];
 
   try {
     const body = await req.json().catch(() => ({} as any));
@@ -173,22 +144,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Auth desde cookies (SSR)
-    let user = (await supabase.auth.getUser()).data.user;
-
-    // Fallback: Authorization Bearer (por si estás usando apiFetch con token)
-    if (!user) {
-      const authH = req.headers.get("authorization") || "";
-      const token = authH.startsWith("Bearer ") ? authH.slice(7) : "";
-      if (token) {
-        const u = await admin.auth.getUser(token).catch(() => null as any);
-        user = u?.data?.user ?? null;
-      }
-    }
-
-    if (!user) {
-      return withCookies(NextResponse.json({ error: "No auth" }, { status: 401 }), pending);
-    }
+    const context = await getAuthorizedBusinessContext({
+      request: req,
+      requestedBusinessId: businessIdFromBody,
+      requiredPermission: "resources:write",
+    });
+    const admin = context.admin;
+    const businessId = context.businessId;
 
     // 1) Buscar chat existente
     const chatExisting = await admin
@@ -199,40 +161,20 @@ export async function POST(req: NextRequest) {
 
     const chatBusinessId = chatExisting?.data?.business_id ? String(chatExisting.data.business_id) : "";
 
-    // 2) Resolver businessId FINAL (prioridad segura)
-    let businessId = "";
-
     if (chatBusinessId) {
-      // Si el chat ya existe, ese manda
-      if (businessIdFromBody && businessIdFromBody !== chatBusinessId) {
-        // ESTA es la clase de mismatch que te estaba dejando sin KB
+      if (chatBusinessId !== businessId) {
         return withCookies(
           NextResponse.json(
             {
               error: "Business mismatch",
-              detail: "El chat pertenece a otro business_id (no coincide con el business activo).",
-              debug: { chatBusinessId, businessIdFromBody }
+              code: "BUSINESS_MISMATCH",
+              detail: "El chat pertenece a otro negocio.",
             },
             { status: 409 }
           ),
           pending
         );
       }
-      businessId = chatBusinessId;
-    } else if (businessIdFromBody) {
-      // Si no existe chat aún, usamos el business del panel (frontend)
-      businessId = businessIdFromBody;
-    } else {
-      // Último fallback: profiles.business_id
-      const p = await admin.from("profiles").select("business_id").eq("id", user.id).maybeSingle();
-      if (p?.data?.business_id) businessId = String(p.data.business_id);
-    }
-
-    if (!businessId) {
-      return withCookies(
-        NextResponse.json({ error: "No business", detail: "No pude resolver business_id." }, { status: 403 }),
-        pending
-      );
     }
 
     // 3) Asegurar chat con business correcto
@@ -327,6 +269,9 @@ ${kbText || "(vacía)"}
       pending
     );
   } catch (e: any) {
+    if (e instanceof BusinessAuthorizationError) {
+      return withCookies(businessAuthorizationErrorResponse(e), pending);
+    }
     return withCookies(
       NextResponse.json({ error: "Server error", detail: e?.message ?? "unknown" }, { status: 500 }),
       pending

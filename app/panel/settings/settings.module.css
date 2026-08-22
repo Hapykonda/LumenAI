@@ -739,6 +739,128 @@
   align-items: center;
 }
 
+.hiddenFileInput {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.photoStudio {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(280px, 1fr);
+  align-items: stretch;
+}
+
+.photoPreview,
+.photoControls {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.060);
+  background:
+    radial-gradient(320px 180px at 18% 0%, rgba(var(--pRgb), 0.14), transparent 68%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.010)),
+    rgba(0, 0, 0, 0.22);
+}
+
+.photoPreview {
+  min-height: 238px;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  text-align: center;
+}
+
+.photoHalo {
+  position: absolute;
+  inset: auto auto 32px 50%;
+  width: 156px;
+  height: 156px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(var(--gfRgb), 0.34), transparent 60%),
+    radial-gradient(circle at 58% 64%, rgba(var(--gtRgb), 0.28), transparent 62%);
+  filter: blur(18px);
+  opacity: 0.82;
+}
+
+.photoFrame {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 118px;
+  height: 118px;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(135deg, rgba(var(--gfRgb), 0.72), rgba(var(--gtRgb), 0.58)),
+    rgba(255, 255, 255, 0.04);
+  color: white;
+  font-size: 42px;
+  font-weight: 900;
+  box-shadow:
+    0 24px 58px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.photoImg,
+.mockAvatarImg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.photoCopy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 4px;
+  max-width: 100%;
+  margin-top: 14px;
+}
+
+.photoTitle {
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.1;
+  color: white;
+  overflow-wrap: anywhere;
+}
+
+.photoSub {
+  font-size: 12px;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.52);
+  overflow-wrap: anywhere;
+}
+
+.photoControls {
+  display: grid;
+  gap: 14px;
+  align-content: center;
+  padding: 16px;
+}
+
+.photoActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+  .photoStudio {
+    grid-template-columns: 1fr;
+  }
+}
+
 .colorSwatch,
 .colorPicker {
   width: 44px;
@@ -1077,6 +1199,7 @@
   height: 38px;
   flex: 0 0 auto;
   border-radius: 15px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1113,8 +1236,11 @@
   flex: 0 0 auto;
 }
 
-.mockSep,
 .mockMuted {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.mockSep {
   color: rgba(255, 255, 255, 0.36);
 }
 

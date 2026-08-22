@@ -18,7 +18,7 @@ export type CalibrationDoc = {
         endWithQuestionOrCTA: boolean;
       };
       freeNotes: string;
-      savedProfiles?: Array<Record<string, any>>;
+      savedProfiles?: Array<Record<string, unknown>>;
     };
     brandBrief: Record<string, string>;
     lexicon: {
@@ -28,9 +28,52 @@ export type CalibrationDoc = {
       forbiddenPhrases: string[];
       dictionary: Record<string, string>;
     };
-    sales: any;
-    guardrails: any;
+    sales: {
+      profileId: string;
+      psychologyDefault: boolean;
+      qualification: string;
+      proactivity: number;
+      closing: number;
+      allowUrgency: boolean;
+      discoveryModel: string;
+      closingStyle: string;
+      objectionPlaybook: string;
+      objectionHandling: Record<string, boolean>;
+    };
+    guardrails: {
+      dontDo: string[];
+      escalate: { enabled: boolean; when: string[] };
+      hours: {
+        enabled: boolean;
+        timezone: string;
+        textOutOfHours: string;
+      };
+    };
   };
-  widget: any;
-  compiled: any;
+  widget: {
+    widgetEnabled: boolean;
+    greeting: string;
+    whatsapp: string;
+    email: string;
+    allowedParentOrigin: string | null;
+    quickActions: string[];
+    position?: "br" | "bl" | "tr" | "tl";
+    theme: {
+      primaryColor: string;
+      gradientFrom: string;
+      gradientTo: string;
+      fontFamily: string;
+      material: string;
+      launcherType: string;
+      launcherText: string;
+      showBranding: boolean;
+    };
+  };
+  compiled: {
+    brandMemory: string;
+    doRules: string[];
+    dontRules: string[];
+    examplePhrases: string[];
+    updatedAt: string | null;
+  };
 };

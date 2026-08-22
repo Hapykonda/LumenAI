@@ -1,10 +1,18 @@
 // app/panel/calibration/presets.ts
 import type { CalibrationDoc } from "./types";
 
+type DeepPartial<T> = {
+  [Key in keyof T]?: T[Key] extends Array<infer Item>
+    ? Array<Item>
+    : T[Key] extends object
+      ? DeepPartial<T[Key]>
+      : T[Key];
+};
+
 export type Preset = {
   id: string;
   name: string;
-  patch: Partial<CalibrationDoc>;
+  patch: DeepPartial<CalibrationDoc>;
 };
 
 export const PRESETS: Preset[] = [
@@ -25,14 +33,14 @@ export const PRESETS: Preset[] = [
             directivity: 75,
             humor: 10,
             audacity: 35,
-          } as any,
+          },
           rules: {
             reflectUnderstandingFirst: true,
             maxOptions: 2,
             endWithQuestionOrCTA: true,
-          } as any,
+          },
           freeNotes: "",
-        } as any,
+        },
         sales: {
           qualification: "medium",
           proactivity: 75,
@@ -40,7 +48,7 @@ export const PRESETS: Preset[] = [
           allowUrgency: false,
           objectionHandling: { price: true, time: true, trust: true, comparison: true },
         },
-      } as any,
+      },
     },
   },
   {
@@ -60,11 +68,11 @@ export const PRESETS: Preset[] = [
             directivity: 60,
             humor: 0,
             audacity: 15,
-          } as any,
-        } as any,
-      } as any,
-      widget: { theme: { material: "dark" } } as any,
-    } as any,
+          },
+        },
+      },
+      widget: { theme: { material: "dark" } },
+    },
   },
   {
     id: "close",
@@ -83,19 +91,19 @@ export const PRESETS: Preset[] = [
             directivity: 65,
             humor: 15,
             audacity: 25,
-          } as any,
-        } as any,
-      } as any,
-    } as any,
+          },
+        },
+      },
+    },
   },
 ];
 
-function isObj(v: any) {
-  return v && typeof v === "object" && !Array.isArray(v);
+function isObj(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
-function deepMerge(a: any, b: any) {
+function deepMerge(a: unknown, b: unknown): unknown {
   if (!isObj(a) || !isObj(b)) return b;
-  const out: any = { ...a };
+  const out: Record<string, unknown> = { ...a };
   for (const k of Object.keys(b)) {
     out[k] = isObj(out[k]) && isObj(b[k]) ? deepMerge(out[k], b[k]) : b[k];
   }
@@ -103,5 +111,5 @@ function deepMerge(a: any, b: any) {
 }
 
 export function applyPreset(current: CalibrationDoc, preset: Preset): CalibrationDoc {
-  return deepMerge(current, preset.patch);
+  return deepMerge(current, preset.patch) as CalibrationDoc;
 }

@@ -16,7 +16,15 @@ type AgentEnvConfig = {
   fallbackAgents?: LumeniteAgentKey[];
 };
 
-const FALLBACK_MODEL = "llama-3.3-70b-versatile";
+export const LUMENITE_PRIMARY_MODEL = "openai/gpt-oss-120b";
+export const LUMENITE_BACKUP_MODEL = "qwen/qwen3.6-27b";
+
+const DEPRECATED_MODEL_ALIASES = new Set([
+  "llama-3.3-70b-versatile",
+  "meta-llama/llama-3.3-70b-versatile",
+]);
+
+const FALLBACK_MODEL = LUMENITE_PRIMARY_MODEL;
 
 export const LUMENITE_AGENT_ENV: Record<LumeniteAgentKey, AgentEnvConfig> = {
   widget: {
@@ -66,6 +74,15 @@ function readEnv(name: string) {
   return getOptionalEnv(name);
 }
 
+export function normalizeLumeniteModel(model: string) {
+  const value = String(model || "").trim();
+  if (!value) return FALLBACK_MODEL;
+
+  return DEPRECATED_MODEL_ALIASES.has(value.toLowerCase())
+    ? LUMENITE_PRIMARY_MODEL
+    : value;
+}
+
 export function resolveLumeniteEnv(agent: LumeniteAgentKey) {
   const config = LUMENITE_AGENT_ENV[agent];
   const dedicatedKey = readEnv(config.keyEnv);
@@ -86,11 +103,12 @@ export function resolveLumeniteEnv(agent: LumeniteAgentKey) {
     usingFallbackKey: !dedicatedKey && Boolean(apiKey),
     fallbackEnv,
     apiKey,
-    model:
+    model: normalizeLumeniteModel(
       readEnv(config.modelEnv) ||
-      (fallbackEnv === "GROQ_PANEL_API_KEY" ? readEnv("GROQ_PANEL_MODEL") : "") ||
-      readEnv("GROQ_MODEL") ||
-      config.fallbackModel,
+        (fallbackEnv === "GROQ_PANEL_API_KEY" ? readEnv("GROQ_PANEL_MODEL") : "") ||
+        readEnv("GROQ_MODEL") ||
+        config.fallbackModel
+    ),
   };
 }
 

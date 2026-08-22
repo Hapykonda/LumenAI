@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AudioLines,
   BrainCircuit,
   Check,
   ChevronRight,
   Eye,
-  Gauge,
   Mic,
   Pause,
-  RefreshCw,
   Rocket,
   ShieldCheck,
   Sparkles,
@@ -24,10 +22,16 @@ import { ensureShape } from "./defaults";
 import { GlassCard } from "../_components/ui/GlassCard";
 import { ActionButton } from "../_components/ui/ActionButton";
 import { StatusBadge } from "../_components/ui/StatusBadge";
-import { SaveBar } from "../_components/ui/SaveBar";
-import { BorderBeam } from "@/components/ui/border-beam";
-import { OrbitingCircles } from "@/components/ui/orbiting-circles";
-import { ShineBorder } from "@/components/ui/shine-border";
+import {
+  CalibrationWorkspace,
+  CalibrationWorkspaceSkeleton,
+  CalibrationWorkspaceState,
+  type CalibrationReadinessSignal,
+  type CalibrationReadinessSummary,
+  type CalibrationSectionKey,
+  type CalibrationStageKey,
+  type CalibrationWorkspaceStatus,
+} from "./workspace";
 
 type AnyObj = Record<string, unknown>;
 type SavedProfile = {
@@ -43,121 +47,36 @@ type SavedProfile = {
 type PrimaryCTA = CalibrationDoc["calibration"]["identity"]["primaryCTA"];
 type ApiGet = {
   publicKey?: string;
+  businessName?: string;
   draft?: unknown;
   published?: unknown;
+  meta?: {
+    draftUpdatedAt?: string | null;
+    publishedAt?: string | null;
+    updatedAt?: string | null;
+  };
 };
 
-type StageKey = "base" | "persona" | "sales" | "rules" | "review";
-type CalibrationAssetVariant =
-  | "identity"
-  | "personality"
-  | "sales-intelligence"
-  | "guardrails"
-  | "publish"
-  | "audio"
-  | "sales-flow"
-  | "widget-preview"
-  | "empty";
-type StudioStatus =
-  | "loading"
-  | "dirty"
-  | "saving"
-  | "saved"
-  | "publishing"
-  | "published"
-  | "error";
-type ReadinessSignal = {
-  key: string;
-  label: string;
-  detail: string;
-  done: boolean;
-  stage: StageKey;
-};
-type CalibrationReadiness = {
-  done: number;
-  total: number;
-  score: number;
-  next?: ReadinessSignal;
-  signals: ReadinessSignal[];
-};
+type StageKey = CalibrationStageKey;
+type StudioStatus = CalibrationWorkspaceStatus;
+type ReadinessSignal = CalibrationReadinessSignal;
+type CalibrationReadiness = CalibrationReadinessSummary;
 
 const accentA = "var(--lmn-accent-rgb, 0,229,255)";
 const accentB = "var(--lmn-accent-2-rgb, 27,67,255)";
 const PANEL_THEME_EVENT = "lumen-theme:update";
 
-const STAGES: Array<{
-  key: StageKey;
-  title: string;
-  label: string;
-  detail: string;
-  icon: typeof BrainCircuit;
-}> = [
-  {
-    key: "base",
-    title: "Base",
-    label: "Identidad",
-    detail: "Quien habla y que promete",
-    icon: BrainCircuit,
-  },
-  {
-    key: "persona",
-    title: "Voz",
-    label: "Personalidad",
-    detail: "Como suena el asistente",
-    icon: Wand2,
-  },
-  {
-    key: "sales",
-    title: "Venta",
-    label: "Motor comercial",
-    detail: "Como diagnostica y cierra",
-    icon: Target,
-  },
-  {
-    key: "rules",
-    title: "Control",
-    label: "Reglas",
-    detail: "Limites, palabras y escalado",
-    icon: ShieldCheck,
-  },
-  {
-    key: "review",
-    title: "Live",
-    label: "Preview",
-    detail: "Revisar y publicar",
-    icon: Eye,
-  },
-];
-
-const STAGE_VISUALS: Record<
-  StageKey,
-  { variant: CalibrationAssetVariant; title: string; text: string }
-> = {
-  base: {
-    variant: "identity",
-    title: "Identidad visible",
-    text: "Nombre, promesa y accion principal quedan listos para que el asistente hable como el negocio.",
-  },
-  persona: {
-    variant: "personality",
-    title: "Voz comercial",
-    text: "Define el tono que el cliente siente: profesional, cercano, rapido y persuasivo sin ruido.",
-  },
-  sales: {
-    variant: "sales-intelligence",
-    title: "Motor de venta",
-    text: "La IA diagnostica, reencuadra objeciones y propone el siguiente paso con criterio.",
-  },
-  rules: {
-    variant: "guardrails",
-    title: "Control operativo",
-    text: "Limites, escalado humano, lenguaje y widget quedan protegidos antes de publicar.",
-  },
-  review: {
-    variant: "publish",
-    title: "Salida a produccion",
-    text: "Revisa completitud, publica el borrador y sincroniza la experiencia real del widget.",
-  },
+const SECTION_STAGE: Record<CalibrationSectionKey, StageKey> = {
+  overview: "base",
+  identity: "base",
+  personality: "persona",
+  tone: "persona",
+  sales: "sales",
+  objections: "sales",
+  guardrails: "rules",
+  escalation: "rules",
+  widget: "rules",
+  review: "review",
 };
 
 const PSYCHOLOGY_BLUEPRINTS = [
@@ -352,6 +271,29 @@ function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
 
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  timeoutMs = 15_000
+) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("La operación superó el tiempo de espera.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 function normalizeHex(hex?: unknown, fallback = "#00E5FF") {
   const raw = String(hex || "").trim();
   if (!raw) return fallback;
@@ -454,16 +396,6 @@ function formatDate(value: unknown) {
   }
 }
 
-function statusLabel(status: StudioStatus, dirty: boolean) {
-  if (status === "loading") return "Cargando";
-  if (status === "saving") return "Guardando";
-  if (status === "publishing") return "Publicando";
-  if (status === "published") return "Publicado";
-  if (status === "error") return "Error";
-  if (dirty) return "Cambios pendientes";
-  return "Borrador guardado";
-}
-
 function hasUsefulText(value: unknown, min = 3) {
   return typeof value === "string" && value.trim().length >= min;
 }
@@ -484,8 +416,8 @@ function buildCalibrationReadiness(
   const guardrails = draft.calibration.guardrails || {};
   const lexicon = draft.calibration.lexicon;
   const widget = draft.widget || {};
-  const theme = isObj(widget.theme) ? widget.theme : {};
-  const escalate = isObj(guardrails.escalate) ? guardrails.escalate : {};
+  const theme = widget.theme;
+  const escalate = guardrails.escalate;
 
   const signals: ReadinessSignal[] = [
     {
@@ -567,15 +499,33 @@ function buildCalibrationReadiness(
 export default function CalibrationStudio() {
   const [loading, setLoading] = useState(true);
   const [publicKey, setPublicKey] = useState("");
+  const [businessName, setBusinessName] = useState("");
   const [draft, setDraft] = useState<CalibrationDoc>(() => ensureShape(null));
   const [published, setPublished] = useState<CalibrationDoc | null>(null);
   const [stage, setStage] = useState<StageKey>("base");
+  const [activeSection, setActiveSection] = useState<CalibrationSectionKey>("overview");
+  const [editorOpen, setEditorOpen] = useState(false);
   const [status, setStatus] = useState<StudioStatus>("loading");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [lastModified, setLastModified] = useState<string | null>(null);
 
   const savedSnapshotRef = useRef("");
+  const savedDraftRef = useRef<CalibrationDoc>(ensureShape(null));
+  const historyRef = useRef<CalibrationDoc[]>([]);
+  const autosaveStateRef = useRef({
+    draft: ensureShape(null),
+    dirty: false,
+    saving: false,
+    publishing: false,
+  });
+  const saveDraftRef = useRef<
+    (
+      nextDraft?: CalibrationDoc,
+      options?: { force?: boolean }
+    ) => Promise<boolean>
+  >(async () => false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedRef = useRef(false);
 
@@ -583,9 +533,9 @@ export default function CalibrationStudio() {
   const personality = draft.calibration.personality;
   const brandBrief = draft.calibration.brandBrief;
   const lexicon = draft.calibration.lexicon;
-  const sales = draft.calibration.sales || {};
-  const guardrails = draft.calibration.guardrails || {};
-  const widget = draft.widget || {};
+  const sales = draft.calibration.sales;
+  const guardrails = draft.calibration.guardrails;
+  const widget = draft.widget;
   const theme = widget.theme || {};
   const savedProfiles = Array.isArray(personality.savedProfiles)
     ? (personality.savedProfiles as SavedProfile[])
@@ -624,6 +574,7 @@ export default function CalibrationStudio() {
   const activeBlueprint = PSYCHOLOGY_BLUEPRINTS.find(
     (item) => item.id === sales.profileId
   );
+  const closeEditor = useCallback(() => setEditorOpen(false), []);
 
   const previewUrl = publicKey
     ? `/widget?key=${encodeURIComponent(publicKey)}&preview=1`
@@ -635,20 +586,28 @@ export default function CalibrationStudio() {
     setError(null);
 
     try {
-      const res = await fetch("/api/panel/calibration", { cache: "no-store" });
+      const res = await fetchWithTimeout("/api/panel/calibration", { cache: "no-store" });
+      const data = (await res.json().catch(() => ({}))) as ApiGet & { error?: string };
 
-      if (!res.ok) throw new Error(`GET /api/panel/calibration -> ${res.status}`);
+      if (!res.ok) {
+        throw new Error(data.error || `No se pudo cargar Calibration Studio (${res.status}).`);
+      }
 
-      const data = (await res.json()) as ApiGet;
       const nextDraft = ensureShape(data.draft);
       const nextPublished = data.published ? ensureShape(data.published) : null;
       const snapshot = compactJson(nextDraft);
 
       setPublicKey(data.publicKey || "");
+      setBusinessName(data.businessName || nextDraft.calibration.identity.brandName || "");
       setDraft(nextDraft);
       setPublished(nextPublished);
       savedSnapshotRef.current = snapshot;
+      savedDraftRef.current = nextDraft;
+      historyRef.current = [];
       loadedRef.current = true;
+      setLastModified(
+        data.meta?.draftUpdatedAt || data.meta?.updatedAt || data.meta?.publishedAt || null
+      );
       setStatus("saved");
     } catch (e: unknown) {
       setStatus("error");
@@ -659,7 +618,7 @@ export default function CalibrationStudio() {
   }
 
   async function saveDraft(nextDraft = draft, options?: { force?: boolean }) {
-    if (!options?.force && (saving || publishing)) return;
+    if (!options?.force && (saving || publishing)) return false;
 
     setSaving(true);
     setStatus("saving");
@@ -667,27 +626,37 @@ export default function CalibrationStudio() {
 
     try {
       const safeDraft = ensureShape(nextDraft);
-      const res = await fetch("/api/panel/calibration/draft", {
+      const res = await fetchWithTimeout("/api/panel/calibration/draft", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ draft: safeDraft }),
       });
+      const payload = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        draftUpdatedAt?: string | null;
+      };
 
-      if (!res.ok) throw new Error(`PUT /api/panel/calibration/draft -> ${res.status}`);
+      if (!res.ok) {
+        throw new Error(payload.error || `No se pudo guardar el borrador (${res.status}).`);
+      }
 
       savedSnapshotRef.current = compactJson(safeDraft);
+      savedDraftRef.current = safeDraft;
       setDraft(safeDraft);
+      setLastModified(payload.draftUpdatedAt || new Date().toISOString());
       setStatus("saved");
+      return true;
     } catch (e: unknown) {
       setStatus("error");
       setError(getErrorMessage(e, "Error guardando borrador"));
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
   async function publishNow() {
-    if (saving || publishing) return;
+    if (saving || publishing) return false;
 
     setPublishing(true);
     setStatus("publishing");
@@ -697,21 +666,41 @@ export default function CalibrationStudio() {
       const safeDraft = ensureShape(draft);
 
       if (dirty) {
-        await saveDraft(safeDraft, { force: true });
+        const saved = await saveDraft(safeDraft, { force: true });
+        if (!saved) {
+          throw new Error("No se pudo guardar el borrador antes de publicar.");
+        }
       }
 
-      const res = await fetch("/api/panel/calibration/publish", {
+      const res = await fetchWithTimeout("/api/panel/calibration/publish", {
         method: "POST",
       });
+      const payload = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        published?: unknown;
+        publishedAt?: string | null;
+      };
 
-      if (!res.ok) throw new Error(`POST /api/panel/calibration/publish -> ${res.status}`);
+      if (!res.ok) {
+        throw new Error(payload.error || `No se pudo publicar la calibración (${res.status}).`);
+      }
 
-      setPublished(safeDraft);
+      const nextPublished = ensureShape(payload.published || safeDraft);
+      setDraft(nextPublished);
+      setPublished(nextPublished);
       setStatus("published");
-      savedSnapshotRef.current = compactJson(safeDraft);
+      savedSnapshotRef.current = compactJson(nextPublished);
+      savedDraftRef.current = nextPublished;
+      historyRef.current = [];
+      setLastModified(
+        payload.publishedAt ||
+          String(nextPublished.compiled?.updatedAt || new Date().toISOString())
+      );
+      return true;
     } catch (e: unknown) {
       setStatus("error");
       setError(getErrorMessage(e, "Error publicando calibracion"));
+      return false;
     } finally {
       setPublishing(false);
     }
@@ -719,6 +708,7 @@ export default function CalibrationStudio() {
 
   function updateDraft(patch: Partial<CalibrationDoc>) {
     setDraft((current) => {
+      historyRef.current = [...historyRef.current, current].slice(-30);
       const next = ensureShape(deepMerge(current, patch));
       setStatus("dirty");
       setError(null);
@@ -842,10 +832,9 @@ export default function CalibrationStudio() {
     const preset = PSYCHOLOGY_BLUEPRINTS.find((item) => item.id === id);
     if (!preset) return;
 
-    const next = ensureShape(deepMerge(draft, preset.patch));
-    setDraft(next);
-    setStatus("dirty");
+    updateDraft(preset.patch as unknown as Partial<CalibrationDoc>);
     setStage("persona");
+    setActiveSection("personality");
   }
 
   function saveCurrentPersonality() {
@@ -889,6 +878,72 @@ export default function CalibrationStudio() {
     } as Partial<CalibrationDoc>);
   }
 
+  function undoLastChange() {
+    const previous = historyRef.current.at(-1);
+    if (!previous || saving || publishing) return;
+
+    historyRef.current = historyRef.current.slice(0, -1);
+    setDraft(previous);
+    setStatus(compactJson(previous) === savedSnapshotRef.current ? "saved" : "dirty");
+    setError(null);
+  }
+
+  function discardUnsavedChanges() {
+    if (!dirty || saving || publishing) return;
+
+    setDraft(savedDraftRef.current);
+    historyRef.current = [];
+    setStatus("saved");
+    setError(null);
+  }
+
+  function resetActivePreset() {
+    const presetId = String(sales.profileId || activeBlueprint?.id || "elite-consultive");
+    const preset = PSYCHOLOGY_BLUEPRINTS.find((item) => item.id === presetId);
+
+    if (preset) {
+      applyBlueprint(preset.id);
+      return;
+    }
+
+    updateDraft({
+      calibration: {
+        personality: ensureShape(null).calibration.personality,
+        sales: ensureShape(null).calibration.sales,
+      },
+    } as Partial<CalibrationDoc>);
+    setStage("persona");
+    setActiveSection("personality");
+  }
+
+  function handleSectionChange(
+    section: CalibrationSectionKey,
+    openEditor = false
+  ) {
+    setActiveSection(section);
+    setStage(SECTION_STAGE[section]);
+    setEditorOpen(openEditor && section !== "overview");
+  }
+
+  function updateBehaviorValue(key: string, value: number) {
+    if (key === "proactivity" || key === "closing") {
+      updateSales({ [key]: value });
+      return;
+    }
+
+    updatePersonalityMix(key, value);
+  }
+
+  useEffect(() => {
+    saveDraftRef.current = saveDraft;
+    autosaveStateRef.current = {
+      draft,
+      dirty,
+      saving,
+      publishing,
+    };
+  });
+
   useEffect(() => {
     void load();
 
@@ -898,11 +953,19 @@ export default function CalibrationStudio() {
   }, []);
 
   useEffect(() => {
-    if (!loadedRef.current || !dirty || saving || publishing) return;
+    const current = autosaveStateRef.current;
+    if (
+      !loadedRef.current ||
+      !current.dirty ||
+      current.saving ||
+      current.publishing
+    ) {
+      return;
+    }
 
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => {
-      void saveDraft(draft);
+      void saveDraftRef.current(current.draft);
     }, 1200);
 
     return () => {
@@ -911,532 +974,113 @@ export default function CalibrationStudio() {
   }, [draftSnapshot]);
 
   if (loading) {
+    return <CalibrationWorkspaceSkeleton />;
+  }
+
+  if (!loadedRef.current && error) {
+    const accessDenied = /autorizado|negocio|permiso/i.test(error);
     return (
-      <div className="grid gap-5">
-        <CalibrationHero
-          completion={completion.percent}
-          status="Cargando"
-          statusTone="muted"
-          onReload={() => void load()}
-          onPublish={() => void publishNow()}
-          publishDisabled
-        />
-      </div>
+      <CalibrationWorkspaceState
+        title={accessDenied ? "No hay acceso a Calibration Studio" : "No pudimos cargar la calibración"}
+        description={
+          accessDenied
+            ? "Necesitas una sesión con acceso a un negocio activo para consultar y modificar esta calibración."
+            : error
+        }
+        actionLabel={accessDenied ? "Volver a comprobar" : "Reintentar"}
+        onAction={() => void load()}
+      />
     );
   }
 
-  const statusTone =
-    status === "error"
-      ? "danger"
-      : status === "dirty"
-      ? "warning"
-      : status === "published" || status === "saved"
-      ? "active"
-      : "default";
-
-  const saveBarVisible = dirty || saving || publishing || status === "error";
-
-  return (
-    <div className={saveBarVisible ? "grid gap-5 pb-28" : "grid gap-5"}>
-      <CalibrationHero
-        completion={completion.percent}
-        status={statusLabel(status, dirty)}
-        statusTone={statusTone}
-        onReload={() => void load()}
-        onPublish={() => void publishNow()}
-        publishDisabled={saving || publishing || !publicKey}
+  const editorContent =
+    stage === "base" ? (
+      <BaseStage
+        identity={identity}
+        brandBrief={brandBrief}
+        updateIdentity={updateIdentity}
+        updateBrandBrief={updateBrandBrief}
       />
-
-      {error ? (
-        <GlassCard variant="soft" className="border-red-400/20 p-4 text-sm font-semibold text-red-100">
-          {error}
-        </GlassCard>
-      ) : null}
-
-      <CalibrationCommandCenter
-        stage={stage}
-        completion={completion}
-        activeBlueprintName={activeBlueprint?.name || "Closer consultivo"}
-        savedProfilesCount={savedProfiles.length}
+    ) : stage === "persona" ? (
+      <PersonalityStage
+        activeId={sales.profileId}
+        savedProfiles={savedProfiles}
+        mix={personality.mix}
+        rules={personality.rules}
+        freeNotes={personality.freeNotes}
+        onApplyBlueprint={applyBlueprint}
+        onApplySavedProfile={applySavedProfile}
+        onSaveProfile={saveCurrentPersonality}
+        onMixChange={updatePersonalityMix}
+        onRulesChange={updateRules}
+        onNotesChange={(value) => updatePersonality({ freeNotes: value })}
+      />
+    ) : stage === "sales" ? (
+      <SalesStage
+        sales={sales}
+        brandBrief={brandBrief}
+        updateSales={updateSales}
+        updateBrandBrief={updateBrandBrief}
+      />
+    ) : stage === "rules" ? (
+      <RulesStage
+        lexicon={lexicon}
+        guardrails={guardrails}
+        widget={widget}
+        theme={theme}
+        updateLexicon={updateLexicon}
+        updateGuardrails={updateGuardrails}
+        updateWidget={updateWidget}
+        updateWidgetTheme={updateWidgetTheme}
+      />
+    ) : (
+      <ReviewStage
         publicKey={publicKey}
-        publishedAt={published?.compiled?.updatedAt}
-        onStageChange={setStage}
-      />
-
-      <CalibrationReadinessPanel
-        readiness={readiness}
-        onStageChange={setStage}
-      />
-
-      <StageRail stage={stage} completion={completion.percent} onChange={setStage} />
-
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
-        <main className="min-w-0">
-          {stage === "base" ? (
-            <BaseStage
-              identity={identity}
-              brandBrief={brandBrief}
-              updateIdentity={updateIdentity}
-              updateBrandBrief={updateBrandBrief}
-            />
-          ) : null}
-
-          {stage === "persona" ? (
-            <PersonalityStage
-              activeId={sales.profileId}
-              savedProfiles={savedProfiles}
-              mix={personality.mix}
-              rules={personality.rules}
-              freeNotes={personality.freeNotes}
-              onApplyBlueprint={applyBlueprint}
-              onApplySavedProfile={applySavedProfile}
-              onSaveProfile={saveCurrentPersonality}
-              onMixChange={updatePersonalityMix}
-              onRulesChange={updateRules}
-              onNotesChange={(value) => updatePersonality({ freeNotes: value })}
-            />
-          ) : null}
-
-          {stage === "sales" ? (
-            <SalesStage
-              sales={sales}
-              brandBrief={brandBrief}
-              updateSales={updateSales}
-              updateBrandBrief={updateBrandBrief}
-            />
-          ) : null}
-
-          {stage === "rules" ? (
-            <RulesStage
-              lexicon={lexicon}
-              guardrails={guardrails}
-              widget={widget}
-              theme={theme}
-              updateLexicon={updateLexicon}
-              updateGuardrails={updateGuardrails}
-              updateWidget={updateWidget}
-              updateWidgetTheme={updateWidgetTheme}
-            />
-          ) : null}
-
-          {stage === "review" ? (
-            <ReviewStage
-              publicKey={publicKey}
-              published={published}
-              previewUrl={previewUrl}
-              completion={completion}
-              onSave={() => void saveDraft()}
-              onPublish={() => void publishNow()}
-              saving={saving || publishing}
-              dirty={dirty}
-            />
-          ) : null}
-        </main>
-
-        <aside className="grid gap-4 xl:sticky xl:top-4 xl:self-start">
-          <CalibrationStageVisual stage={stage} />
-
-          <AssistantPreview draft={draft} />
-
-          <GlassCard variant="soft" accent className="p-5">
-            <div className="flex items-start gap-3">
-              <div className="apex-cut grid h-10 w-10 shrink-0 place-items-center border border-white/[0.07] bg-white/[0.02]">
-                <Gauge className="h-4 w-4 text-white/70" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-sm font-black text-white">Lo que ya afecta al asistente</h3>
-                <p className="mt-2 text-sm leading-6 text-white/50">
-                  Identidad, personalidad, ventas, frases, reglas, saludo y colores se guardan como borrador. Al publicar pasan al widget real.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2 text-xs text-white/48">
-              <FactLine label="Public key" value={publicKey || "Sin key"} />
-              <FactLine label="Ultima publicacion" value={formatDate(published?.compiled?.updatedAt)} />
-              <FactLine label="Perfiles guardados" value={String(savedProfiles.length)} />
-            </div>
-          </GlassCard>
-        </aside>
-      </section>
-
-      <SaveBar
-        visible={saveBarVisible}
-        title={
-          status === "error"
-            ? "Hubo un problema"
-            : publishing
-            ? "Publicando calibracion"
-            : saving
-            ? "Guardando borrador"
-            : dirty
-            ? "Cambios pendientes"
-            : "Calibracion lista"
-        }
-        description="El borrador no cambia el widget publico hasta que publiques."
-        status={status === "error" ? "Error" : dirty ? "Draft" : "Listo"}
+        published={published}
+        previewUrl={previewUrl}
+        completion={completion}
+        onSave={() => void saveDraft()}
+        onPublish={() => void publishNow()}
         saving={saving || publishing}
-        primaryLabel="Guardar"
-        secondaryLabel="Publicar"
-        onPrimary={() => void saveDraft()}
-        onSecondary={() => void publishNow()}
-        primaryDisabled={saving || publishing || !dirty}
-        secondaryDisabled={saving || publishing || !publicKey}
+        dirty={dirty}
       />
-    </div>
-  );
-}
+    );
 
-function CalibrationHero({
-  completion,
-  status,
-  statusTone,
-  onReload,
-  onPublish,
-  publishDisabled,
-}: {
-  completion: number;
-  status: string;
-  statusTone: "default" | "active" | "warning" | "danger" | "muted";
-  onReload(): void;
-  onPublish(): void;
-  publishDisabled?: boolean;
-}) {
   return (
-    <section
-      className="lmn-calibration-hero"
-      aria-labelledby="lumenai-calibration-title"
-    >
-      <div className="sr-only">
-        <h2 id="lumenai-calibration-title">AI Calibration Center</h2>
-        <p>Tune behavior, sales logic and system control.</p>
-      </div>
-      <div className="lmn-calibration-hero-controls">
-        <StatusBadge tone={statusTone}>{status}</StatusBadge>
-        <StatusBadge tone="muted">{completion}% listo</StatusBadge>
-        <ActionButton type="button" variant="secondary" onClick={onReload}>
-          <RefreshCw className="h-3.5 w-3.5" />
-          Recargar
-        </ActionButton>
-        <ActionButton
-          type="button"
-          variant="primary"
-          onClick={onPublish}
-          disabled={publishDisabled}
-        >
-          <Rocket className="h-3.5 w-3.5" />
-          Publicar
-        </ActionButton>
-      </div>
-    </section>
-  );
-}
-
-function CalibrationAssetCard({
-  variant,
-  className = "",
-}: {
-  variant: CalibrationAssetVariant;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`lmn-calibration-asset lmn-calibration-asset--${variant} ${className}`}
-      aria-hidden="true"
+    <CalibrationWorkspace
+      draft={draft}
+      published={published}
+      publicKey={publicKey}
+      businessName={businessName}
+      stage={stage}
+      activeSection={activeSection}
+      activeBlueprintId={String(sales.profileId || "")}
+      activeBlueprintName={activeBlueprint?.name || "Personalidad personalizada"}
+      blueprintOptions={PSYCHOLOGY_BLUEPRINTS.map((item) => ({
+        id: item.id,
+        name: item.name,
+      }))}
+      readiness={readiness}
+      completion={completion}
+      status={status}
+      dirty={dirty}
+      saving={saving}
+      publishing={publishing}
+      error={error}
+      lastModified={lastModified}
+      editorOpen={editorOpen}
+      editorContent={editorContent}
+      onSectionChange={handleSectionChange}
+      onCloseEditor={closeEditor}
+      onBehaviorChange={updateBehaviorValue}
+      onApplyBlueprint={applyBlueprint}
+      onReload={() => void load()}
+      onUndo={undoLastChange}
+      onResetPreset={resetActivePreset}
+      onDiscard={discardUnsavedChanges}
+      onPublish={publishNow}
+      canUndo={historyRef.current.length > 0}
     />
-  );
-}
-
-function CalibrationCommandCenter({
-  stage,
-  completion,
-  activeBlueprintName,
-  savedProfilesCount,
-  publicKey,
-  publishedAt,
-  onStageChange,
-}: {
-  stage: StageKey;
-  completion: { done: number; total: number; percent: number };
-  activeBlueprintName: string;
-  savedProfilesCount: number;
-  publicKey: string;
-  publishedAt?: unknown;
-  onStageChange(stage: StageKey): void;
-}) {
-  const cards: Array<{
-    key: StageKey;
-    eyebrow: string;
-    title: string;
-    text: string;
-    metric: string;
-    variant: CalibrationAssetVariant;
-  }> = [
-    {
-      key: "base",
-      eyebrow: "Identidad",
-      title: "Entrena con contexto real",
-      text: "Nombre, promesa, cliente ideal y diferenciacion. El audio se convierte en texto dentro del mismo flujo.",
-      metric: `${completion.done}/${completion.total}`,
-      variant: "identity",
-    },
-    {
-      key: "persona",
-      eyebrow: "Psicologia",
-      title: activeBlueprintName,
-      text: "Presets comerciales basados en venta consultiva, claridad, confianza, objeciones y micro-cierres.",
-      metric: `${savedProfilesCount} perfil(es)`,
-      variant: "personality",
-    },
-    {
-      key: "sales",
-      eyebrow: "Conversion",
-      title: "Motor de ventas guiado",
-      text: "La IA diagnostica, reencuadra y propone el siguiente paso sin presion falsa ni promesas inventadas.",
-      metric: "SPIN + cierre",
-      variant: "sales-flow",
-    },
-    {
-      key: "review",
-      eyebrow: "Salida en vivo",
-      title: publicKey ? "Widget listo para publicar" : "Falta public key",
-      text: publishedAt ? `Ultima publicacion: ${formatDate(publishedAt)}` : "Guarda, revisa el preview y publica solo cuando este listo para clientes reales.",
-      metric: `${completion.percent}% listo`,
-      variant: "publish",
-    },
-  ];
-
-  return (
-    <section className="lmn-calibration-command-shell" aria-label="Mapa estrategico de calibracion">
-      <div className="lmn-calibration-command-copy">
-        <span>Studio operativo</span>
-        <h2>Calibracion clara, visual y publicable</h2>
-        <p>
-          Cada bloque modifica una parte real del asistente: identidad, personalidad,
-          ventas, reglas y publicacion. No es decorativo; todo termina en el widget.
-        </p>
-      </div>
-
-      <div className="lmn-calibration-command-grid">
-        {cards.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            onClick={() => onStageChange(item.key)}
-            className={stage === item.key ? "lmn-calibration-command-card is-active" : "lmn-calibration-command-card"}
-          >
-            <CalibrationAssetCard
-              variant={item.variant}
-              className="lmn-calibration-command-art"
-            />
-            <span className="lmn-calibration-command-eyebrow">{item.eyebrow}</span>
-            <strong>{item.title}</strong>
-            <p>{item.text}</p>
-            <small>{item.metric}</small>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CalibrationReadinessPanel({
-  readiness,
-  onStageChange,
-}: {
-  readiness: CalibrationReadiness;
-  onStageChange(stage: StageKey): void;
-}) {
-  const next = readiness.next;
-  const status =
-    readiness.score >= 100
-      ? "Listo para produccion"
-      : readiness.score >= 72
-      ? "Casi publicable"
-      : "Requiere calibracion";
-
-  return (
-    <GlassCard variant="base" accent className="lmn-calibration-readiness relative p-5 md:p-6">
-      <BorderBeam
-        size={180}
-        duration={14}
-        colorFrom="#00E5FF"
-        colorTo="#6C3BFF"
-        borderWidth={1}
-      />
-      <div className="grid gap-5 xl:grid-cols-[260px_minmax(0,1fr)] xl:items-stretch">
-        <div className="apex-cut relative overflow-hidden border border-white/[0.065] bg-black/30 p-5">
-          <ShineBorder
-            borderWidth={1}
-            duration={18}
-            shineColor={["rgba(0,229,255,.55)", "rgba(27,67,255,.34)", "rgba(108,59,255,.28)"]}
-          />
-          <div className="lmn-readiness-glow absolute inset-0 opacity-70" aria-hidden="true" />
-          <div className="pointer-events-none absolute inset-0 grid place-items-center opacity-60" aria-hidden="true">
-            <div className="relative h-[190px] w-[190px]">
-              <OrbitingCircles radius={78} iconSize={26} duration={18} path>
-                <span className="grid h-full w-full place-items-center rounded-full border border-cyan-200/15 bg-cyan-300/10 text-[9px] font-black text-cyan-100">
-                  AI
-                </span>
-                <span className="grid h-full w-full place-items-center rounded-full border border-blue-200/15 bg-blue-400/10 text-[9px] font-black text-blue-100">
-                  KB
-                </span>
-                <span className="grid h-full w-full place-items-center rounded-full border border-indigo-200/15 bg-indigo-400/10 text-[9px] font-black text-indigo-100">
-                  CRM
-                </span>
-              </OrbitingCircles>
-            </div>
-          </div>
-          <div className="relative z-10">
-            <p className="text-[10px] font-black uppercase text-white/38">
-              Launch score
-            </p>
-            <div className="mt-4 flex items-end gap-2">
-              <strong className="text-6xl font-black leading-none text-white">
-                {readiness.score}
-              </strong>
-              <span className="pb-2 text-lg font-black text-white/44">%</span>
-            </div>
-            <p className="mt-3 text-sm font-semibold text-white/60">{status}</p>
-            <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/[0.055]">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${readiness.score}%`,
-                  background: `linear-gradient(90deg, rgba(${accentA}, .95), rgba(${accentB}, .72))`,
-                }}
-              />
-            </div>
-            <p className="mt-4 text-xs leading-5 text-white/44">
-              {readiness.done}/{readiness.total} sistemas operativos listos para que la IA responda, venda y escale con criterio.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase text-white/38">
-                Control de salida
-              </p>
-              <h3 className="mt-2 text-2xl font-black text-white">
-                Calibra lo que cambia el comportamiento real
-              </h3>
-            </div>
-            {next ? (
-              <ActionButton
-                type="button"
-                variant="primary"
-                onClick={() => onStageChange(next.stage)}
-              >
-                <ChevronRight className="h-3.5 w-3.5" />
-                Resolver: {next.label}
-              </ActionButton>
-            ) : (
-              <StatusBadge tone="active">Todo listo</StatusBadge>
-            )}
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {readiness.signals.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => onStageChange(item.stage)}
-                className={item.done ? "lmn-readiness-card is-done" : "lmn-readiness-card"}
-              >
-                <span className="grid h-8 w-8 place-items-center rounded-[12px] border border-white/[0.065] bg-white/[0.020]">
-                  {item.done ? (
-                    <Check className="h-4 w-4 text-cyan-100" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-white/54" />
-                  )}
-                </span>
-                <span className="min-w-0">
-                  <strong>{item.label}</strong>
-                  <small>{item.detail}</small>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </GlassCard>
-  );
-}
-
-function CalibrationStageVisual({ stage }: { stage: StageKey }) {
-  const visual = STAGE_VISUALS[stage];
-
-  return (
-    <GlassCard variant="base" accent className="lmn-calibration-stage-visual p-3">
-      <CalibrationAssetCard
-        variant={visual.variant}
-        className="lmn-calibration-asset--side"
-      />
-      <div className="p-3">
-        <h3 className="text-lg font-black text-white">{visual.title}</h3>
-        <p className="mt-2 text-sm leading-6 text-white/52">{visual.text}</p>
-      </div>
-    </GlassCard>
-  );
-}
-
-function StageRail({
-  stage,
-  completion,
-  onChange,
-}: {
-  stage: StageKey;
-  completion: number;
-  onChange(stage: StageKey): void;
-}) {
-  const activeIndex = Math.max(0, STAGES.findIndex((item) => item.key === stage));
-
-  return (
-    <GlassCard variant="soft" className="p-3">
-      <div className="grid gap-2 md:grid-cols-5">
-        {STAGES.map((item, index) => {
-          const Icon = item.icon;
-          const active = item.key === stage;
-          const done = index < activeIndex || completion >= (index + 1) * 20;
-
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => onChange(item.key)}
-              className="apex-cut group flex min-h-[86px] items-start gap-3 border p-3 text-left transition hover:bg-white/[0.024]"
-              style={{
-                borderColor: active
-                  ? `rgba(${accentA}, .36)`
-                  : done
-                  ? "rgba(0,229,255,.18)"
-                  : "rgba(255,255,255,.055)",
-                background: active
-                  ? `linear-gradient(135deg, rgba(${accentA}, .12), rgba(${accentB}, .055)), rgba(255,255,255,.018)`
-                  : "rgba(0,0,0,.20)",
-              }}
-            >
-              <span className="apex-cut grid h-9 w-9 shrink-0 place-items-center border border-white/[0.06] bg-white/[0.018]">
-                {done ? <Check className="h-4 w-4 text-white/78" /> : <Icon className="h-4 w-4 text-white/68" />}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/36">
-                  {item.title}
-                </span>
-                <span className="mt-1 block text-sm font-black text-white">
-                  {item.label}
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-white/44">
-                  {item.detail}
-                </span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </GlassCard>
   );
 }
 
@@ -2265,83 +1909,6 @@ function ReviewStage({
   );
 }
 
-function AssistantPreview({ draft }: { draft: CalibrationDoc }) {
-  const identity = draft.calibration.identity;
-  const mix = draft.calibration.personality.mix;
-  const sales = draft.calibration.sales || {};
-  const widget = draft.widget || {};
-  const theme = widget.theme || {};
-  const primary = normalizeHex(theme.primaryColor, "#2F7CFF");
-  const secondary = normalizeHex(theme.gradientTo, "#5BE0C2");
-  const business = identity.brandName || "Tu negocio";
-  const assistant = identity.assistantName || "LumenAI";
-  const empathy = clampNumber(mix.empathy, 0, 100, 70);
-  const directivity = clampNumber(mix.directivity, 0, 100, 70);
-  const closing = clampNumber(sales.closing, 0, 100, 75);
-
-  return (
-    <GlassCard variant="base" accent className="overflow-hidden p-0">
-      <div
-        className="border-b border-white/[0.055] p-5"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(255,255,255,.024), rgba(255,255,255,.004)), #030509",
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="apex-cut grid h-12 w-12 shrink-0 place-items-center border text-sm font-black text-white"
-            style={{
-              borderColor: "rgba(255,255,255,.08)",
-              background: `linear-gradient(135deg, ${primary}, ${secondary})`,
-            }}
-          >
-            {assistant.slice(0, 1).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-black text-white">{assistant}</div>
-            <div className="mt-1 truncate text-xs text-white/42">{business}</div>
-          </div>
-          <StatusBadge tone="active" className="ml-auto">Draft</StatusBadge>
-        </div>
-      </div>
-
-      <div className="grid gap-3 p-5">
-        <MessageBubble
-          from="assistant"
-          title={(widget.greeting || "Hola, soy LumenAI.").split("\n")[0]}
-          text={(widget.greeting || "Te ayudo a cotizar, resolver dudas o hablar con el equipo.").split("\n").slice(1).join("\n") || "Te ayudo a cotizar, resolver dudas o hablar con el equipo."}
-        />
-        <MessageBubble from="user" text="Hola, quiero cotizar y saber si me conviene." />
-        <MessageBubble
-          from="assistant"
-          title={empathy >= 70 ? "Perfecto, te guio." : "Entendido."}
-          text={
-            directivity >= 70
-              ? "Para recomendarte bien, necesito solo un dato: que resultado quieres conseguir primero?"
-              : "Puedo explicarte las opciones y ayudarte a elegir la mas conveniente."
-          }
-        />
-        <MessageBubble
-          from="assistant"
-          title={closing >= 78 ? "Siguiente paso" : "Opciones"}
-          text={
-            closing >= 78
-              ? "Si quieres, avanzamos con una recomendacion concreta y te dejo listo el contacto por WhatsApp."
-              : "Podemos revisar beneficios, precios publicados o disponibilidad antes de avanzar."
-          }
-        />
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 border-t border-white/[0.055] p-5">
-        <MiniSignal label="Empatia" value={empathy} />
-        <MiniSignal label="Direccion" value={directivity} />
-        <MiniSignal label="Cierre" value={closing} />
-      </div>
-    </GlassCard>
-  );
-}
-
 function SectionIntro({
   icon: Icon,
   title,
@@ -2475,6 +2042,7 @@ function TextAreaField({
     <label className={className ? `grid gap-2 ${className}` : "grid gap-2"}>
       <span className="text-xs font-black uppercase tracking-[0.12em] text-white/42">{label}</span>
       <textarea
+        aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -2616,6 +2184,7 @@ function AudioTextArea({
         </button>
       </div>
       <textarea
+        aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -2623,7 +2192,7 @@ function AudioTextArea({
         className="apex-cut min-h-[136px] resize-y border border-white/[0.060] bg-black/36 px-3 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/28 focus:border-white/14 focus:bg-black/48"
       />
       {audioError ? (
-        <span className="text-xs font-semibold text-red-200">{audioError}</span>
+        <span className="text-xs font-semibold text-red-200" role="alert">{audioError}</span>
       ) : recording ? (
         <span className="inline-flex items-center gap-2 text-xs font-semibold text-white/48">
           <span className="h-2 w-2 animate-pulse rounded-full bg-red-300" />
@@ -2741,48 +2310,6 @@ function ColorField({
         />
       </div>
     </label>
-  );
-}
-
-function MessageBubble({
-  from,
-  title,
-  text,
-}: {
-  from: "assistant" | "user";
-  title?: string;
-  text: string;
-}) {
-  const isUser = from === "user";
-
-  return (
-    <div className={isUser ? "flex justify-end" : "flex justify-start"}>
-      <div
-        className="max-w-[86%] border px-4 py-3"
-        style={{
-          borderRadius: 8,
-          borderColor: isUser ? `rgba(${accentA}, .20)` : "rgba(255,255,255,.060)",
-          background: isUser
-            ? `linear-gradient(135deg, rgba(${accentA}, .24), rgba(${accentB}, .14)), #05070d`
-            : "linear-gradient(145deg, rgba(255,255,255,.028), rgba(255,255,255,.006)), #05070d",
-        }}
-      >
-        {title ? <div className="mb-1 text-sm font-black text-white">{title}</div> : null}
-        <div className="whitespace-pre-wrap text-sm leading-6 text-white/72">{text}</div>
-        <div className={isUser ? "mt-2 text-right text-[10px] text-white/34" : "mt-2 text-[10px] text-white/34"}>
-          {isUser ? "Cliente" : "LumenAI"} / ahora
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MiniSignal({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="apex-cut border border-white/[0.055] bg-white/[0.014] p-3">
-      <div className="text-[10px] font-black uppercase tracking-[0.14em] text-white/34">{label}</div>
-      <div className="mt-2 text-lg font-black text-white">{Math.round(value)}%</div>
-    </div>
   );
 }
 

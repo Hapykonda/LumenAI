@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import OnboardingClient from "./OnboardingClient";
 import { getSupabaseBrowserEnv, getSupabaseServerEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-async function resolveBusinessId(admin: any, userId: string) {
+async function resolveBusinessId(admin: SupabaseClient, userId: string) {
   // 1) profiles.business_id
   const { data: p } = await admin
     .from("profiles")

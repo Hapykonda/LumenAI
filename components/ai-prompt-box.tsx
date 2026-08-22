@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Globe, BrainCog, FolderCode } from "lucide-react";
@@ -254,9 +255,12 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
           transition={{ duration: 0.2, ease: "easeOut" }}
           className="relative bg-[#1F2023] rounded-2xl overflow-hidden shadow-2xl"
         >
-          <img
+          <Image
             src={imageUrl}
             alt="Full preview"
+            width={1200}
+            height={800}
+            unoptimized
             className="w-full max-h-[80vh] object-contain rounded-2xl"
           />
         </motion.div>
@@ -451,9 +455,18 @@ interface PromptInputBoxProps {
   isLoading?: boolean;
   placeholder?: string;
   className?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
 }
 export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref: React.Ref<HTMLDivElement>) => {
-  const { onSend = () => {}, isLoading = false, placeholder = "Type your message here...", className } = props;
+  const {
+    onSend = () => {},
+    isLoading = false,
+    placeholder = "Type your message here...",
+    className,
+    value,
+    onValueChange,
+  } = props;
   const [input, setInput] = React.useState("");
   const [files, setFiles] = React.useState<File[]>([]);
   const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({});
@@ -464,6 +477,15 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const [showCanvas, setShowCanvas] = React.useState(false);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
+  const inputValue = value ?? input;
+
+  const setInputValue = React.useCallback(
+    (nextValue: string) => {
+      if (value === undefined) setInput(nextValue);
+      onValueChange?.(nextValue);
+    },
+    [onValueChange, value]
+  );
 
   const handleToggleChange = (value: string) => {
     if (value === "search") {
@@ -477,10 +499,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
   const handleCanvasToggle = () => setShowCanvas((prev) => !prev);
 
-  const isImageFile = (file: File) => file.type.startsWith("image/");
-
-  const processFile = (file: File) => {
-    if (!isImageFile(file)) {
+  const processFile = React.useCallback((file: File) => {
+    if (!file.type.startsWith("image/")) {
       console.log("Only image files are allowed");
       return;
     }
@@ -492,7 +512,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
     const reader = new FileReader();
     reader.onload = (e) => setFilePreviews({ [file.name]: e.target?.result as string });
     reader.readAsDataURL(file);
-  };
+  }, []);
 
   const handleDragOver = React.useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -508,9 +528,9 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
     e.preventDefault();
     e.stopPropagation();
     const files = Array.from(e.dataTransfer.files);
-    const imageFiles = files.filter((file) => isImageFile(file));
+    const imageFiles = files.filter((file) => file.type.startsWith("image/"));
     if (imageFiles.length > 0) processFile(imageFiles[0]);
-  }, []);
+  }, [processFile]);
 
   const handleRemoveFile = (index: number) => {
     const fileToRemove = files[index];
@@ -533,7 +553,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         }
       }
     }
-  }, []);
+  }, [processFile]);
 
   React.useEffect(() => {
     document.addEventListener("paste", handlePaste);
@@ -541,14 +561,14 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   }, [handlePaste]);
 
   const handleSubmit = () => {
-    if (input.trim() || files.length > 0) {
+    if (inputValue.trim() || files.length > 0) {
       let messagePrefix = "";
       if (showSearch) messagePrefix = "[Search: ";
       else if (showThink) messagePrefix = "[Think: ";
       else if (showCanvas) messagePrefix = "[Canvas: ";
-      const formattedInput = messagePrefix ? `${messagePrefix}${input}]` : input;
+      const formattedInput = messagePrefix ? `${messagePrefix}${inputValue}]` : inputValue;
       onSend(formattedInput, files);
-      setInput("");
+      setInputValue("");
       setFiles([]);
       setFilePreviews({});
     }
@@ -562,13 +582,13 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
     onSend(`[Voice message - ${duration} seconds]`, []);
   };
 
-  const hasContent = input.trim() !== "" || files.length > 0;
+  const hasContent = inputValue.trim() !== "" || files.length > 0;
 
   return (
     <>
       <PromptInput
-        value={input}
-        onValueChange={setInput}
+        value={inputValue}
+        onValueChange={setInputValue}
         isLoading={isLoading}
         onSubmit={handleSubmit}
         className={cn(
@@ -587,25 +607,34 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             {files.map((file, index) => (
               <div key={index} className="relative group">
                 {file.type.startsWith("image/") && filePreviews[file.name] && (
-                  <div
+                  <>
+                    <button
+                    type="button"
                     className="w-16 h-16 rounded-xl overflow-hidden cursor-pointer transition-all duration-300"
                     onClick={() => openImageModal(filePreviews[file.name])}
+                    aria-label={`Abrir vista previa de ${file.name}`}
                   >
-                    <img
+                    <Image
                       src={filePreviews[file.name]}
                       alt={file.name}
+                      width={64}
+                      height={64}
+                      unoptimized
                       className="h-full w-full object-cover"
                     />
+                    </button>
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRemoveFile(index);
                       }}
                       className="absolute top-1 right-1 rounded-full bg-black/70 p-0.5 opacity-100 transition-opacity"
+                      aria-label={`Quitar ${file.name}`}
                     >
                       <X className="h-3 w-3 text-white" />
                     </button>
-                  </div>
+                  </>
                 )}
               </div>
             ))}
@@ -619,6 +648,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           )}
         >
           <PromptInputTextarea
+            aria-label="Mensaje para LumenAI"
             placeholder={
               showSearch
                 ? "Search the web..."
@@ -649,27 +679,32 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           >
             <PromptInputAction tooltip="Upload image">
               <button
+                type="button"
                 onClick={() => uploadInputRef.current?.click()}
                 className="flex h-8 w-8 text-[#9CA3AF] cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-gray-600/30 hover:text-[#D1D5DB]"
                 disabled={isRecording}
+                aria-label="Adjuntar imagen"
               >
                 <Paperclip className="h-5 w-5 transition-colors" />
-                <input
-                  ref={uploadInputRef}
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files.length > 0) processFile(e.target.files[0]);
-                    if (e.target) e.target.value = "";
-                  }}
-                  accept="image/*"
-                />
               </button>
+              <input
+                ref={uploadInputRef}
+                type="file"
+                className="hidden"
+                aria-label="Seleccionar imagen para adjuntar"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) processFile(e.target.files[0]);
+                  if (e.target) e.target.value = "";
+                }}
+                accept="image/*"
+              />
             </PromptInputAction>
 
             <div className="flex items-center">
               <button
                 type="button"
+                aria-label="Alternar búsqueda web"
+                aria-pressed={showSearch}
                 onClick={() => handleToggleChange("search")}
                 className={cn(
                   "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
@@ -706,6 +741,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
               <button
                 type="button"
+                aria-label="Alternar razonamiento profundo"
+                aria-pressed={showThink}
                 onClick={() => handleToggleChange("think")}
                 className={cn(
                   "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
@@ -742,6 +779,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
               <button
                 type="button"
+                aria-label="Alternar canvas"
+                aria-pressed={showCanvas}
                 onClick={handleCanvasToggle}
                 className={cn(
                   "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
@@ -804,6 +843,15 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 else setIsRecording(true);
               }}
               disabled={isLoading && !hasContent}
+              aria-label={
+                isLoading
+                  ? "Detener generación"
+                  : isRecording
+                    ? "Detener grabación"
+                    : hasContent
+                      ? "Enviar mensaje"
+                      : "Iniciar mensaje de voz"
+              }
             >
               {isLoading ? (
                 <Square className="h-4 w-4 fill-[#1F2023] animate-pulse" />
@@ -812,7 +860,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               ) : hasContent ? (
                 <ArrowUp className="h-4 w-4 text-[#1F2023]" />
               ) : (
-                <Mic className="h-5 w-5 text-[#1F2023] transition-colors" />
+                <Mic className="h-5 w-5 transition-colors" />
               )}
             </Button>
           </PromptInputAction>

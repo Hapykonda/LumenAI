@@ -1,5 +1,6 @@
 import {
   getLumenitePublicStatus,
+  LUMENITE_BACKUP_MODEL,
   resolveLumeniteEnv,
   type LumeniteAgentKey,
 } from "@/lib/ai/lumenite/env";
@@ -23,6 +24,15 @@ export function getGroqModel(purpose: GroqPurpose) {
   return resolveLumeniteEnv(purpose).model;
 }
 
+function cleanAiContent(value: unknown) {
+  const text = typeof value === "string" ? value.trim() : "";
+
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/^\s*<think>[\s\S]*$/i, "")
+    .trim();
+}
+
 export async function callGroqChat(input: {
   purpose: GroqPurpose;
   messages: ChatMessage[];
@@ -30,33 +40,46 @@ export async function callGroqChat(input: {
   maxTokens?: number;
   responseFormat?: "json_object";
 }) {
-  const apiKey = getGroqApiKey(input.purpose);
+  const resolved = resolveLumeniteEnv(input.purpose);
+  const apiKey = resolved.apiKey;
 
   if (!apiKey) return null;
 
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: getGroqModel(input.purpose),
-      messages: input.messages,
-      temperature: input.temperature ?? 0.2,
-      max_tokens: input.maxTokens ?? 900,
-      response_format: input.responseFormat
-        ? { type: input.responseFormat }
-        : undefined,
-    }),
-  }).catch(() => null);
+  const payload = (model: string) => ({
+    model,
+    messages: input.messages,
+    temperature: input.temperature ?? 0.2,
+    max_tokens: input.maxTokens ?? 900,
+    response_format: input.responseFormat
+      ? { type: input.responseFormat }
+      : undefined,
+  });
 
-  if (!res?.ok) return null;
+  async function request(model: string) {
+    return fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload(model)),
+    }).catch(() => null);
+  }
 
-  const data = await res.json().catch(() => null);
-  const content = data?.choices?.[0]?.message?.content;
+  async function readContent(res: Response | null) {
+    if (!res?.ok) return "";
 
-  return typeof content === "string" && content.trim()
-    ? content.trim()
-    : null;
+    const data = await res.json().catch(() => null);
+    return cleanAiContent(data?.choices?.[0]?.message?.content);
+  }
+
+  let res = await request(resolved.model);
+  let content = await readContent(res);
+
+  if (!content && resolved.model !== LUMENITE_BACKUP_MODEL) {
+    res = await request(LUMENITE_BACKUP_MODEL);
+    content = await readContent(res);
+  }
+
+  return content || null;
 }

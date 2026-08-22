@@ -26,11 +26,19 @@ const DEFAULT_HOURS: BusinessHours = {
   sun: { open: false, from: "10:00", to: "14:00" },
 };
 
-export function normalizeHours(h: any): BusinessHours {
-  const out: any = { ...DEFAULT_HOURS };
+export function normalizeHours(value: unknown): BusinessHours {
+  const source =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  const out: BusinessHours = { ...DEFAULT_HOURS };
   const keys: DayKey[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
   for (const k of keys) {
-    const v = h?.[k] ?? null;
+    const raw = source[k];
+    const v =
+      raw && typeof raw === "object" && !Array.isArray(raw)
+        ? (raw as Record<string, unknown>)
+        : {};
     out[k] = {
       open: typeof v?.open === "boolean" ? v.open : DEFAULT_HOURS[k].open,
       from: typeof v?.from === "string" ? v.from : DEFAULT_HOURS[k].from,
@@ -39,8 +47,10 @@ export function normalizeHours(h: any): BusinessHours {
   }
 
   const closedDates =
-    h?.closedDates && typeof h.closedDates === "object" && !Array.isArray(h.closedDates)
-      ? h.closedDates
+    source.closedDates &&
+    typeof source.closedDates === "object" &&
+    !Array.isArray(source.closedDates)
+      ? source.closedDates
       : {};
 
   out.closedDates = Object.entries(closedDates).reduce(
@@ -195,7 +205,7 @@ export function buildBusinessContext(opts: {
   tone?: string | null;
   whatsapp?: string | null;
   email?: string | null;
-  businessHours?: any;
+  businessHours?: unknown;
   timeZone?: string | null; // ideal: "America/Santiago"
 }) {
   const name = (opts.businessName ?? "").trim() || "el negocio";

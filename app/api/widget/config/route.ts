@@ -60,12 +60,6 @@ function admin() {
   });
 }
 
-function isUuid(v: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    v
-  );
-}
-
 function isObj(v: unknown) {
   return v && typeof v === "object" && !Array.isArray(v);
 }
@@ -156,18 +150,7 @@ async function resolveBusiness(sb: ReturnType<typeof admin>, key: string): Promi
     if (byWidgetBusiness) return byWidgetBusiness as Biz;
   }
 
-  if (!isUuid(key)) return null;
-
-  const { data: byId, error: idError } = await sb
-    .from("businesses")
-    .select("id,name,public_key")
-    .eq("id", key)
-    .limit(1)
-    .maybeSingle();
-
-  if (idError) throw new Error(idError.message);
-
-  return (byId as Biz) ?? null;
+  return null;
 }
 
 async function getSettings(sb: ReturnType<typeof admin>, businessId: string) {
@@ -320,7 +303,6 @@ function normalizeConfig(input: {
 
     source: preview ? "draft" : "published",
 
-    businessId: business.id,
     businessName,
     publicKey: business.public_key,
     widgetEnabled,
@@ -351,7 +333,6 @@ function normalizeConfig(input: {
       cleanString((settings as any)?.allowed_parent_origin) ||
       null,
 
-    business_id: business.id,
     business_name: businessName,
     widget_enabled: widgetEnabled,
     assistant_name: assistantName,
@@ -385,27 +366,13 @@ export async function GET(req: Request) {
     const key = String(searchParams.get("key") ?? "").trim();
 
     if (debug) {
-      const { data: businesses, error } = await sb
-        .from("businesses")
-        .select("id,name,public_key")
-        .limit(12);
-
-      if (error) throw new Error(error.message);
-
-      let sampleSettings: any = null;
-
-      if (businesses?.[0]?.id) {
-        sampleSettings = await getSettings(sb, businesses[0].id).catch(() => null);
-      }
-
       return NextResponse.json(
         {
           ok: true,
           received_key: key || null,
           preview,
-          tip: "Usa businesses.public_key en /widget?key=...",
-          businesses_sample: businesses ?? [],
-          widget_settings_sample: sampleSettings,
+          accepted_key: "businesses.public_key or widget_settings.public_key",
+          rejected_key: "businesses.id is not accepted by the public widget API",
         },
         { headers }
       );
@@ -416,7 +383,7 @@ export async function GET(req: Request) {
         {
           ok: false,
           error:
-            "Key inválida o no encontrada. Usa businesses.public_key o businesses.id.",
+            "Key invalida o no encontrada. Usa la public_key del negocio o del widget.",
         },
         { status: 400, headers }
       );
@@ -429,7 +396,7 @@ export async function GET(req: Request) {
         {
           ok: false,
           error:
-            "Key inválida o no encontrada. Usa businesses.public_key o businesses.id.",
+            "Key invalida o no encontrada. Usa la public_key del negocio o del widget.",
         },
         { status: 404, headers }
       );

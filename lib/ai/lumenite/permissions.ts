@@ -1,18 +1,25 @@
-import { requireUserBusiness } from "@/app/api/panel/calibration/_lib";
+import { getAuthorizedBusinessContext } from "@/lib/auth/business-context";
 import { LumeniteSafeError } from "./errors";
 
-export async function requireLumeniteBusiness() {
-  const ctx = await requireUserBusiness();
-
-  if (ctx.error || !ctx.admin || !ctx.user || !ctx.business?.id) {
-    throw new LumeniteSafeError("No autorizado", ctx.error ? 401 : 403);
-  }
+export async function requireLumeniteBusiness(request?: Request) {
+  const ctx = await getAuthorizedBusinessContext({ request, requiredPermission: "business:read" });
 
   return {
     admin: ctx.admin,
     user: ctx.user,
-    business: ctx.business,
-    businessId: ctx.business.id as string,
-    userId: ctx.user.id,
+    business: ctx.activeBusiness,
+    businessId: ctx.businessId,
+    userId: ctx.userId,
+    role: ctx.role,
+    membershipId: ctx.membershipId,
+    permissions: ctx.permissions,
   };
+}
+
+export async function requireLumeniteActionContext(request?: Request) {
+  const ctx = await requireLumeniteBusiness(request);
+  if (!ctx.permissions.includes("resources:write")) {
+    throw new LumeniteSafeError("No tienes permiso para ejecutar acciones.", 403);
+  }
+  return ctx;
 }

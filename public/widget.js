@@ -32,7 +32,7 @@
     try {
       if (!script || !script.src) return window.location.origin;
       return new URL(script.src, window.location.href).origin;
-    } catch (e) {
+    } catch {
       return window.location.origin;
     }
   }
@@ -79,7 +79,7 @@
 
   try {
     APP_ORIGIN = new URL(BOOT.appUrl).origin;
-  } catch (e) {
+  } catch {
     APP_ORIGIN = BOOT.appUrl;
   }
 
@@ -94,7 +94,7 @@
   function isMobile() {
     try {
       return window.matchMedia("(max-width: 640px)").matches;
-    } catch (e) {
+    } catch {
       return window.innerWidth <= 640;
     }
   }
@@ -176,7 +176,7 @@
     try {
       url += "&parentUrl=" + encodeURIComponent(window.location.href);
       url += "&parentReferrer=" + encodeURIComponent(document.referrer || "");
-    } catch (e) {}
+    } catch {}
 
     return url;
   }
@@ -411,10 +411,10 @@
   function postToIframe(iframe, message) {
     try {
       iframe.contentWindow.postMessage(message, APP_ORIGIN);
-    } catch (e) {
+    } catch {
       try {
         iframe.contentWindow.postMessage(message, "*");
-      } catch (_) {}
+      } catch {}
     }
   }
 
@@ -629,7 +629,7 @@
         window.removeEventListener("message", onMessage);
         window.removeEventListener("resize", onResize);
         root.remove();
-      } catch (e) {}
+      } catch {}
     };
 
     window.LumenAIWidget.setPosition = function (newPos) {

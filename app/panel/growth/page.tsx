@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import {
   ArrowRight,
   CheckCircle2,
@@ -30,6 +29,7 @@ type Opportunity = {
   status?: string | null;
   recommended_action?: string | null;
   suggested_message?: string | null;
+  source?: string | null;
   created_at?: string | null;
 };
 
@@ -58,6 +58,12 @@ function scoreTone(score?: number | null): "active" | "warning" | "muted" {
   return "muted";
 }
 
+function generationLabel(source?: string | null) {
+  if (source === "heuristic") return "Reglas sobre datos reales";
+  if (source === "lumenite_ai" || source === "ai") return "IA sobre datos reales";
+  return "Origen no registrado";
+}
+
 function shortDate(value?: string | null) {
   if (!value) return "";
   try {
@@ -80,7 +86,10 @@ export default function GrowthPage() {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const opportunities = data?.opportunities ?? [];
+  const opportunities = useMemo(
+    () => data?.opportunities ?? [],
+    [data?.opportunities]
+  );
   const selected = useMemo(
     () => opportunities.find((item) => item.id === selectedId) || opportunities[0] || null,
     [opportunities, selectedId]
@@ -179,7 +188,8 @@ export default function GrowthPage() {
   return (
     <main className="grid gap-5 pb-10">
       <PanelSectionHeader
-        eyebrow="Lumenite Growth Engine"
+        variant="hero"
+        eyebrow="LumenAI Growth Engine"
         title="Motor de oportunidades"
         description="Detecta oportunidades comerciales desde leads, chats y mensajes reales. Las acciones quedan preparadas, no enviadas automaticamente."
         status={`${summary.open} abiertas`}
@@ -198,7 +208,7 @@ export default function GrowthPage() {
         }
       />
 
-      {error ? <div className="lmn-autoconfig-error">{error}</div> : null}
+      {error ? <div className="lmn-autoconfig-error" role="alert">{error}</div> : null}
 
       <section className="grid gap-3 md:grid-cols-5">
         <Metric label="Oportunidades" value={summary.opportunities} />
@@ -222,7 +232,7 @@ export default function GrowthPage() {
 
           <div className="grid max-h-[640px] gap-2 overflow-auto pr-1">
             {loading ? (
-              <Empty title="Leyendo oportunidades" text="Lumenite esta revisando el panel." />
+              <Empty title="Leyendo oportunidades" text="LumenAI esta revisando el panel." />
             ) : opportunities.length === 0 ? (
               <Empty
                 title="Sin oportunidades aun"
@@ -274,12 +284,15 @@ export default function GrowthPage() {
                     {selected.title}
                   </h2>
                   <p className="mt-3 max-w-3xl text-sm leading-7 text-white/56">
-                    {selected.summary || "Lumenite detecto una oportunidad que necesita revision humana."}
+                    {selected.summary || "LumenAI detecto una oportunidad que necesita revision humana."}
                   </p>
                 </div>
-                <StatusBadge tone={scoreTone(selected.score)}>
-                  Score {Number(selected.score || 0)}%
-                </StatusBadge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge tone="muted">{generationLabel(selected.source)}</StatusBadge>
+                  <StatusBadge tone={scoreTone(selected.score)}>
+                    Score {Number(selected.score || 0)}%
+                  </StatusBadge>
+                </div>
               </div>
 
               <div className="grid gap-3 md:grid-cols-3">
@@ -311,7 +324,7 @@ export default function GrowthPage() {
           ) : (
             <Empty
               title="Growth listo para analizar"
-              text="Cuando existan leads o chats, Lumenite puede crear oportunidades comerciales accionables."
+              text="Cuando existan leads o chats, LumenAI puede crear oportunidades comerciales accionables."
             />
           )}
         </GlassCard>
@@ -415,3 +428,4 @@ function Empty({ title, text }: { title: string; text: string }) {
     </div>
   );
 }
+

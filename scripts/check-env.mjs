@@ -25,6 +25,10 @@ const requiredExampleKeys = [
   "GROQ_GROWTH_MODEL",
   "GROQ_TWIN_MODEL",
   "GROQ_CAMPAIGNS_MODEL",
+  "GOOGLE_OAUTH_CLIENT_ID",
+  "GOOGLE_OAUTH_CLIENT_SECRET",
+  "GOOGLE_OAUTH_REDIRECT_URI",
+  "LUMENAI_INTEGRATION_ENCRYPTION_KEY",
   "DEV_MAGICLINK_TOKEN",
   "LUMENAI_TEST_URL",
   "LUMENAI_TEST_PUBLIC_KEY",
@@ -44,6 +48,13 @@ const agentKeys = [
   "GROQ_GROWTH_API_KEY",
   "GROQ_TWIN_API_KEY",
   "GROQ_CAMPAIGNS_API_KEY",
+];
+
+const gmailIntegrationKeys = [
+  "GOOGLE_OAUTH_CLIENT_ID",
+  "GOOGLE_OAUTH_CLIENT_SECRET",
+  "GOOGLE_OAUTH_REDIRECT_URI",
+  "LUMENAI_INTEGRATION_ENCRYPTION_KEY",
 ];
 
 const suspiciousChars = [
@@ -151,7 +162,7 @@ if (missingCore.length) {
 const hasGroqFallback = Boolean(readRuntimeKey("GROQ_API_KEY", local));
 const missingAgentKeys = agentKeys.filter((key) => !readRuntimeKey(key, local));
 if (missingAgentKeys.length && !hasGroqFallback) {
-  errors.push(`No hay keys Lumenite por agente ni GROQ_API_KEY de fallback: ${missingAgentKeys.join(", ")}.`);
+  errors.push(`No hay keys LumenAI por agente ni GROQ_API_KEY de fallback: ${missingAgentKeys.join(", ")}.`);
 } else if (missingAgentKeys.length) {
   warnings.push(`Keys por agente faltantes; se usara fallback controlado si aplica: ${missingAgentKeys.join(", ")}.`);
 }
@@ -159,6 +170,13 @@ if (missingAgentKeys.length && !hasGroqFallback) {
 const appUrl = readRuntimeKey("NEXT_PUBLIC_APP_URL", local);
 if (process.env.VERCEL_ENV === "production" && /localhost|127\.0\.0\.1/i.test(appUrl)) {
   errors.push("NEXT_PUBLIC_APP_URL usa localhost en produccion.");
+}
+
+const configuredGmailKeys = gmailIntegrationKeys.filter((key) => readRuntimeKey(key, local));
+if (configuredGmailKeys.length > 0 && configuredGmailKeys.length < gmailIntegrationKeys.length) {
+  errors.push(`La integracion Gmail esta parcialmente configurada; faltan: ${gmailIntegrationKeys.filter((key) => !configuredGmailKeys.includes(key)).join(", ")}.`);
+} else if (!configuredGmailKeys.length) {
+  warnings.push("Google Gmail esta deshabilitado hasta configurar sus cuatro variables server-only.");
 }
 
 for (const warning of warnings) {
@@ -173,3 +191,4 @@ if (errors.length) {
 } else {
   console.log("OK env contract valid. No secret values printed.");
 }
+

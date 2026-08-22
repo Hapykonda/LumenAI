@@ -191,7 +191,8 @@ export async function POST() {
       published,
       publishedAt: now,
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : null;
     return jsonError(error?.message || "Error publicando calibración", 500);
   }
 }

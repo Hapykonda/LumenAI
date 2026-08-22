@@ -27,6 +27,9 @@ type Campaign = {
   duration_days?: number | null;
   status?: string | null;
   summary?: string | null;
+  metadata?: {
+    source?: string | null;
+  } | null;
   created_at?: string | null;
 };
 
@@ -79,7 +82,7 @@ export default function CampaignsPage() {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const campaigns = data?.campaigns ?? [];
+  const campaigns = useMemo(() => data?.campaigns ?? [], [data?.campaigns]);
   const selected = useMemo(
     () => campaigns.find((item) => item.id === selectedId) || campaigns[0] || null,
     [campaigns, selectedId]
@@ -195,7 +198,8 @@ export default function CampaignsPage() {
   return (
     <main className="grid gap-5 pb-10">
       <PanelSectionHeader
-        eyebrow="Lumenite Campaign Studio"
+        variant="hero"
+        eyebrow="LumenAI Campaign Studio"
         title="Estudio de campanas comerciales"
         description="Convierte una idea en oferta, mensajes, tareas y experimentos listos para ejecutar manualmente."
         status={`${summary.campaigns} campanas`}
@@ -208,7 +212,7 @@ export default function CampaignsPage() {
         }
       />
 
-      {error ? <div className="lmn-autoconfig-error">{error}</div> : null}
+      {error ? <div className="lmn-autoconfig-error" role="alert">{error}</div> : null}
 
       <section className="grid gap-3 md:grid-cols-5">
         <Metric label="Campanas" value={summary.campaigns} />
@@ -226,7 +230,7 @@ export default function CampaignsPage() {
           </div>
           <h2 className="mt-2 text-xl font-black text-white">Idea a campana</h2>
           <p className="mt-2 text-sm leading-6 text-white/48">
-            Describe lo que quieres vender. Lumenite generara piezas listas para copiar.
+            Describe lo que quieres vender. LumenAI generara piezas listas para copiar.
           </p>
           <form
             className="mt-4 grid gap-3"
@@ -236,6 +240,7 @@ export default function CampaignsPage() {
             }}
           >
             <textarea
+              aria-label="Instrucciones de la campaña"
               value={instruction}
               onChange={(event) => setInstruction(event.target.value)}
               rows={6}
@@ -243,6 +248,7 @@ export default function CampaignsPage() {
               placeholder="Crea una campana de 7 dias para vender el servicio premium usando WhatsApp como CTA principal."
             />
             <select
+              aria-label="Objetivo de la campaña"
               value={objective}
               onChange={(event) => setObjective(event.target.value)}
               className="apex-cut h-11 border border-white/[0.08] bg-black/20 px-3 text-sm font-bold text-white outline-none"
@@ -255,6 +261,7 @@ export default function CampaignsPage() {
             </select>
             <div className="grid grid-cols-[1fr_100px] gap-2">
               <select
+                aria-label="Canal de la campaña"
                 value={channel}
                 onChange={(event) => setChannel(event.target.value)}
                 className="apex-cut h-11 border border-white/[0.08] bg-black/20 px-3 text-sm font-bold text-white outline-none"
@@ -266,6 +273,7 @@ export default function CampaignsPage() {
                 ))}
               </select>
               <input
+                aria-label="Duración de la campaña en días"
                 type="number"
                 min={1}
                 max={90}
@@ -296,9 +304,18 @@ export default function CampaignsPage() {
                     {selected.summary || selected.offer || "Campana comercial lista para revisar."}
                   </p>
                 </div>
-                <StatusBadge tone={selected.status === "active" ? "active" : "warning"}>
-                  {selected.status || "ready"}
-                </StatusBadge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge tone="muted">
+                    {selected.metadata?.source === "evidence_rules"
+                      ? "Reglas sobre datos reales"
+                      : selected.metadata?.source === "lumenite_ai"
+                        ? "IA sobre datos reales"
+                        : "Origen no registrado"}
+                  </StatusBadge>
+                  <StatusBadge tone={selected.status === "active" ? "active" : "warning"}>
+                    {selected.status || "ready"}
+                  </StatusBadge>
+                </div>
               </div>
 
               <div className="grid gap-3 md:grid-cols-4">
@@ -352,7 +369,7 @@ export default function CampaignsPage() {
           ) : (
             <Empty
               title="Crea tu primera campana"
-              text="Lumenite puede convertir productos, leads y Knowledge en mensajes y tareas comerciales."
+              text="LumenAI puede convertir productos, leads y Knowledge en mensajes y tareas comerciales."
             />
           )}
         </GlassCard>
@@ -363,7 +380,7 @@ export default function CampaignsPage() {
           </div>
           <h3 className="mt-2 text-xl font-black text-white">Acciones preparadas</h3>
           <p className="mt-2 text-sm leading-6 text-white/48">
-            Las piezas quedan listas para copiar. Para cambiar widget/greeting se envia a Config IA.
+            Las piezas quedan listas para copiar. Para cambiar widget/greeting se envia a Config AI.
           </p>
           <div className="mt-4 grid gap-2">
             <ActionButton
@@ -380,7 +397,7 @@ export default function CampaignsPage() {
               variant="secondary"
             >
               <Send className="h-3.5 w-3.5" />
-              Enviar a Config IA
+              Enviar a Config AI
             </ActionButton>
             <ActionButton href="/panel/growth" variant="secondary">
               Crear playbook
@@ -448,3 +465,4 @@ function Empty({ title, text }: { title: string; text: string }) {
     </div>
   );
 }
+

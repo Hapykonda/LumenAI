@@ -1,8 +1,11 @@
 "use client";
 
+ 
+
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreditCard, Landmark, WalletCards } from "lucide-react";
+import { useModalAccessibility } from "@/components/ui/use-modal-accessibility";
 import { supabase } from "@/lib/supabase/client";
 import { getActiveBusinessIdClient } from "@/lib/supabase/lumen/getActiveBusinessClient";
 import { PanelSectionHeader } from "../_components/ui/PanelSectionHeader";
@@ -14,6 +17,7 @@ import { StatusBadge } from "../_components/ui/StatusBadge";
 import { ActionButton } from "../_components/ui/ActionButton";
 import { SaveBar } from "../_components/ui/SaveBar";
 import { BusinessHoursConsole } from "./BusinessHoursConsole";
+import SectionIntroGate from "../_components/SectionIntroGate";
 import styles from "./knowledge.module.css";
 
 type KBType = "faq" | "services" | "pricing" | "policy" | "contact" | "payment" | "other";
@@ -61,16 +65,6 @@ const TYPE_TABS = [
   })),
 ];
 
-const DAY_LABEL: Record<DayKey, string> = {
-  mon: "Lunes",
-  tue: "Martes",
-  wed: "Miércoles",
-  thu: "Jueves",
-  fri: "Viernes",
-  sat: "Sábado",
-  sun: "Domingo",
-};
-
 const DEFAULT_HOURS: BusinessHours = {
   mon: { open: true, from: "10:00", to: "18:00" },
   tue: { open: true, from: "10:00", to: "18:00" },
@@ -99,13 +93,21 @@ function normalizeWhatsApp(s: string) {
   return cleaned.length ? cleaned : null;
 }
 
-function normalizeHours(h: any): BusinessHours {
+function normalizeHours(value: unknown): BusinessHours {
   const base = DEFAULT_HOURS;
-  const out: any = { ...base };
+  const source =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  const out: BusinessHours = { ...base };
   const keys: DayKey[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
   for (const k of keys) {
-    const v = h?.[k] ?? null;
+    const raw = source[k];
+    const v =
+      raw && typeof raw === "object" && !Array.isArray(raw)
+        ? (raw as Record<string, unknown>)
+        : {};
 
     out[k] = {
       open: typeof v?.open === "boolean" ? v.open : base[k].open,
@@ -115,8 +117,10 @@ function normalizeHours(h: any): BusinessHours {
   }
 
   const closedDates =
-    h?.closedDates && typeof h.closedDates === "object" && !Array.isArray(h.closedDates)
-      ? h.closedDates
+    source.closedDates &&
+    typeof source.closedDates === "object" &&
+    !Array.isArray(source.closedDates)
+      ? source.closedDates
       : {};
 
   out.closedDates = Object.entries(closedDates).reduce(
@@ -135,10 +139,10 @@ function normalizeHours(h: any): BusinessHours {
   return out as BusinessHours;
 }
 
-function stableStringify(value: any): string {
-  const seen = new WeakSet();
+function stableStringify(value: unknown): string {
+  const seen = new WeakSet<object>();
 
-  const sorter = (v: any): any => {
+  const sorter = (v: unknown): unknown => {
     if (v === null || typeof v !== "object") return v;
     if (seen.has(v)) return v;
 
@@ -146,11 +150,12 @@ function stableStringify(value: any): string {
 
     if (Array.isArray(v)) return v.map(sorter);
 
-    const out: any = {};
-    Object.keys(v)
+    const record = v as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    Object.keys(record)
       .sort()
       .forEach((k) => {
-        out[k] = sorter(v[k]);
+        out[k] = sorter(record[k]);
       });
 
     return out;
@@ -229,6 +234,11 @@ export default function KnowledgePage() {
   const [formContent, setFormContent] = useState("");
   const [formPublished, setFormPublished] = useState(true);
   const [savingKB, setSavingKB] = useState(false);
+  const knowledgeDialogRef = useModalAccessibility<HTMLDivElement>({
+    active: open,
+    closeDisabled: savingKB,
+    onClose: closeModal,
+  });
 
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -323,8 +333,12 @@ export default function KnowledgePage() {
       if (error) throw new Error(error.message);
 
       setItems((data as KBItem[]) ?? []);
-    } catch (e: any) {
-      setErrKB(e?.message ?? "No se pudo cargar la Knowledge Base.");
+    } catch (error: unknown) {
+      setErrKB(
+        error instanceof Error
+          ? error.message
+          : "No se pudo cargar la Knowledge Base.",
+      );
     } finally {
       setLoadingKB(false);
     }
@@ -375,7 +389,9 @@ export default function KnowledgePage() {
     const next: ProfileRow = {
       whatsapp: data.whatsapp ? String(data.whatsapp) : null,
       email: data.email ? String(data.email) : null,
-      business_hours: normalizeHours((data as any).business_hours),
+      business_hours: normalizeHours(
+        (data as { business_hours?: unknown }).business_hours,
+      ),
     };
 
     setProfile(next);
@@ -481,8 +497,8 @@ export default function KnowledgePage() {
 
       await loadKB(businessId);
       setOpen(false);
-    } catch (e: any) {
-      setErrKB(e?.message ?? "No se pudo guardar.");
+    } catch (error: unknown) {
+      setErrKB(error instanceof Error ? error.message : "No se pudo guardar.");
     } finally {
       setSavingKB(false);
     }
@@ -573,7 +589,7 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
     });
   }
 
-  async function saveProfile() {
+  const saveProfile = useCallback(async () => {
     if (!businessId || !profile) return;
 
     const emailOk = isEmailLike(profile.email ?? "");
@@ -613,7 +629,7 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
     setProfile(next);
     profileLastSavedRef.current = stableStringify(next);
     profileHydratedRef.current = true;
-  }
+  }, [businessId, profile]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -632,7 +648,7 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
     window.addEventListener("keydown", onKeyDown);
 
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, saveBarVisible, businessId, profile]);
+  }, [open, saveBarVisible, saveProfile]);
 
   useEffect(() => {
     let alive = true;
@@ -690,10 +706,12 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
           loadKB(activeBusinessId),
           ensureWidgetSettingsRow(activeBusinessId),
         ]);
-      } catch (e: any) {
+      } catch (error: unknown) {
         if (!alive) return;
 
-        setErrKB(e?.message ?? "No se pudo cargar Knowledge.");
+        setErrKB(
+          error instanceof Error ? error.message : "No se pudo cargar Knowledge.",
+        );
         setErrProfile(null);
       } finally {
         if (alive) {
@@ -724,8 +742,21 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
   }
 
   return (
-    <main className={`${styles.page} ${saveBarVisible ? styles.pageWithBar : ""}`}>
+    <SectionIntroGate
+      title="Knowledge es la memoria comercial de LumenAI."
+      description="Aquí cargas la información que el asistente necesita para responder bien: servicios, precios, políticas, pagos, contacto y reglas del negocio."
+      bullets={[
+        "Convierte conocimiento disperso en respuestas consistentes para clientes.",
+        "Publica o deja en borrador cada pieza de información según su estado.",
+        "Completa horarios, contacto y datos de pago para reducir derivaciones manuales.",
+      ]}
+      primaryActionLabel="Entrar al área"
+      skipActionLabel="Omitir"
+      storageKey="lumenai:intro:knowledge:v1"
+    >
+      <main className={`${styles.page} ${saveBarVisible ? styles.pageWithBar : ""}`}>
       <PanelSectionHeader
+        variant="hero"
         eyebrow="Cerebro del negocio"
         title="Cerebro comercial"
         description="Enseña a LumenAI qué vende el negocio, cómo responde, qué precios maneja, qué políticas aplica y cuándo debe derivar a un humano."
@@ -742,7 +773,7 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
       />
 
       {errKB || errProfile ? (
-        <div className={styles.errorBox}>
+        <div className={styles.errorBox} role="alert">
           <div className={styles.errorText}>{errProfile || errKB}</div>
         </div>
       ) : null}
@@ -809,6 +840,7 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
           >
             <div className={styles.toolbar}>
               <input
+                aria-label="Buscar en Knowledge"
                 className={styles.input}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -816,9 +848,14 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
               />
 
               <select
+                aria-label="Filtrar Knowledge por estado"
                 className={styles.select}
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) =>
+                  setStatusFilter(
+                    e.target.value as "all" | "published" | "draft",
+                  )
+                }
               >
                 <option value="all">Todos los estados</option>
                 <option value="published">Publicados</option>
@@ -1047,19 +1084,28 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
       />
 
       {open ? (
-        <div className={styles.modalOverlay} onMouseDown={closeModal}>
-          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+        <div className={styles.modalOverlay} role="presentation" onMouseDown={closeModal}>
+          <div
+            ref={knowledgeDialogRef}
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="knowledge-dialog-title"
+            aria-describedby="knowledge-dialog-description"
+            tabIndex={-1}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <div className={styles.modalHeader}>
               <div>
-                <div className={styles.modalTitle}>
+                <h2 className={styles.modalTitle} id="knowledge-dialog-title">
                   {mode === "create" ? "Nuevo ítem de Knowledge" : "Editar ítem de Knowledge"}
-                </div>
-                <div className={styles.mutedSmall}>
+                </h2>
+                <div className={styles.mutedSmall} id="knowledge-dialog-description">
                   Solo los ítems publicados alimentan directamente al asistente.
                 </div>
               </div>
 
-              <button className={styles.close} onClick={closeModal} aria-label="Cerrar">
+              <button type="button" className={styles.close} onClick={closeModal} aria-label="Cerrar">
                 ✕
               </button>
             </div>
@@ -1081,13 +1127,15 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
                 </select>
               </label>
 
-              <label className={styles.labelWrap}>
-                Estado
-                <div className={styles.toggleRow}>
+              <fieldset className={styles.labelWrap}>
+                <legend>Estado</legend>
+                <div className={styles.toggleRow} role="radiogroup" aria-label="Estado de publicación">
                   <button
                     className={formPublished ? styles.toggleOn : styles.toggleOff}
                     onClick={() => !savingKB && setFormPublished(true)}
                     type="button"
+                    role="radio"
+                    aria-checked={formPublished}
                   >
                     Publicado
                   </button>
@@ -1095,11 +1143,13 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
                     className={!formPublished ? styles.toggleOn : styles.toggleOff}
                     onClick={() => !savingKB && setFormPublished(false)}
                     type="button"
+                    role="radio"
+                    aria-checked={!formPublished}
                   >
                     Borrador
                   </button>
                 </div>
-              </label>
+              </fieldset>
 
               <label className={styles.labelWrap} style={{ gridColumn: "1 / -1" }}>
                 Título
@@ -1126,17 +1176,18 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
             </div>
 
             <div className={styles.modalFooter}>
-              <button className={styles.ghost} onClick={closeModal} disabled={savingKB}>
+              <button type="button" className={styles.ghost} onClick={closeModal} disabled={savingKB}>
                 Cancelar
               </button>
 
-              <button className={styles.primary} onClick={saveKB} disabled={savingKB}>
+              <button type="button" className={styles.primary} onClick={saveKB} disabled={savingKB}>
                 {savingKB ? "Guardando…" : "Guardar ítem"}
               </button>
             </div>
           </div>
         </div>
       ) : null}
-    </main>
+      </main>
+    </SectionIntroGate>
   );
 }

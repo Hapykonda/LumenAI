@@ -3,9 +3,9 @@ export function clamp(n: number, min: number, max: number) {
 }
 
 export function safeRandomId(prefix: string) {
-  const anyCrypto: any = (globalThis as any).crypto;
+  const browserCrypto = globalThis.crypto;
   return (
-    (typeof anyCrypto?.randomUUID === "function" && anyCrypto.randomUUID()) ||
+    (typeof browserCrypto?.randomUUID === "function" && browserCrypto.randomUUID()) ||
     `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now()}`
   );
 }

@@ -26,15 +26,8 @@ export const LUMENITE_AGENTS: LumeniteAgent[] = [
     route: "/panel/autoconfig",
     purpose: "Configurar Knowledge, widget, calibracion, marca, contacto y reglas.",
     allowedActions: [
-      "create_kb_item",
-      "update_kb_item",
-      "delete_kb_item",
-      "update_widget_settings",
-      "update_calibration_draft",
-      "publish_calibration",
-      "update_business_profile",
-      "create_config_snapshot",
-      "rollback_last_config",
+      "internal.task.create",
+      "internal.reminder.create",
     ],
   },
   {
@@ -42,21 +35,21 @@ export const LUMENITE_AGENTS: LumeniteAgent[] = [
     name: "Widget Support Agent",
     route: "/widget",
     purpose: "Responder a clientes finales con Knowledge real y capturar leads.",
-    allowedActions: ["capture_lead", "create_chat_message", "request_human_takeover"],
+    allowedActions: ["internal.response.prepare", "internal.conversation.tag"],
   },
   {
     key: "panel",
     name: "Executive Panel Agent",
     route: "/panel/overview",
     purpose: "Resumir estado operativo y orientar prioridades del panel.",
-    allowedActions: ["create_action_run", "create_market_signal"],
+    allowedActions: ["internal.task.create", "internal.reminder.create"],
   },
   {
     key: "radar",
     name: "Radar Agent",
     route: "/panel/radar",
     purpose: "Cruzar senales internas con feeds externos y recomendaciones ejecutivas.",
-    allowedActions: ["create_market_feed", "refresh_market_items", "create_market_signal"],
+    allowedActions: ["internal.task.create", "internal.reminder.create"],
   },
   {
     key: "growth",
@@ -64,11 +57,10 @@ export const LUMENITE_AGENTS: LumeniteAgent[] = [
     route: "/panel/growth",
     purpose: "Detectar oportunidades comerciales desde leads, chats y mensajes.",
     allowedActions: [
-      "create_opportunity",
-      "update_opportunity_status",
-      "generate_followup_message",
-      "create_followup_task",
-      "create_growth_playbook",
+      "internal.task.create",
+      "internal.lead.note.add",
+      "internal.response.prepare",
+      "internal.reminder.create",
     ],
   },
   {
@@ -77,10 +69,8 @@ export const LUMENITE_AGENTS: LumeniteAgent[] = [
     route: "/panel/twin",
     purpose: "Simular decisiones comerciales antes de aplicarlas.",
     allowedActions: [
-      "create_business_scenario",
-      "create_simulation_report",
-      "send_recommendation_to_config_ia",
-      "suggest_kb_item",
+      "internal.task.create",
+      "internal.reminder.create",
     ],
   },
   {
@@ -89,11 +79,8 @@ export const LUMENITE_AGENTS: LumeniteAgent[] = [
     route: "/panel/campaigns",
     purpose: "Crear campanas, mensajes, assets, tareas y experimentos comerciales.",
     allowedActions: [
-      "create_campaign",
-      "create_campaign_asset",
-      "create_campaign_task",
-      "send_campaign_to_config_ia_as_prompt",
-      "create_growth_playbook",
+      "internal.task.create",
+      "internal.reminder.create",
     ],
   },
   {
@@ -101,14 +88,14 @@ export const LUMENITE_AGENTS: LumeniteAgent[] = [
     name: "Knowledge Architect Agent",
     route: "/panel/knowledge",
     purpose: "Detectar vacios, duplicados y mejoras en el cerebro del negocio.",
-    allowedActions: ["suggest_kb_item", "create_kb_item", "update_kb_item", "publish_kb_item"],
+    allowedActions: ["internal.task.create", "internal.lead.note.add"],
   },
   {
     key: "system",
     name: "System QA Agent",
     route: "/panel/system-health",
     purpose: "Diagnosticar auth, Supabase, widget, Knowledge, keys y rutas criticas.",
-    allowedActions: ["create_action_run", "create_audit_log"],
+    allowedActions: ["internal.task.create", "internal.reminder.create"],
   },
 ];
 

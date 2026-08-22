@@ -64,8 +64,8 @@ export default function OnboardingForm() {
       if (rpcErr) throw new Error(rpcErr.message);
 
       router.replace("/panel");
-    } catch (e: any) {
-      setErr(e?.message ?? "Error inesperado");
+    } catch (error: unknown) {
+      setErr(error instanceof Error ? error.message : "Error inesperado");
     } finally {
       setLoading(false);
     }

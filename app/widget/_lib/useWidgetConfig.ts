@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 export type WidgetConfig = {
-  businessId: string;
   widgetEnabled: boolean;
   greeting: string;
   assistantName: string;
@@ -17,8 +16,12 @@ export type WidgetConfig = {
     fontFamily: string;
   };
   channels: { whatsapp: string | null; email: string | null };
-  businessHours: any;
+  businessHours: unknown;
 };
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "config error";
+}
 
 export function useWidgetConfig() {
   const sp = useSearchParams();
@@ -39,8 +42,8 @@ export function useWidgetConfig() {
         const json = await res.json();
         if (!res.ok) throw new Error(json?.error ?? "config error");
         setCfg(json);
-      } catch (e: any) {
-        setErr(e?.message ?? "config error");
+      } catch (error) {
+        setErr(errorMessage(error));
       }
     })();
   }, [key]);

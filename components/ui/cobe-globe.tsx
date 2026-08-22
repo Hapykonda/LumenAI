@@ -37,6 +37,7 @@ interface GlobeProps {
   diffuse?: number;
   mapSamples?: number;
   emptyLabel?: string;
+  ariaLabel?: string;
 }
 
 const THEME_EVENT = "lumen-theme:update";
@@ -111,6 +112,7 @@ export function Globe({
   diffuse = 1.5,
   mapSamples = 12000,
   emptyLabel = "Sin datos geo",
+  ariaLabel,
 }: GlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pointerInteracting = useRef<{ x: number; y: number } | null>(null);
@@ -386,9 +388,22 @@ export function Globe({
   }, []);
 
   return (
-    <div className={`relative aspect-square select-none ${className}`}>
+    <div
+      className={`relative aspect-square select-none ${className}`}
+      role="img"
+      aria-label={
+        ariaLabel ??
+        (markers.length
+          ? `Mapa global con ${markers.length} ubicaciones: ${markers
+              .slice(0, 8)
+              .map((marker) => marker.label)
+              .join(", ")}`
+          : emptyLabel)
+      }
+    >
       <canvas
         ref={canvasRef}
+        aria-hidden="true"
         onPointerDown={handlePointerDown}
         style={{
           width: "100%",
@@ -412,6 +427,7 @@ export function Globe({
       {markers.map((marker) => (
         <div
           key={marker.id}
+          aria-hidden="true"
           style={{
             position: "absolute",
             positionAnchor: `--cobe-${marker.id}`,
@@ -456,6 +472,7 @@ export function Globe({
         .map((arc) => (
           <div
             key={arc.id}
+            aria-hidden="true"
             style={{
               position: "absolute",
               positionAnchor: `--cobe-arc-${arc.id}`,

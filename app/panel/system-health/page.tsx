@@ -83,6 +83,7 @@ export default function SystemHealthPage() {
   return (
     <main className="grid gap-5 pb-10">
       <PanelSectionHeader
+        variant="hero"
         eyebrow="System QA Agent"
         title="Health operativo"
         description="Checklist tecnico-amigable para validar auth, Supabase, widget, Knowledge, snapshots, action runs y keys server-side."
@@ -102,7 +103,7 @@ export default function SystemHealthPage() {
         }
       />
 
-      {error ? <div className="lmn-autoconfig-error">{error}</div> : null}
+      {error ? <div className="lmn-autoconfig-error" role="alert">{error}</div> : null}
 
       <section className="grid gap-3 md:grid-cols-4">
         <Metric label="Checks" value={summary.total} />

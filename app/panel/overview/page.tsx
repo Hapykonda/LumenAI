@@ -5,23 +5,27 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Activity,
   ArrowRight,
   BookOpen,
   Bot,
+  CircleAlert,
   Clock3,
   GitBranch,
   HeartPulse,
   Megaphone,
   MessageCircle,
   Newspaper,
+  Radio,
+  RefreshCw,
+  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   Target,
   TrendingUp,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import { panelFetch } from "@/lib/panel-fetch";
 import { GlassCard } from "../_components/ui/GlassCard";
-import { PanelSectionHeader } from "../_components/ui/PanelSectionHeader";
 import { StatusBadge } from "../_components/ui/StatusBadge";
 import { ActionButton } from "../_components/ui/ActionButton";
 import {
@@ -33,9 +37,7 @@ import {
   LumenSearchDock,
 } from "../_components/enterprise/Lumen21Suite";
 import { COUNTRY_COORDS } from "@/lib/geo/countries";
-import { BorderBeam } from "@/components/ui/border-beam";
-import { PromptInputBox } from "@/components/ai-prompt-box";
-import { LumenMagicFlow } from "../_components/LumenMagicFlow";
+import { AnimatedHeroLights } from "@/components/ui/animated-hero-lights";
 
 const accentA = "var(--lmn-accent-rgb, 0,229,255)";
 const accentB = "var(--lmn-accent-2-rgb, 27,67,255)";
@@ -96,6 +98,28 @@ type OverviewData = {
     launch_done: number;
     launch_total: number;
   };
+  commandCenter?: {
+    generatedAt: string;
+    summary: {
+      health: "ready" | "warning" | "critical";
+      criticalAlerts: number;
+      pendingApprovals: number;
+      activeLumeniteActions: number;
+    };
+    metrics: Array<{
+      key: string;
+      label: string;
+      value: string | number;
+      meaning: string;
+      source: string;
+      period: string;
+      updatedAt: string;
+      comparison: string;
+      state: "ready" | "warning" | "critical" | "active" | "muted";
+      href: string;
+      actionLabel: string;
+    }>;
+  };
   performance?: {
     leadFunnel: Array<{ key: string; label: string; value: number; percent: number }>;
     channels: Array<{ key: string; label: string; value: number; percent: number }>;
@@ -145,6 +169,8 @@ type OverviewData = {
 };
 
 type RecentLead = NonNullable<OverviewData["recentLeads"]>[number];
+type CommandCenter = NonNullable<OverviewData["commandCenter"]>;
+type CommandCenterMetric = CommandCenter["metrics"][number];
 type DemandPoint = NonNullable<OverviewData["performance"]>["growthSeries"][number];
 type DemandKey = "widgetUsers" | "leads" | "buyers";
 type AutopilotAction = {
@@ -156,35 +182,13 @@ type AutopilotAction = {
   tone: "urgent" | "setup" | "growth" | "insight";
 };
 
-async function apiFetch(path: string, init?: RequestInit) {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-
-  const headers = new Headers(init?.headers);
-
-  if (init?.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  return fetch(path, {
-    ...init,
-    headers,
-    cache: "no-store",
-    credentials: "include",
-  });
-}
-
 function formatDate(value?: string | null) {
-  if (!value) return "â€”";
+  if (!value) return "Sin fecha";
 
   try {
     return new Date(value).toLocaleString();
   } catch {
-    return "â€”";
+    return "Sin fecha";
   }
 }
 
@@ -302,10 +306,12 @@ function buildAutopilotActions(data: OverviewData | null, urgentCount: number): 
 }
 
 export default function OverviewPage() {
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [data, setData] = useState<OverviewData | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   const stats = data?.stats;
 
@@ -315,51 +321,6 @@ export default function OverviewPage() {
     (stats?.chats_unread ?? 0) +
     (stats?.chats_paused ?? 0) +
     (stats?.leads_new ?? 0);
-
-  const quickPriority = useMemo(() => {
-    if ((stats?.chats_unread ?? 0) > 0) {
-      return {
-        title: "Responder chats no leÃ­dos",
-        text: "Hay conversaciones nuevas esperando revisiÃ³n.",
-        href: "/panel/chat",
-        label: "Abrir inbox",
-      };
-    }
-
-    if ((stats?.leads_new ?? 0) > 0) {
-      return {
-        title: "Revisar nuevos leads",
-        text: "Hay oportunidades comerciales reciÃ©n capturadas.",
-        href: "/panel/leads",
-        label: "Ver leads",
-      };
-    }
-
-    if ((stats?.kb_published ?? 0) === 0) {
-      return {
-        title: "Cargar Knowledge",
-        text: "Sin base publicada, LumenAI no puede vender con precisiÃ³n.",
-        href: "/panel/knowledge",
-        label: "Completar Knowledge",
-      };
-    }
-
-    if (!data?.widget?.enabled) {
-      return {
-        title: "Activar widget",
-        text: "Publica el widget para empezar a recibir conversaciones reales.",
-        href: "/panel/widget",
-        label: "Abrir Widget",
-      };
-    }
-
-    return {
-      title: "Optimizar calibraciÃ³n",
-      text: "Ajusta personalidad, tono y cierre para mejorar conversiÃ³n.",
-      href: "/panel/calibration",
-      label: "Abrir Studio",
-    };
-  }, [stats, data?.widget?.enabled]);
 
   const autopilotActions = useMemo(
     () => buildAutopilotActions(data, urgentCount),
@@ -377,7 +338,7 @@ export default function OverviewPage() {
     }
 
     try {
-      const res = await apiFetch("/api/panel/overview", {
+      const res = await panelFetch("/api/panel/overview", {
         method: "GET",
       });
 
@@ -391,6 +352,7 @@ export default function OverviewPage() {
 
       setData(json);
       setErr(null);
+      setLastUpdated(new Date().toISOString());
     } catch {
       setErr("No se pudo conectar con /api/panel/overview.");
       setData(null);
@@ -431,40 +393,25 @@ export default function OverviewPage() {
   return (
     <div className="lmn-overview-minimal-page flex flex-col gap-5">
       <MinimalOverviewHero
-        businessName={data?.business?.name || "LumenAI"}
         launchPercent={launchPercent}
         urgentCount={urgentCount}
-        chatsTotal={stats?.chats_total ?? 0}
-        leadsTotal={stats?.leads_total ?? 0}
         widgetReady={Boolean(data?.checks?.widget)}
         knowledgeReady={Boolean(data?.checks?.knowledge)}
-      />
-
-      <PanelSectionHeader
-        title="Centro ejecutivo"
-        description="Metricas reales de leads, chats, Knowledge, widget y conversaciones que necesitan atencion."
+        lastUpdated={lastUpdated}
+        refreshing={refreshing}
+        onRefresh={() => void loadOverview({ silent: true })}
+        commandSummary={data?.commandCenter?.summary}
       />
 
       {err ? (
-        <div className="apex-cut border border-red-400/25 bg-red-500/10 p-4 text-sm font-bold text-red-100">
+        <div className="apex-cut border border-red-400/25 bg-red-500/10 p-4 text-sm font-bold text-red-100" role="alert">
           {err}
         </div>
       ) : null}
 
-      <VisionCommandDeck
-        launchPercent={launchPercent}
-        widgetReady={Boolean(data?.checks?.widget)}
-        knowledgeReady={Boolean(data?.checks?.knowledge)}
-        leadsTotal={stats?.leads_total ?? 0}
-        chatsTotal={stats?.chats_total ?? 0}
-      />
-
-      <ConfigIaOverviewOption
-        launchPercent={launchPercent}
-        urgentCount={urgentCount}
-        widgetReady={Boolean(data?.checks?.widget)}
-        knowledgeReady={Boolean(data?.checks?.knowledge)}
-        quickPriority={quickPriority}
+      <OperationalCommandCenter
+        data={data?.commandCenter}
+        loading={loading}
       />
 
       <SystemModules
@@ -478,13 +425,16 @@ export default function OverviewPage() {
 
       <LumenInsightCarousel stats={stats} />
 
-      <details className="group">
+      <details
+        className="group"
+        onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}
+      >
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 border border-white/[0.055] bg-white/[0.014] px-4 py-3 text-sm font-semibold text-white/62 transition hover:bg-white/[0.030]">
           Analitica avanzada
           <span className="text-xs text-white/34 group-open:hidden">Mostrar</span>
           <span className="hidden text-xs text-white/34 group-open:inline">Ocultar</span>
         </summary>
-        <div className="mt-4 grid gap-4">
+        {advancedOpen ? <div className="mt-4 grid gap-4">
           <OverviewGeoGlobe
             leadsTotal={stats?.leads_total ?? 0}
             geo={data?.performance?.geo ?? []}
@@ -495,7 +445,7 @@ export default function OverviewPage() {
             stats={stats}
             loading={loading}
           />
-        </div>
+        </div> : null}
       </details>
 
       <BusinessAutopilot
@@ -546,7 +496,7 @@ export default function OverviewPage() {
               </div>
 
               <p className="mt-2 text-sm leading-6 text-white/50">
-                Ãšltimos mensajes registrados por widget o panel.
+                Ultimos mensajes registrados por widget o panel.
               </p>
             </div>
 
@@ -558,9 +508,9 @@ export default function OverviewPage() {
 
           <div className="mt-5 grid gap-3">
             {loading ? (
-              <EmptyLine text="Cargando actividadâ€¦" />
+              <EmptyLine text="Cargando actividad..." />
             ) : (data?.recentMessages ?? []).length === 0 ? (
-              <EmptyLine text="TodavÃ­a no hay mensajes." />
+              <EmptyLine text="Todavia no hay mensajes." />
             ) : (
               (data?.recentMessages ?? []).map((message) => (
                 <Link
@@ -579,7 +529,7 @@ export default function OverviewPage() {
                   </div>
 
                   <p className="mt-2 line-clamp-2 text-sm leading-6 text-white/52">
-                    {message.content || "Mensaje vacÃ­o"}
+                    {message.content || "Mensaje vacio"}
                   </p>
                 </Link>
               ))
@@ -592,7 +542,7 @@ export default function OverviewPage() {
             <div>
               <h3 className="text-sm font-semibold text-white">Leads recientes</h3>
               <p className="mt-1 text-xs text-white/42">
-                Ãšltimas oportunidades detectadas.
+                Ultimas oportunidades detectadas.
               </p>
             </div>
 
@@ -603,9 +553,9 @@ export default function OverviewPage() {
 
           <div className="mt-4 grid gap-2">
             {loading ? (
-              <EmptyLine text="Cargando leadsâ€¦" />
+              <EmptyLine text="Cargando leads..." />
             ) : (data?.recentLeads ?? []).length === 0 ? (
-              <EmptyLine text="TodavÃ­a no hay leads." />
+              <EmptyLine text="Todavia no hay leads." />
             ) : (
               (data?.recentLeads ?? []).map((lead) => (
                 <Link
@@ -625,7 +575,7 @@ export default function OverviewPage() {
 
                   <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-white/42">
                     <span>{leadStatusLabel(lead.status)}</span>
-                    <span>â€¢</span>
+                    <span aria-hidden="true">/</span>
                     <span>{formatDate(lead.created_at)}</span>
                   </div>
                 </Link>
@@ -639,41 +589,163 @@ export default function OverviewPage() {
   );
 }
 
+function commandMetricIcon(key: string) {
+  if (key === "health") return <HeartPulse aria-hidden="true" />;
+  if (key === "alerts") return <CircleAlert aria-hidden="true" />;
+  if (key === "approvals") return <ShieldCheck aria-hidden="true" />;
+  if (key === "lumenite") return <Bot aria-hidden="true" />;
+  if (key === "pulse") return <Radio aria-hidden="true" />;
+  if (key === "opportunities") return <Target aria-hidden="true" />;
+  if (key === "conversations") return <MessageCircle aria-hidden="true" />;
+  if (key === "leads") return <TrendingUp aria-hidden="true" />;
+  if (key === "activity") return <Activity aria-hidden="true" />;
+  return <SlidersHorizontal aria-hidden="true" />;
+}
+
+function commandMetricTone(state: CommandCenterMetric["state"]) {
+  if (state === "critical") return "danger";
+  if (state === "warning") return "warning";
+  if (state === "ready" || state === "active") return "active";
+  return "muted";
+}
+
+function commandMetricState(state: CommandCenterMetric["state"]) {
+  if (state === "critical") return "Critico";
+  if (state === "warning") return "Atencion";
+  if (state === "ready") return "Correcto";
+  if (state === "active") return "Activo";
+  return "Sin actividad";
+}
+
+function OperationalCommandCenter({
+  data,
+  loading,
+}: {
+  data?: CommandCenter;
+  loading: boolean;
+}) {
+  return (
+    <section className="lmn-command-center" aria-labelledby="command-center-heading">
+      <div className="lmn-command-center-header">
+        <div>
+          <span>Centro de mando</span>
+          <h2 id="command-center-heading">Prioridades operativas</h2>
+          <p>Lectura trazable del estado actual y acceso directo a cada decision.</p>
+        </div>
+        <time dateTime={data?.generatedAt}>
+          {data?.generatedAt ? `Corte ${formatDate(data.generatedAt)}` : "Sincronizando corte"}
+        </time>
+      </div>
+
+      <div className="lmn-command-center-grid" aria-busy={loading}>
+        {loading && !data ? (
+          Array.from({ length: 10 }, (_, index) => (
+            <div key={index} className="lmn-command-metric is-loading" aria-hidden="true">
+              <span />
+              <strong />
+              <p />
+            </div>
+          ))
+        ) : data?.metrics.length ? (
+          data.metrics.map((metric, index) => (
+            <article
+              key={metric.key}
+              className="lmn-command-metric"
+              data-state={metric.state}
+              data-priority={index < 5 ? "primary" : "secondary"}
+            >
+              <div className="lmn-command-metric-head">
+                <span className="lmn-command-metric-icon">
+                  {commandMetricIcon(metric.key)}
+                </span>
+                <StatusBadge tone={commandMetricTone(metric.state)}>
+                  {commandMetricState(metric.state)}
+                </StatusBadge>
+              </div>
+
+              <div className="lmn-command-metric-value">
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+              </div>
+              <p>{metric.meaning}</p>
+
+              <dl>
+                <div>
+                  <dt>Fuente</dt>
+                  <dd>{metric.source}</dd>
+                </div>
+                <div>
+                  <dt>Periodo</dt>
+                  <dd>{metric.period}</dd>
+                </div>
+                <div>
+                  <dt>Actualizacion</dt>
+                  <dd>{formatDate(metric.updatedAt)}</dd>
+                </div>
+              </dl>
+
+              <div className="lmn-command-metric-foot">
+                <span>{metric.comparison}</span>
+                <Link href={metric.href}>
+                  {metric.actionLabel}
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              </div>
+            </article>
+          ))
+        ) : (
+          <div className="lmn-command-center-empty" role="status">
+            No hay datos operativos disponibles para este workspace.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function MinimalOverviewHero({
-  businessName,
   launchPercent,
   urgentCount,
-  chatsTotal,
-  leadsTotal,
   widgetReady,
   knowledgeReady,
+  lastUpdated,
+  refreshing,
+  onRefresh,
+  commandSummary,
 }: {
-  businessName: string;
   launchPercent: number;
   urgentCount: number;
-  chatsTotal: number;
-  leadsTotal: number;
   widgetReady: boolean;
   knowledgeReady: boolean;
+  lastUpdated: string | null;
+  refreshing: boolean;
+  onRefresh: () => void;
+  commandSummary?: CommandCenter["summary"];
 }) {
   const readyTone = launchPercent >= 80 ? "active" : launchPercent >= 55 ? "warning" : "danger";
+  const health = commandSummary?.health ?? "warning";
+  const healthLabel = health === "ready" ? "Operativo" : health === "warning" ? "Atencion" : "Critico";
+  const healthTone = health === "ready" ? "active" : health === "warning" ? "warning" : "danger";
 
   return (
     <section className="lmn-minimal-overview-hero">
+      <AnimatedHeroLights intensity="high" className="is-overview-dance" />
       <div className="lmn-minimal-overview-copy">
-        <div className="lmn-minimal-overview-kicker">
-          <Sparkles className="h-3.5 w-3.5" />
-          LumenAI Command Center
-        </div>
-        <h1>{businessName} esta listo para operar con inteligencia comercial.</h1>
+        <h1>
+          {health === "ready"
+            ? "LumenAI esta listo para operar."
+            : health === "critical"
+              ? "LumenAI requiere atencion inmediata."
+              : "LumenAI opera con pendientes."}
+        </h1>
         <p>
-          Revisa salud del sistema, conversaciones, oportunidades, Knowledge y
-          cambios recomendados por Lumenite desde un centro de mando mas claro.
+          Revisa salud del sistema, conversaciones, oportunidades y cambios
+          recomendados desde un centro de mando más claro.
         </p>
 
         <div className="lmn-minimal-overview-actions">
           <ActionButton href="/panel/autoconfig" variant="primary">
-            Configurar con IA
+            Configurar con AI
             <ArrowRight className="h-3.5 w-3.5" />
           </ActionButton>
           <ActionButton href="/panel/widget" variant="secondary">
@@ -681,24 +753,40 @@ function MinimalOverviewHero({
             <Bot className="h-3.5 w-3.5" />
           </ActionButton>
         </div>
+
+        <div className="lmn-overview-provenance" aria-live="polite">
+          <span>Fuente: workspace activo en Supabase</span>
+          <span>
+            {lastUpdated
+              ? `Actualizado ${formatDate(lastUpdated)}`
+              : "Sincronizando datos"}
+          </span>
+          <button type="button" onClick={onRefresh} disabled={refreshing}>
+            <RefreshCw
+              className={refreshing ? "animate-spin" : ""}
+              aria-hidden="true"
+            />
+            {refreshing ? "Actualizando" : "Actualizar"}
+          </button>
+        </div>
       </div>
 
       <div className="lmn-minimal-overview-board">
         <div className="lmn-minimal-overview-score">
-          <span>Readiness</span>
-          <strong>{launchPercent}%</strong>
-          <StatusBadge tone={readyTone}>
-            {launchPercent >= 80 ? "Sistema listo" : "Requiere ajuste"}
+          <span>Salud del sistema</span>
+          <strong>{healthLabel}</strong>
+          <StatusBadge tone={healthTone}>
+            {commandSummary?.criticalAlerts ?? 0} alerta(s) critica(s)
           </StatusBadge>
         </div>
 
         <div className="lmn-minimal-overview-grid">
           {[
-            ["Urgentes", urgentCount, urgentCount > 0 ? "warning" : "active"],
-            ["Chats", chatsTotal, chatsTotal > 0 ? "active" : "muted"],
-            ["Leads", leadsTotal, leadsTotal > 0 ? "active" : "muted"],
-            ["Widget", widgetReady ? "Activo" : "Pendiente", widgetReady ? "active" : "warning"],
-            ["Knowledge", knowledgeReady ? "Lista" : "Pendiente", knowledgeReady ? "active" : "warning"],
+            ["Alertas", commandSummary?.criticalAlerts ?? urgentCount, (commandSummary?.criticalAlerts ?? urgentCount) > 0 ? "warning" : "active"],
+            ["Aprobaciones", commandSummary?.pendingApprovals ?? 0, (commandSummary?.pendingApprovals ?? 0) > 0 ? "warning" : "active"],
+            ["Lumenite", commandSummary?.activeLumeniteActions ?? 0, (commandSummary?.activeLumeniteActions ?? 0) > 0 ? "active" : "muted"],
+            ["Cobertura", `${launchPercent}%`, readyTone],
+            ["Operacion", widgetReady && knowledgeReady ? "Lista" : "Pendiente", widgetReady && knowledgeReady ? "active" : "warning"],
           ].map(([label, value, tone]) => (
             <div key={String(label)} className="lmn-minimal-overview-tile">
               <span>{label}</span>
@@ -709,244 +797,6 @@ function MinimalOverviewHero({
         </div>
       </div>
     </section>
-  );
-}
-
-function VisionCommandDeck({
-  launchPercent,
-  widgetReady,
-  knowledgeReady,
-  leadsTotal,
-  chatsTotal,
-}: {
-  launchPercent: number;
-  widgetReady: boolean;
-  knowledgeReady: boolean;
-  leadsTotal: number;
-  chatsTotal: number;
-}) {
-  const sections = [
-    {
-      href: "/panel/overview",
-      eyebrow: "Sistema completo",
-      title: "Centro operativo",
-      text: "Resumen ejecutivo de salud, actividad, leads, widget y riesgos del negocio.",
-      icon: <Bot className="h-5 w-5" />,
-      status: `${launchPercent}% listo`,
-      meta: [`${chatsTotal} chats`, `${leadsTotal} leads`],
-    },
-    {
-      href: "/panel/calibration",
-      eyebrow: "Calibration",
-      title: "Cerebro comercial",
-      text: "Identidad, personalidad, ventas, guardrails, audio, preview y publicacion real.",
-      icon: <SlidersHorizontal className="h-5 w-5" />,
-      status: knowledgeReady ? "Base conectada" : "Knowledge pendiente",
-      meta: ["IA", "Ventas", "Guardrails"],
-    },
-    {
-      href: "/panel/settings",
-      eyebrow: "Colorimetria",
-      title: "Visual system",
-      text: "Colores, posicion, mensaje inicial, tipografia, preview desktop/mobile e instalacion.",
-      icon: <Sparkles className="h-5 w-5" />,
-      status: widgetReady ? "Widget activo" : "Widget oculto",
-      meta: ["Glass", "Widget", "Marca"],
-    },
-  ];
-
-  return (
-    <section className="lmn-vision-command-deck">
-      {sections.map((section) => (
-        <Link key={section.href} href={section.href} className="group no-underline">
-          <GlassCard hover variant="strong" accent className="lmn-vision-command-card p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="grid h-12 w-12 shrink-0 place-items-center border border-white/[0.08] bg-white/[0.035] text-white">
-                {section.icon}
-              </div>
-              <StatusBadge tone="muted">{section.status}</StatusBadge>
-            </div>
-
-            <div className="mt-7">
-              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/42">
-                {section.eyebrow}
-              </div>
-              <h3 className="mt-2 text-3xl font-black leading-[0.96] tracking-[-0.055em] text-white">
-                {section.title}
-              </h3>
-              <p className="mt-4 text-sm leading-6 text-white/56">{section.text}</p>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-2">
-                {section.meta.slice(0, 3).map((item) => (
-                  <span
-                    key={item}
-                    className="border border-white/[0.065] bg-white/[0.025] px-3 py-1.5 text-[11px] font-black text-white/52"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-              <span className="inline-flex items-center gap-2 text-xs font-black text-white/58 transition group-hover:text-white">
-                Abrir
-                <ArrowRight className="h-3.5 w-3.5" />
-              </span>
-            </div>
-          </GlassCard>
-        </Link>
-      ))}
-    </section>
-  );
-}
-
-function ConfigIaOverviewOption({
-  launchPercent,
-  urgentCount,
-  widgetReady,
-  knowledgeReady,
-  quickPriority,
-}: {
-  launchPercent: number;
-  urgentCount: number;
-  widgetReady: boolean;
-  knowledgeReady: boolean;
-  quickPriority: { title: string; text: string; href: string; label: string };
-}) {
-  const systemState = widgetReady && knowledgeReady ? "Base lista" : "Puede completarlo";
-  const priorityText =
-    urgentCount > 0 ? `${urgentCount} pendiente(s)` : `${launchPercent}% listo`;
-
-  return (
-    <GlassCard
-      hover
-      variant="strong"
-      accent
-      className="lmn-overview-config-ia group relative overflow-hidden p-0"
-    >
-      <BorderBeam
-        size={180}
-        duration={13}
-        colorFrom="#00E5FF"
-        colorTo="#6C3BFF"
-        borderWidth={1}
-      />
-      <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_440px] xl:items-center">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 border border-white/[0.080] bg-white/[0.035] px-3 py-2 text-xs font-semibold text-white/62">
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            Centro principal
-          </div>
-
-          <h3 className="mt-4 text-3xl font-semibold leading-tight text-white md:text-4xl">
-            Config IA convierte instrucciones en calibracion publicable.
-          </h3>
-
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/52 md:text-base">
-            El suscriptor puede pedir cambios en lenguaje natural y LumenAI
-            prepara un borrador real para identidad, ventas, guardrails,
-            Knowledge, automatizaciones y widget.
-          </p>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-2 border border-white/[0.070] bg-white/[0.030] px-3 py-2 text-xs font-semibold text-white/58">
-              <Sparkles className="h-3.5 w-3.5" />
-              {systemState}
-            </span>
-            <span className="inline-flex items-center gap-2 border border-white/[0.070] bg-white/[0.030] px-3 py-2 text-xs font-semibold text-white/58">
-              <Target className="h-3.5 w-3.5" />
-              {priorityText}
-            </span>
-            <span className="inline-flex items-center gap-2 border border-white/[0.070] bg-white/[0.030] px-3 py-2 text-xs font-semibold text-white/58">
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              readiness operativo
-            </span>
-          </div>
-
-          <Link
-            href="/panel/autoconfig"
-            className="mt-6 inline-flex items-center gap-2 border border-white/15 bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-white/90"
-          >
-            Abrir Config IA
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        <LumenAIPromptConsole
-          quickPriority={quickPriority}
-          systemState={systemState}
-          widgetReady={widgetReady}
-          knowledgeReady={knowledgeReady}
-        />
-      </div>
-    </GlassCard>
-  );
-}
-
-function LumenAIPromptConsole({
-  quickPriority,
-  systemState,
-  widgetReady,
-  knowledgeReady,
-}: {
-  quickPriority: { title: string; text: string; href: string; label: string };
-  systemState: string;
-  widgetReady: boolean;
-  knowledgeReady: boolean;
-}) {
-  const [reply, setReply] = useState({
-    title: "Comando listo",
-    text: `Pide una configuracion y la abrire en Config IA. Siguiente foco: ${quickPriority.title}.`,
-  });
-
-  function handlePrompt(message: string) {
-    setReply({
-      title: "Abriendo Config IA",
-      text: "La indicacion pasara al motor real de configuracion para generar una propuesta aplicable.",
-    });
-
-    window.setTimeout(() => {
-      window.location.href = `/panel/autoconfig?prompt=${encodeURIComponent(message)}`;
-    }, 260);
-  }
-
-  return (
-    <div className="lmn-ai-prompt-console">
-      <div className="lmn-ai-prompt-head">
-        <div className="flex items-center gap-2">
-          <span className="lmn-ai-prompt-mark">
-            <Bot className="h-4 w-4" />
-          </span>
-          <div>
-            <div className="text-sm font-semibold text-white">LumenAI Config</div>
-            <div className="text-xs text-white/42">Entrada rapida hacia Config IA</div>
-          </div>
-        </div>
-        <StatusBadge tone={widgetReady && knowledgeReady ? "active" : "warning"}>
-          {systemState}
-        </StatusBadge>
-      </div>
-
-      <div className="lmn-ai-prompt-response">
-        <div className="lmn-ai-prompt-response-title">{reply.title}</div>
-        <div className="lmn-ai-prompt-response-text">{reply.text}</div>
-      </div>
-
-      <PromptInputBox
-        className="lmn-ai-prompt-input"
-        placeholder="Ej: deja LumenAI listo para una demo premium"
-        onSend={handlePrompt}
-      />
-
-      <div className="lmn-ai-prompt-footer">
-        <span>{quickPriority.text}</span>
-        <Link href="/panel/autoconfig">Abrir Config IA</Link>
-      </div>
-
-      <div className="lmn-ai-prompt-orbit">
-        <LumenMagicFlow />
-      </div>
-    </div>
   );
 }
 
@@ -975,7 +825,7 @@ function SystemModules({
       icon: <BookOpen className="h-4 w-4" />,
       title: "Knowledge",
       cardClass: "lmn-module-knowledge",
-      text: "Servicios, precios, polÃ­ticas y reglas que entrenan la IA.",
+      text: "Servicios, precios, politicas y reglas que entrenan la IA.",
       value: knowledgeReady ? "Publicado" : "Incompleto",
       ok: knowledgeReady,
       href: "/panel/knowledge",
@@ -1020,7 +870,7 @@ function SystemModules({
       icon: <Bot className="h-4 w-4" />,
       title: "Widget",
       cardClass: "lmn-module-widget",
-      text: "Canal pÃºblico instalado para convertir visitas en chats.",
+      text: "Canal publico instalado para convertir visitas en chats.",
       value: widgetReady ? "Activo" : "Pendiente",
       ok: widgetReady,
       href: "/panel/widget",
@@ -1029,7 +879,7 @@ function SystemModules({
       icon: <MessageCircle className="h-4 w-4" />,
       title: "Chat",
       cardClass: "lmn-module-chat",
-      text: "Inbox operativo con mensajes, estados y atenciÃ³n humana.",
+      text: "Inbox operativo con mensajes, estados y atencion humana.",
       value: `${chatsTotal} chat(s)`,
       ok: chatsTotal > 0,
       href: "/panel/chat",
@@ -1176,7 +1026,7 @@ function OverviewGeoGlobe({
             Geo insights
           </div>
           <h3 className="mt-2 text-2xl font-black tracking-[-0.055em] text-white md:text-3xl">
-            Radar geogrÃ¡fico comercial
+            Radar geografico comercial
           </h3>
           <p className="mt-3 max-w-[720px] text-sm leading-7 text-white/52">
             Lee pais, personas, leads y mensajes detectados por el widget para saber donde hay mas demanda real.

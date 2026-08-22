@@ -72,7 +72,7 @@ function fallbackOpportunities(snapshot: Awaited<ReturnType<typeof buildLumenite
         score >= 75
           ? "Responder hoy con propuesta clara y CTA de cierre."
           : "Enviar seguimiento consultivo y confirmar necesidad.",
-      suggested_message: `Hola${cleanText(lead.name, 60) ? ` ${cleanText(lead.name, 60)}` : ""}, vi tu consulta sobre ${intent || "nuestro servicio"}. Puedo ayudarte con una recomendacion clara y los siguientes pasos. ¿Quieres que lo revisemos ahora?`,
+      suggested_message: `Hola${cleanText(lead.name, 60) ? ` ${cleanText(lead.name, 60)}` : ""}, vi tu consulta sobre ${intent || "nuestro servicio"}. Puedo ayudarte con una recomendacion clara y los siguientes pasos. Â¿Quieres que lo revisemos ahora?`,
     };
   });
 
@@ -161,7 +161,7 @@ export async function POST() {
         {
           role: "system",
           content:
-            "Eres Lumenite Growth Engine. Detecta oportunidades comerciales desde datos reales. Devuelve JSON con opportunities: [{lead_id, chat_id, title, summary, intent, product_or_service, objection, score, priority, recommended_action, suggested_message}]. No inventes integraciones externas.",
+            "Eres LumenAI Growth Engine. Detecta oportunidades comerciales desde datos reales. Devuelve JSON con opportunities: [{lead_id, chat_id, title, summary, intent, product_or_service, objection, score, priority, recommended_action, suggested_message}]. No inventes integraciones externas.",
         },
         {
           role: "user",
@@ -248,10 +248,11 @@ export async function POST() {
     return NextResponse.json({
       ok: true,
       ai: getGroqStatus("growth"),
+      generationMode: aiText ? "ai" : "evidence_rules",
       inserted,
       proposed: drafts,
       message: inserted.length
-        ? `Lumenite detecto ${inserted.length} oportunidad(es) nueva(s).`
+        ? `LumenAI detecto ${inserted.length} oportunidad(es) nueva(s).`
         : "No se detectaron oportunidades nuevas sin duplicar.",
     });
   } catch (error) {
@@ -261,3 +262,6 @@ export async function POST() {
     );
   }
 }
+
+
+

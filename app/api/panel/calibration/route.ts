@@ -21,6 +21,12 @@ export async function GET() {
       publicKey: ctx.business.public_key,
     });
 
+    const timestamps = row as {
+      draft_updated_at?: string | null;
+      published_at?: string | null;
+      updated_at?: string | null;
+    };
+
     return NextResponse.json({
       ok: true,
       publicKey: ctx.business.public_key,
@@ -29,12 +35,13 @@ export async function GET() {
       draft,
       published,
       meta: {
-        draftUpdatedAt: (row as any)?.draft_updated_at || null,
-        publishedAt: (row as any)?.published_at || null,
-        updatedAt: (row as any)?.updated_at || null,
+        draftUpdatedAt: timestamps.draft_updated_at || null,
+        publishedAt: timestamps.published_at || null,
+        updatedAt: timestamps.updated_at || null,
       },
     });
-  } catch (error: any) {
+  } catch (caught: unknown) {
+    const error = caught instanceof Error ? caught : null;
     return jsonError(error?.message || "Error cargando calibración", 500);
   }
 }
