@@ -79,5 +79,25 @@ test("production migrations persist operators and move privileged logic out of p
   assert.match(securityMigration, /private\.create_business_for_new_user/);
   assert.match(securityMigration, /security invoker/);
   assert.match(securityMigration, /to authenticated/);
+  assert.match(securityMigration, /public\.lumenai_release_state\(\)/);
   assert.doesNotMatch(securityMigration, /grant execute[^;]+private\.create_business_for_new_user[^;]+anon/is);
+});
+
+test("system health exposes actionable release gates and an active widget probe", async () => {
+  const route = await readFile(
+    new URL("app/api/panel/system-health/route.ts", root),
+    "utf8",
+  );
+  const page = await readFile(
+    new URL("app/panel/system-health/page.tsx", root),
+    "utf8",
+  );
+
+  assert.match(route, /probePublicWidget/);
+  assert.match(route, /lumenai_release_state/);
+  assert.match(route, /readyForProduction/);
+  assert.match(route, /Pagos y suscripciones reales/);
+  assert.match(page, /Centro de lanzamiento/);
+  assert.match(page, /Copiar informe/);
+  assert.match(page, /OperatorAvatar/);
 });

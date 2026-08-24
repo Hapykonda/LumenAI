@@ -415,3 +415,25 @@ for all
 to authenticated
 using ((select private.lumenai_can_access_business(business_id)))
 with check ((select private.lumenai_can_access_business(business_id)));
+
+-- A non-sensitive release marker lets the authenticated application verify
+-- that the production hardening migration was applied without exposing policy
+-- definitions, secrets, or privileged helpers through the Data API.
+create or replace function public.lumenai_release_state()
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = pg_catalog, public
+as $$
+  select jsonb_build_object(
+    'schema_version', '20260824071640',
+    'rls_consolidated', true,
+    'fk_indexes', true,
+    'operator_catalog', true
+  );
+$$;
+
+revoke all on function public.lumenai_release_state() from public;
+grant execute on function public.lumenai_release_state()
+  to authenticated, service_role;
