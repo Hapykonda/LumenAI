@@ -7,7 +7,7 @@ import type {
   PulseWidgetState,
 } from "@/lib/pulse-radar/types";
 import { expressionForWidgetState } from "@/lib/pulse-radar/expression-catalog";
-import { PulseRadarMark } from "./PulseRadarMark";
+import { PulsePersona } from "@/components/brand/pulse-persona";
 import styles from "./pulse-radar-widget.module.css";
 
 function launcherLabel(state: PulseWidgetState, unreadCount: number) {
@@ -63,7 +63,7 @@ export function PulseRadarLauncher({
         aria-hidden="true"
       />
       <span className={styles.launcherCore}>
-        <PulseRadarMark state={state} size={32} />
+        <PulsePersona state={state} size={44} />
       </span>
       {unreadCount > 0 ? (
         <span className={styles.unreadSignal} aria-hidden="true" />

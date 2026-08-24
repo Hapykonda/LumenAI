@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { BellOff, Clock3, X } from "lucide-react";
 import { getPulseExpression } from "@/lib/pulse-radar/expression-catalog";
 import type { PulseRadarInsight } from "@/lib/pulse-radar/types";
+import { PulsePersona } from "@/components/brand/pulse-persona";
 import styles from "./pulse-radar-widget.module.css";
 
 export function ProactiveInsightBubble({
@@ -49,6 +50,11 @@ export function ProactiveInsightBubble({
       ))}
 
       <div className={styles.teaserHeader}>
+        <PulsePersona
+          expression={insight.expression}
+          size={38}
+          title={`Pulse: ${expression.label}`}
+        />
         <div>
           <span>{expression.label}</span>
           <strong>{insight.title}</strong>

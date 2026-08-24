@@ -9,6 +9,7 @@ import {
   ownerProfileAvatarEndpoint,
   ownerProfileFromMetadata,
 } from "@/lib/owner-profile";
+import { normalizeOperatorId } from "@/lib/operators/catalog";
 
 export default async function PanelLayout({
   children,
@@ -62,11 +63,34 @@ export default async function PanelLayout({
       : {}),
   });
 
+  const { data: widgetSettings } = await supabase
+    .from("widget_settings")
+    .select("operator_id,published_settings")
+    .eq("business_id", businessId)
+    .maybeSingle();
+
+  const publishedSettings =
+    widgetSettings?.published_settings &&
+    typeof widgetSettings.published_settings === "object" &&
+    !Array.isArray(widgetSettings.published_settings)
+      ? (widgetSettings.published_settings as Record<string, unknown>)
+      : {};
+  const publishedWidget =
+    publishedSettings.widget &&
+    typeof publishedSettings.widget === "object" &&
+    !Array.isArray(publishedSettings.widget)
+      ? (publishedSettings.widget as Record<string, unknown>)
+      : {};
+  const operatorId = normalizeOperatorId(
+    widgetSettings?.operator_id ?? publishedWidget.operatorId,
+  );
+
   return (
     <PanelProvider
       userId={user.id}
       businessId={businessId}
       email={user.email ?? null}
+      operatorId={operatorId}
     >
       <PanelShell userEmail={user.email} ownerProfile={ownerProfile}>
         {children}

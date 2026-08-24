@@ -20,13 +20,13 @@ import {
   X,
 } from "lucide-react";
 import { expressionForWidgetState, getPulseExpression } from "@/lib/pulse-radar/expression-catalog";
+import { PulsePersona } from "@/components/brand/pulse-persona";
 import type {
   PulseConversationMessage,
   PulseHealthData,
   PulseRadarData,
   PulseWidgetState,
 } from "@/lib/pulse-radar/types";
-import { PulseRadarMark } from "./PulseRadarMark";
 import { SafeMessageBody } from "./SafeMessageBody";
 import styles from "./pulse-radar-widget.module.css";
 
@@ -36,6 +36,7 @@ type PanelProps = {
   health: PulseHealthData | null;
   messages: PulseConversationMessage[];
   contextLabel: string;
+  guidePrompt: string;
   input: string;
   error: string | null;
   proactiveEnabled: boolean;
@@ -148,6 +149,14 @@ function PulseMessage({
       data-state={message.state ?? "complete"}
       data-tone={expression.tone}
     >
+      {message.role === "assistant" ? (
+        <PulsePersona
+          className={styles.messagePersona}
+          expression={message.expression}
+          size={32}
+          title={`Pulse: ${expression.label}`}
+        />
+      ) : null}
       {message.role === "assistant" && decorativeEmoji.length ? (
         <div className={styles.messageDecorations} aria-hidden="true">
           {decorativeEmoji.map((item, index) => (
@@ -204,6 +213,7 @@ export default function PulseRadarPanel(props: PanelProps) {
     health,
     messages,
     contextLabel,
+    guidePrompt,
     input,
     error,
     proactiveEnabled,
@@ -223,8 +233,11 @@ export default function PulseRadarPanel(props: PanelProps) {
   const expression = expressionForWidgetState(state);
   const waiting = state === "thinking" || state === "listening" || state === "streaming";
   const suggestions = useMemo(
-    () => (data?.questions ?? []).filter(Boolean).slice(0, 3),
-    [data?.questions],
+    () =>
+      Array.from(new Set([guidePrompt, ...(data?.questions ?? [])]))
+        .filter(Boolean)
+        .slice(0, 3),
+    [data?.questions, guidePrompt],
   );
 
   useEffect(() => {
@@ -265,7 +278,7 @@ export default function PulseRadarPanel(props: PanelProps) {
     >
       <header className={styles.panelHeader}>
         <span className={styles.headerMark}>
-          <PulseRadarMark state={state} size={30} />
+          <PulsePersona state={state} size={46} title={`Pulse: ${expression.label}`} />
         </span>
         <div>
           <span className={styles.eyebrow}>Inteligencia contextual</span>
@@ -343,7 +356,7 @@ export default function PulseRadarPanel(props: PanelProps) {
         ))}
         {waiting ? (
           <div className={styles.typing} role="status">
-            <PulseRadarMark state={state} size={22} />
+            <PulsePersona state={state} size={24} />
             <span>
               <i />
               <i />

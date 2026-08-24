@@ -1,0 +1,347 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(1, 3, 8, 0.78);
+  backdrop-filter: blur(22px) saturate(120%);
+}
+
+.dialog {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.82fr) minmax(420px, 1.18fr);
+  width: min(1040px, 100%);
+  max-height: min(820px, calc(100vh - 48px));
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 28px;
+  outline: none;
+  color: #f7f9ff;
+  background:
+    radial-gradient(600px 420px at 22% 28%, rgba(33, 126, 255, 0.22), transparent 68%),
+    linear-gradient(145deg, rgba(10, 15, 27, 0.985), rgba(3, 6, 12, 0.995));
+  box-shadow:
+    0 60px 160px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.075);
+}
+
+.dialog[data-reverse="true"] .personaStage {
+  order: 2;
+}
+
+.dialog[data-reverse="true"] .content {
+  order: 1;
+}
+
+.close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 3;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.66);
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.close svg {
+  width: 17px;
+}
+
+.personaStage {
+  position: relative;
+  display: grid;
+  min-height: 620px;
+  place-items: center;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 34px 34px;
+}
+
+.dialog[data-reverse="true"] .personaStage {
+  border-right: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.personaStage::after {
+  position: absolute;
+  inset: 20% 12%;
+  border-radius: 50%;
+  background: rgba(48, 144, 255, 0.17);
+  content: "";
+  filter: blur(70px);
+}
+
+.persona {
+  z-index: 1;
+}
+
+.orbitOne,
+.orbitTwo {
+  position: absolute;
+  z-index: 0;
+  width: 330px;
+  height: 330px;
+  border: 1px solid rgba(101, 210, 255, 0.13);
+  border-radius: 50%;
+  animation: intro-orbit 18s linear infinite;
+}
+
+.orbitTwo {
+  width: 430px;
+  height: 180px;
+  border-color: rgba(112, 101, 255, 0.11);
+  transform: rotate(-22deg);
+  animation-direction: reverse;
+  animation-duration: 24s;
+}
+
+.personaLabel {
+  position: absolute;
+  bottom: 34px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 13px;
+  border: 1px solid rgba(108, 216, 255, 0.16);
+  border-radius: 999px;
+  color: rgba(211, 244, 255, 0.76);
+  background: rgba(3, 10, 20, 0.74);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.personaLabel svg {
+  width: 14px;
+}
+
+.content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: 62px 56px 50px;
+}
+
+.eyebrow {
+  color: #75ddff;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.content h2 {
+  max-width: 620px;
+  margin: 16px 0 0;
+  font-size: clamp(2.25rem, 4vw, 4.4rem);
+  line-height: 0.96;
+  letter-spacing: -0.058em;
+}
+
+.content > p {
+  max-width: 620px;
+  margin: 20px 0 0;
+  color: rgba(229, 237, 255, 0.56);
+  font-size: 14px;
+  line-height: 1.72;
+}
+
+.steps {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  margin: 28px 0 0;
+  padding: 1px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.07);
+  list-style: none;
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  background: rgba(3, 7, 13, 0.9);
+}
+
+.steps span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid rgba(116, 220, 255, 0.15);
+  border-radius: 9px;
+  color: #8ce5ff;
+  background: rgba(36, 132, 255, 0.09);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.steps p {
+  margin: 4px 0 0;
+  color: rgba(239, 244, 255, 0.64);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 28px;
+}
+
+.actions button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 11px;
+  padding: 0 16px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.actions svg {
+  width: 15px;
+}
+
+.primary {
+  border: 1px solid rgba(111, 219, 255, 0.28);
+  color: #fff;
+  background: linear-gradient(135deg, #47d9ff, #2167ff 52%, #3536d3);
+  box-shadow: 0 16px 42px rgba(31, 93, 255, 0.25);
+}
+
+.assistant {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.skip {
+  border: 0;
+  color: rgba(255, 255, 255, 0.42);
+  background: transparent;
+}
+
+.reopen {
+  position: fixed;
+  bottom: 18px;
+  left: 266px;
+  z-index: 85;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 5px;
+  border: 1px solid rgba(109, 212, 255, 0.16);
+  border-radius: 14px;
+  color: rgba(230, 246, 255, 0.76);
+  background: rgba(4, 8, 16, 0.88);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(18px);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reopen > svg {
+  width: 13px;
+  color: rgba(255, 255, 255, 0.34);
+}
+
+@keyframes intro-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 860px) {
+  .dialog {
+    grid-template-columns: 1fr;
+  }
+
+  .personaStage,
+  .dialog[data-reverse="true"] .personaStage {
+    order: 1;
+    min-height: 250px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    border-left: 0;
+  }
+
+  .persona {
+    transform: scale(0.75);
+  }
+
+  .personaLabel {
+    bottom: 18px;
+  }
+
+  .content,
+  .dialog[data-reverse="true"] .content {
+    order: 2;
+    padding: 38px 28px 30px;
+  }
+
+  .reopen {
+    left: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .backdrop {
+    align-items: end;
+    padding: 10px;
+  }
+
+  .dialog {
+    max-height: calc(100vh - 20px);
+    border-radius: 22px;
+  }
+
+  .personaStage {
+    min-height: 210px;
+  }
+
+  .content {
+    padding: 30px 20px 22px;
+  }
+
+  .content h2 {
+    font-size: 2.3rem;
+  }
+
+  .actions {
+    display: grid;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbitOne,
+  .orbitTwo {
+    animation: none;
+  }
+}

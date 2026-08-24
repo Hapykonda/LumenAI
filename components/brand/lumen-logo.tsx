@@ -33,9 +33,9 @@ export function LumenLogo({
       className={cn("lmn-brand-lockup", animated && "is-animated", className)}
       data-size={size}
     >
-      <span className="lmn-brand-mark" aria-hidden="true">
+      <span className="lmn-brand-mark lumenai-mark" aria-hidden="true">
         <Image
-          src="/brand/lumenai-mark.webp"
+          src="/brand/lumenai-official-mark.png"
           alt=""
           width={pixels}
           height={pixels}

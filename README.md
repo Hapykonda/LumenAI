@@ -17,6 +17,7 @@ y Radar Ejecutivo en un panel operativo.
 
 - `/` landing publica
 - `/login` autenticacion
+- `/subscriptions` comparacion y seleccion de planes
 - `/onboarding` alta inicial de negocio
 - `/panel/overview` centro de mando
 - `/panel/autoconfig` Config IA con LumenAI
@@ -27,6 +28,14 @@ y Radar Ejecutivo en un panel operativo.
 - `/panel/widget` instalacion y configuracion del widget
 - `/panel/settings` personalizacion
 - `/widget/[key]` widget publico
+
+## Identidad y Pulse
+
+- La interfaz publica usa el sistema visual LumenAI Obsidian: negro, blanco editorial, azul electrico y luz atmosferica.
+- El logotipo oficial vive en `public/brand/lumenai-official-mark.png`.
+- Los siete operadores y sus nueve estados optimizados viven en `public/brand/operators/`.
+- Pulse Radar carga datos reales por seccion, muestra salud del sistema y agrega una guia contextual para cada modulo del panel.
+- Las animaciones respetan `prefers-reduced-motion` y los controles principales incluyen nombres accesibles.
 
 ## Variables requeridas
 
@@ -98,4 +107,3 @@ Aplicar migraciones antes de QA productivo.
 8. Abrir widget publico.
 9. Preguntar precios, horarios y pedir humano.
 10. Confirmar chat, mensajes y lead en Supabase.
-

@@ -24,6 +24,7 @@ export type WidgetConfig = {
   widgetEnabled?: boolean;
   greeting?: string | null;
   assistantName?: string | null;
+  operatorId?: string | null;
   tone?: string | null;
   position?: "br" | "bl" | "tr" | "tl";
   theme?: WidgetTheme;
@@ -36,6 +37,7 @@ export type WidgetConfig = {
   // compat snake_case
   primary_color?: string | null;
   assistant_name?: string | null;
+  operator_id?: string | null;
   business_name?: string | null;
   widget_enabled?: boolean;
   avatar_url?: string | null;

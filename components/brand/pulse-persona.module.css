@@ -1,0 +1,112 @@
+.persona {
+  --persona-accent: 86 233 255;
+  --persona-column: 0;
+  --persona-row: 0;
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgb(var(--persona-accent) / 0.28);
+  border-radius: 28%;
+  background:
+    radial-gradient(circle at 50% 24%, rgb(var(--persona-accent) / 0.18), transparent 54%),
+    #070a11;
+  box-shadow:
+    inset 0 0 18px rgb(var(--persona-accent) / 0.08),
+    0 0 22px rgb(var(--persona-accent) / 0.09);
+  isolation: isolate;
+}
+
+.persona::after {
+  position: absolute;
+  inset: 8%;
+  z-index: -1;
+  border-radius: 50%;
+  background: rgb(var(--persona-accent) / 0.13);
+  content: "";
+  filter: blur(10px);
+  animation: persona-breathe 2.8s ease-in-out infinite;
+}
+
+.image {
+  position: absolute;
+  top: calc(var(--persona-row) * -100%);
+  left: calc(var(--persona-column) * -100%);
+  width: 300%;
+  max-width: none;
+  height: 300%;
+  object-fit: fill;
+  transition: filter 220ms ease;
+}
+
+.persona[data-mood="thinking"] {
+  --persona-column: 2;
+  --persona-row: 0;
+  --persona-accent: 94 169 255;
+}
+
+.persona[data-mood="analyzing"] {
+  --persona-column: 1;
+  --persona-row: 0;
+  --persona-accent: 94 169 255;
+}
+
+.persona[data-mood="reading"] {
+  --persona-column: 0;
+  --persona-row: 2;
+  --persona-accent: 94 169 255;
+}
+
+.persona[data-mood="positive"] {
+  --persona-column: 0;
+  --persona-row: 1;
+  --persona-accent: 83 226 151;
+}
+
+.persona[data-mood="warning"] {
+  --persona-column: 1;
+  --persona-row: 1;
+  --persona-accent: 255 184 92;
+}
+
+.persona[data-mood="critical"] {
+  --persona-column: 1;
+  --persona-row: 1;
+  --persona-accent: 255 104 119;
+}
+
+.persona[data-mood="celebration"] {
+  --persona-column: 2;
+  --persona-row: 1;
+  --persona-accent: 83 226 151;
+}
+
+.persona[data-mood="idle"],
+.persona[data-mood="offline"] {
+  --persona-column: 2;
+  --persona-row: 2;
+}
+
+.persona[data-mood="offline"] .image {
+  filter: grayscale(0.85) opacity(0.64);
+}
+
+.persona[data-mood="thinking"]::after,
+.persona[data-mood="analyzing"]::after {
+  animation-duration: 1.8s;
+}
+
+@keyframes persona-breathe {
+  50% {
+    opacity: 0.58;
+    transform: scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .persona::after,
+  .persona .image {
+    animation: none !important;
+  }
+}

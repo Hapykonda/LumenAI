@@ -5,11 +5,26 @@ import "./lumenai-obsidian.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "LumenAI Obsidian Intelligence OS",
+    default: "LumenAI — Inteligencia operativa para empresas",
     template: "%s | LumenAI",
   },
   description:
-    "Sistema de inteligencia comercial y soporte para observar senales, priorizar oportunidades y actuar con contexto.",
+    "Atención, ventas, conocimiento e inteligencia empresarial conectados en un sistema vivo guiado por Pulse.",
+  applicationName: "LumenAI",
+  keywords: [
+    "inteligencia artificial para empresas",
+    "asistente para pymes",
+    "chatbot empresarial",
+    "ventas con IA",
+    "soporte con IA",
+  ],
+  openGraph: {
+    title: "LumenAI — Tu negocio convertido en un sistema vivo",
+    description:
+      "Conecta atención, ventas, conocimiento y decisiones con Pulse y LumenAI.",
+    type: "website",
+    locale: "es_CL",
+  },
 };
 
 export default function RootLayout({

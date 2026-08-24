@@ -1,6 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { OperatorAvatar } from "@/components/brand/operator-avatar";
+import {
+  normalizeOperatorId,
+  type OperatorMood,
+} from "@/lib/operators/catalog";
 import type { Msg, WidgetConfig, WidgetTheme } from "./_lib/types";
 import { postToParent } from "./_lib/postMessage";
 import {
@@ -15,7 +20,6 @@ import {
   clamp,
   formatTime,
   hexToRgb,
-  initials,
   isNearBottom,
   isProbablyMobile,
   normalizeWhatsAppLink,
@@ -335,6 +339,8 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
 
   const assistantName =
     cfg?.assistantName ?? cfg?.assistant_name ?? "LumenAI";
+
+  const operatorId = normalizeOperatorId(cfg?.operatorId ?? cfg?.operator_id);
 
   const businessName =
     cfg?.businessName ?? cfg?.business_name ?? null;
@@ -1053,6 +1059,13 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
 
   const connectionLabel = cfgLoading ? "Conectando…" : err ? "Problema" : "Online";
   const launcherText = String(theme.launcherText ?? "¿En qué te ayudo?").trim();
+  const operatorMood: OperatorMood = err
+    ? "bad-news"
+    : transcribing || typing
+      ? "working"
+      : sending || recording
+        ? "thinking"
+        : "welcome";
 
   return (
     <div className="lmn-root" style={vars} data-open={open ? "true" : "false"}>
@@ -1083,29 +1096,13 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="lmn-orbMark" aria-hidden="true">
-                  <svg viewBox="0 0 28 28" fill="none" role="img">
-                    <path
-                      d="M7.8 18.9c-1.35-1.22-2.1-2.9-2.1-4.78 0-4.02 3.42-7.28 7.64-7.28 4.22 0 7.64 3.26 7.64 7.28 0 4.02-3.42 7.28-7.64 7.28-.86 0-1.7-.13-2.46-.4l-3.05 1.33.27-3.43Z"
-                      stroke="currentColor"
-                      strokeWidth="1.85"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M10.35 13.9h.01M13.34 13.9h.01M16.33 13.9h.01"
-                      stroke="currentColor"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M20.5 5.8 23 3.3M22.45 8.95h3.25M18.55 3.75V1.2"
-                      stroke="currentColor"
-                      strokeWidth="1.45"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </div>
+                <OperatorAvatar
+                  operator={operatorId}
+                  mood={operatorMood}
+                  size={52}
+                  label={`${assistantName} listo para ayudar`}
+                  priority
+                />
               )}
             </div>
           </button>
@@ -1153,7 +1150,12 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <span>{initials(assistantName).slice(0, 2)}</span>
+                      <OperatorAvatar
+                        operator={operatorId}
+                        mood={operatorMood}
+                        size={30}
+                        label={`${assistantName}: ${connectionLabel}`}
+                      />
                     )}
                   </div>
                 </div>

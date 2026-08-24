@@ -6,6 +6,7 @@ import {
   getAuthorizedBusinessContext,
 } from "@/lib/auth/business-context";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { normalizeOperatorId } from "@/lib/operators/catalog";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -108,6 +109,9 @@ function normalizeWidgetPayload(business: any, settings: any) {
     widget: {
       enabled,
       position,
+      operatorId: normalizeOperatorId(
+        (widget as any)?.operatorId ?? settings?.operator_id,
+      ),
       assistantName:
         clean((source as any)?.calibration?.identity?.assistantName) ||
         clean(settings?.assistant_name) ||
@@ -165,6 +169,10 @@ function buildNextPublishedSettings(current: any, payload: Record<string, any>) 
     const value = clean(payload.assistant_name) || "LumenAI";
     widget.assistantName = value;
     identity.assistantName = value;
+  }
+
+  if (payload.operator_id !== undefined) {
+    widget.operatorId = normalizeOperatorId(payload.operator_id);
   }
 
   if (payload.greeting !== undefined) {
@@ -285,6 +293,10 @@ export async function PATCH(req: Request) {
 
     if (body?.assistantName !== undefined || body?.assistant_name !== undefined) {
       payload.assistant_name = clean(body?.assistantName ?? body?.assistant_name) || "LumenAI";
+    }
+
+    if (body?.operatorId !== undefined || body?.operator_id !== undefined) {
+      payload.operator_id = normalizeOperatorId(body?.operatorId ?? body?.operator_id);
     }
 
     if (body?.greeting !== undefined) {

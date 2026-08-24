@@ -20,6 +20,7 @@ import type {
   PulseRadarInsight,
 } from "@/lib/pulse-radar/types";
 import { pulseSectionFromPath } from "@/lib/pulse-radar/types";
+import { pulseSectionGuideFromPath } from "@/lib/pulse-radar/section-guide";
 import { ProactiveInsightBubble } from "./ProactiveInsightBubble";
 import { PulseRadarLauncher } from "./PulseRadarLauncher";
 import {
@@ -204,6 +205,7 @@ function teaserIsBlocked() {
 export function PulseRadarWidget() {
   const pathname = usePathname() || "/panel/overview";
   const contextLabel = useMemo(() => pulseSectionFromPath(pathname), [pathname]);
+  const sectionGuide = useMemo(() => pulseSectionGuideFromPath(pathname), [pathname]);
   const [machine, dispatch] = useReducer(pulseMachineReducer, INITIAL_PULSE_MACHINE);
   const [hydrated, setHydrated] = useState(false);
   const [data, setData] = useState<PulseRadarData | null>(null);
@@ -470,6 +472,26 @@ export function PulseRadarWidget() {
 
   useEffect(() => {
     if (!hydrated) return;
+    const guideMessage: PulseConversationMessage = {
+      id: `section-guide-${sectionGuide.id}`,
+      role: "assistant",
+      title: sectionGuide.title,
+      body: sectionGuide.summary,
+      expression: sectionGuide.expression,
+      actions: sectionGuide.actions,
+      source: { label: `Tutorial · ${sectionGuide.label}` },
+      createdAt: new Date().toISOString(),
+      state: "complete",
+    };
+
+    setMessages((current) => {
+      if (current.some((message) => message.id === guideMessage.id)) return current;
+      return [...current, guideMessage].slice(-20);
+    });
+  }, [hydrated, sectionGuide]);
+
+  useEffect(() => {
+    if (!hydrated) return;
     void loadRadar();
     return () => loadAbortRef.current?.abort();
   }, [hydrated, pathname, loadRadar]);
@@ -570,6 +592,7 @@ export function PulseRadarWidget() {
             health={health}
             messages={messages}
             contextLabel={contextLabel}
+            guidePrompt={sectionGuide.prompt}
             input={input}
             error={error}
             proactiveEnabled={proactiveEnabled}

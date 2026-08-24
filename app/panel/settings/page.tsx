@@ -10,8 +10,15 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { ImageIcon, Upload, X } from "lucide-react";
+import { OperatorAvatar } from "@/components/brand/operator-avatar";
+import {
+  LUMEN_OPERATORS,
+  normalizeOperatorId,
+  type OperatorId,
+  type OperatorMood,
+} from "@/lib/operators/catalog";
 import { supabase } from "@/lib/supabase/client";
-import { usePanel } from "../_components/panel-context";
+import { PANEL_OPERATOR_EVENT, usePanel } from "../_components/panel-context";
 import { PanelSectionHeader } from "../_components/ui/PanelSectionHeader";
 import { ModuleTabs } from "../_components/ui/ModuleTabs";
 import { FieldGroup } from "../_components/ui/FieldGroup";
@@ -42,6 +49,7 @@ type Position = "br" | "bl" | "tr" | "tl";
 type TabKey =
   | "account"
   | "general"
+  | "operator"
   | "messages"
   | "branding"
   | "position"
@@ -57,6 +65,7 @@ type EditableSettings = {
   widget_enabled: boolean;
   greeting: string;
   assistant_name: string;
+  operator_id: OperatorId;
   tone: Tone;
   position: Position;
   primary_color: string;
@@ -85,6 +94,7 @@ const DEFAULTS: Omit<EditableSettings, "business_id"> = {
   greeting:
     "Bienvenido a **{business}**\n• Respuesta rápida\n• Atención profesional\n\n¿En qué puedo ayudarte hoy?",
   assistant_name: "LumenAI",
+  operator_id: "pulse",
   tone: "neutral",
   position: "br",
   primary_color: "#00E5FF",
@@ -100,6 +110,7 @@ const PANEL_AVATAR_EVENT = "lumenai:avatar-update";
 const TABS = [
   { key: "account", label: "Mi perfil", description: "Identidad de cuenta" },
   { key: "general", label: "General", description: "Estado y tono" },
+  { key: "operator", label: "Operador", description: "Elige tu guía" },
   { key: "messages", label: "Mensajes", description: "Saludo inicial" },
   { key: "branding", label: "Branding", description: "Colores y fuente" },
   { key: "position", label: "Posición", description: "Ubicación web" },
@@ -128,6 +139,18 @@ const COLOR_PRESETS = [
   { name: "Stripe Violet", primary: "#6C3BFF", from: "#00E5FF", to: "#6C3BFF" },
   { name: "Executive Blue", primary: "#1B43FF", from: "#008CFF", to: "#6C3BFF" },
   { name: "Aurora Night", primary: "#56E1E8", from: "#122D70", to: "#5C58ED" },
+];
+
+const OPERATOR_PREVIEW_MOODS: Array<{ mood: OperatorMood; label: string }> = [
+  { mood: "welcome", label: "Bienvenida" },
+  { mood: "good-news", label: "Buenas noticias" },
+  { mood: "bad-news", label: "Alerta" },
+  { mood: "thinking", label: "Pensando" },
+  { mood: "analyzing", label: "Analizando" },
+  { mood: "explaining", label: "Explicando" },
+  { mood: "celebrating", label: "Celebrando" },
+  { mood: "working", label: "Trabajando" },
+  { mood: "dancing", label: "Animando" },
 ];
 
 function clampHex(input: string | undefined | null, fallback: string) {
@@ -204,6 +227,16 @@ function pickAvatarUrl(row: unknown) {
     normalizeImageUrl(brand.avatarUrl) ||
     normalizeImageUrl(widget.avatarUrl) ||
     ""
+  );
+}
+
+function pickOperatorId(row: unknown) {
+  const source = isRecord(row) ? row : {};
+  const published = isRecord(source.published_settings) ? source.published_settings : {};
+  const widget = isRecord(published.widget) ? published.widget : {};
+
+  return normalizeOperatorId(
+    source.operator_id ?? widget.operatorId ?? widget.assistantOperator ?? widget.operator,
   );
 }
 
@@ -399,7 +432,7 @@ export default function SettingsPage() {
         supabase
           .from("widget_settings")
           .select(
-            "business_id,widget_enabled,greeting,assistant_name,tone,position,primary_color,gradient_from,gradient_to,font_family,avatar_url,published_settings"
+            "business_id,widget_enabled,greeting,assistant_name,operator_id,tone,position,primary_color,gradient_from,gradient_to,font_family,avatar_url,published_settings"
           )
           .eq("business_id", businessId!)
           .maybeSingle(),
@@ -457,6 +490,7 @@ export default function SettingsPage() {
         widget_enabled: !!loaded.widget_enabled,
         greeting: safeText(loaded.greeting, DEFAULTS.greeting),
         assistant_name: safeText(loaded.assistant_name, DEFAULTS.assistant_name),
+        operator_id: pickOperatorId(loaded),
         tone: (loaded.tone ?? DEFAULTS.tone) as Tone,
         position: (loaded.position ?? DEFAULTS.position) as Position,
         primary_color: clampHex(loaded.primary_color, DEFAULTS.primary_color),
@@ -539,6 +573,7 @@ export default function SettingsPage() {
       widget_enabled: !!row.widget_enabled,
       greeting: safeText(row.greeting, DEFAULTS.greeting),
       assistant_name: safeText(row.assistant_name, DEFAULTS.assistant_name),
+      operator_id: normalizeOperatorId(row.operator_id),
       tone: row.tone ?? DEFAULTS.tone,
       position: row.position ?? DEFAULTS.position,
       primary_color: clampHex(row.primary_color, DEFAULTS.primary_color),
@@ -572,6 +607,11 @@ export default function SettingsPage() {
       new CustomEvent(PANEL_AVATAR_EVENT, {
         detail: { avatarUrl: next.avatar_url },
       })
+    );
+    window.dispatchEvent(
+      new CustomEvent(PANEL_OPERATOR_EVENT, {
+        detail: { operatorId: next.operator_id },
+      }),
     );
 
     if (previousAvatar && previousAvatar !== next.avatar_url) {
@@ -697,6 +737,7 @@ export default function SettingsPage() {
     enabled: row?.widget_enabled ?? DEFAULTS.widget_enabled,
     greeting: row?.greeting ?? DEFAULTS.greeting,
     assistant: row?.assistant_name ?? DEFAULTS.assistant_name,
+    operator: normalizeOperatorId(row?.operator_id ?? DEFAULTS.operator_id),
     tone: row?.tone ?? DEFAULTS.tone,
     pos: row?.position ?? DEFAULTS.position,
     primary: clampHex(row?.primary_color ?? DEFAULTS.primary_color, DEFAULTS.primary_color),
@@ -939,6 +980,98 @@ export default function SettingsPage() {
                     </Field>
                   </div>
                 </>
+              )}
+            </FieldGroup>
+          ) : null}
+
+          {tab === "operator" ? (
+            <FieldGroup
+              title="Elige quién representa a LumenAI"
+              description="Los siete operadores comparten la misma inteligencia. Cambia su apariencia y personalidad visual sin alterar los datos ni las automatizaciones."
+            >
+              {busy || !row ? (
+                <Skeleton />
+              ) : (
+                <div className={styles.operatorStudio}>
+                  <div className={styles.operatorHero}>
+                    <OperatorAvatar
+                      operator={row.operator_id}
+                      mood="analyzing"
+                      size={142}
+                      label={`${LUMEN_OPERATORS.find((item) => item.id === row.operator_id)?.name ?? "Pulse Nova"} analizando`}
+                      priority
+                    />
+                    <div className={styles.operatorHeroCopy}>
+                      <span className={styles.operatorKicker}>Operador activo</span>
+                      <h3>
+                        {LUMEN_OPERATORS.find((item) => item.id === row.operator_id)?.name ??
+                          "Pulse Nova"}
+                      </h3>
+                      <p>
+                        {LUMEN_OPERATORS.find((item) => item.id === row.operator_id)?.personality ??
+                          "Curioso, optimista y estratégico"}
+                      </p>
+                      <StatusBadge tone="active">9 expresiones conectadas</StatusBadge>
+                    </div>
+                  </div>
+
+                  <div className={styles.operatorGrid} role="radiogroup" aria-label="Operador del asistente">
+                    {LUMEN_OPERATORS.map((operator) => {
+                      const active = row.operator_id === operator.id;
+
+                      return (
+                        <button
+                          key={operator.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          className={active ? styles.operatorCardActive : styles.operatorCard}
+                          onClick={() => setRow({ ...row, operator_id: operator.id })}
+                          disabled={busy || saving}
+                        >
+                          <OperatorAvatar
+                            operator={operator.id}
+                            mood="welcome"
+                            size={82}
+                            label={operator.name}
+                          />
+                          <span className={styles.operatorCardCopy}>
+                            <strong>{operator.name}</strong>
+                            <small>{operator.role}</small>
+                          </span>
+                          <span className={styles.operatorCheck} aria-hidden="true">
+                            {active ? "✓" : ""}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className={styles.expressionRail}>
+                    <div className={styles.expressionHeading}>
+                      <strong>Lenguaje emocional</strong>
+                      <span>El sistema elige la expresión según el contexto.</span>
+                    </div>
+                    <div className={styles.expressionGrid}>
+                      {OPERATOR_PREVIEW_MOODS.map((item) => (
+                        <div key={item.mood} className={styles.expressionCard}>
+                          <OperatorAvatar
+                            operator={row.operator_id}
+                            mood={item.mood}
+                            size={66}
+                            label={item.label}
+                          />
+                          <span>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className={styles.operatorNote}>
+                    Una foto personalizada en Branding puede reemplazar al operador solamente en el widget
+                    público; el panel seguirá usando el personaje elegido como guía contextual.
+                  </p>
+                </div>
               )}
             </FieldGroup>
           ) : null}
@@ -1194,6 +1327,7 @@ export default function SettingsPage() {
                 gTo={pv.gTo}
                 fontFamily={pv.font}
                 avatarUrl={pv.avatar}
+                operatorId={pv.operator}
               />
             </FieldGroup>
           ) : null}
@@ -1255,6 +1389,7 @@ export default function SettingsPage() {
               gTo={pv.gTo}
               fontFamily={pv.font}
               avatarUrl={pv.avatar}
+              operatorId={pv.operator}
             />
           </PreviewShell>
         </aside>
@@ -1630,6 +1765,7 @@ function RealWidgetPreviewMock(props: {
   gTo: string;
   fontFamily: string;
   avatarUrl?: string | null;
+  operatorId: OperatorId;
 }) {
   const fs = fontStack(props.fontFamily);
   const isMobile = props.mode === "mobile";
@@ -1657,7 +1793,12 @@ function RealWidgetPreviewMock(props: {
                 referrerPolicy="no-referrer"
               />
             ) : (
-              String(props.businessName || "B").slice(0, 1).toUpperCase()
+              <OperatorAvatar
+                operator={props.operatorId}
+                mood="welcome"
+                size={42}
+                label={`${props.assistantName} listo`}
+              />
             )}
           </div>
 

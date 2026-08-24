@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -24,6 +25,7 @@ import { supabase } from "@/lib/supabase/client";
 import { LumenLogo } from "@/components/brand/lumen-logo";
 import { AnimatedHeroLights } from "@/components/ui/animated-hero-lights";
 import { getAppUrl } from "@/lib/env";
+import styles from "./login.module.css";
 
 function getBaseUrl() {
   const envUrl = getAppUrl().replace(/\/+$/, "");
@@ -155,6 +157,12 @@ export default function LoginPage() {
     const hash = window.location.hash || "";
     const searchParams = new URLSearchParams(search.replace(/^\?/, ""));
     const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+    const selectedPlan = searchParams.get("plan");
+
+    if (selectedPlan && ["inicio", "crecimiento", "escala"].includes(selectedPlan)) {
+      window.sessionStorage.setItem("lumenai:selected-plan", selectedPlan);
+      setOk(`Plan ${selectedPlan} seleccionado. Inicia sesión para continuar.`);
+    }
 
     const rawError =
       searchParams.get("e") ||
@@ -372,7 +380,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="lmn-auth-shell relative min-h-screen overflow-hidden bg-[#05070B] text-white">
+    <main className={`${styles.shell} lmn-auth-shell relative min-h-screen overflow-hidden bg-[#05070B] text-white`}>
       <a className="lmn-skip-link" href="#login-form">
         Ir al formulario de acceso
       </a>
@@ -416,21 +424,25 @@ export default function LoginPage() {
       </nav>
 
       <section className="lmn-auth-layout relative z-10 mx-auto grid min-h-[calc(100svh-82px)] max-w-7xl grid-cols-1 gap-8 px-5 pb-10 md:px-8 lg:grid-cols-[minmax(0,.95fr)_minmax(390px,456px)] lg:items-center">
-        <div className="lmn-auth-intro hidden lg:block">
+        <div className={`${styles.intro} lmn-auth-intro hidden lg:block`}>
           <div className="inline-flex items-center gap-2 border border-white/[0.07] bg-white/[0.025] px-3 py-2 text-xs font-bold text-white/60">
             <ShieldCheck className="h-3.5 w-3.5 text-[#00E5FF]" />
             Acceso seguro para equipos comerciales
           </div>
 
+          <div className={styles.pulseVisual} aria-hidden="true">
+            <Image src="/brand/operators/pulse/welcome.webp" alt="" width={400} height={400} priority sizes="420px" />
+          </div>
+
           <h1 className="mt-7 max-w-3xl text-6xl font-black leading-[.9] tracking-[-0.055em] text-white xl:text-7xl">
-            Entra a la consola que convierte conversaciones en{" "}
-            <span className="lmn-auth-accent">ventas</span>
+            Tu empresa ya está lista para sentirse{" "}
+            <span className="lmn-auth-accent">viva</span>
             .
           </h1>
 
           <p className="mt-6 max-w-2xl text-base leading-7 text-white/56">
-            LumenAI reúne widget, IA comercial, Knowledge, leads y analítica en
-            una plataforma clara para operar, medir y escalar atención.
+            Entra al espacio donde Pulse entiende el negocio, conecta sus datos
+            y convierte cada conversación en una siguiente acción.
           </p>
 
           <div className="mt-8 grid max-w-3xl grid-cols-3 gap-3">

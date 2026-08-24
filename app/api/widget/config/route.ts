@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseServerEnv } from "@/lib/env";
+import { normalizeOperatorId } from "@/lib/operators/catalog";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,6 +20,7 @@ type WidgetSettingsRow = {
   widget_enabled?: boolean | null;
   greeting?: string | null;
   assistant_name?: string | null;
+  operator_id?: string | null;
   tone?: string | null;
   position?: string | null;
   primary_color?: string | null;
@@ -211,6 +213,10 @@ function normalizeConfig(input: {
     cleanString(settings?.assistant_name) ||
     "LumenAI";
 
+  const operatorId = normalizeOperatorId(
+    widget?.operatorId ?? settings?.operator_id,
+  );
+
   const widgetEnabled =
     typeof widget?.widgetEnabled === "boolean"
       ? widget.widgetEnabled
@@ -308,6 +314,7 @@ function normalizeConfig(input: {
     widgetEnabled,
     greeting,
     assistantName,
+    operatorId,
     tone: cleanString(settings?.tone, "neutral"),
     position,
     theme,
@@ -336,6 +343,7 @@ function normalizeConfig(input: {
     business_name: businessName,
     widget_enabled: widgetEnabled,
     assistant_name: assistantName,
+    operator_id: operatorId,
 
     primary_color: primaryColor,
     gradient_from: gradientFrom,
