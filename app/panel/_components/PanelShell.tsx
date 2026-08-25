@@ -9,10 +9,12 @@ import {
   ChevronRight,
   Command,
   HeartPulse,
+  Moon,
   Search,
-  ShieldCheck,
-  Workflow,
+  Sparkles,
+  Sun,
   UserCircle2,
+  Workflow,
 } from "lucide-react";
 import { AnimatedSidebar } from "./AnimatedSidebar";
 import { isPanelActive, PANEL_NAV } from "./panel-nav";
@@ -38,21 +40,21 @@ const PanelInsightsAssistant = dynamic(
 function PanelThemeRuntime() {
   useEffect(() => {
     const premiumTheme: PanelThemeColors = {
-      base: "#05070B",
-      primary: "#5EEBFF",
-      secondary: "#3B82F6",
-      mode: "dark",
+      base: "#F4F7FB",
+      primary: "#246BFD",
+      secondary: "#7C5CFC",
+      mode: "light",
     };
     const stored = readPanelThemeFromStorage();
     const currentVersion = window.localStorage.getItem("lmn_theme_version");
-    const shouldUpgradeDefault = currentVersion !== "lumenai-obsidian-os-20260808";
+    const shouldUpgradeDefault = currentVersion !== "lumenai-product-os-20260825";
 
     const initialTheme = shouldUpgradeDefault ? premiumTheme : stored || premiumTheme;
 
     applyPanelThemeToRoot(initialTheme);
     if (shouldUpgradeDefault) {
       savePanelThemeToStorage(initialTheme);
-      window.localStorage.setItem("lmn_theme_version", "lumenai-obsidian-os-20260808");
+      window.localStorage.setItem("lmn_theme_version", "lumenai-product-os-20260825");
     }
 
     const handleThemeChange = (event: Event) => {
@@ -75,18 +77,16 @@ function PanelThemeRuntime() {
   return null;
 }
 
-function readModePreference() {
-  if (typeof window === "undefined") return "dark";
-  const stored = readPanelThemeFromStorage();
-  return stored?.mode === "light" ? "light" : "dark";
-}
-
 function PanelTopbar({
   userEmail,
   ownerProfile,
+  mode,
+  onToggleMode,
 }: {
   userEmail?: string;
   ownerProfile: OwnerProfile;
+  mode: "light" | "dark";
+  onToggleMode: () => void;
 }) {
   const pathname = usePathname() || "/panel/overview";
   const [query, setQuery] = useState("");
@@ -105,50 +105,36 @@ function PanelTopbar({
   }, [query]);
 
   return (
-    <header className="lmn-panel-topbar">
-      <div className="lmn-topbar-inner">
-        <div className="lmn-topbar-context">
-          <div className="lmn-topbar-route">
-            <Link href="/panel/overview" className="transition hover:text-white/72">
-              Intelligence OS
-            </Link>
+    <header className="lmx-topbar">
+      <div className="lmx-topbar-inner">
+        <div className="lmx-topbar-context">
+          <div className="lmx-breadcrumb">
+            <Link href="/panel/overview">LumenAI</Link>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/24" />
             <strong>{activeItem?.label ?? "Panel"}</strong>
           </div>
-          <div className="lmn-topbar-status">
-            <Link
-              href="/panel/settings"
-              className="inline-flex max-w-[260px] items-center gap-1.5 truncate"
-            >
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">
-                {ownerProfile.displayName || userEmail || "Workspace actual"}
-              </span>
-            </Link>
-            <span aria-hidden="true">/</span>
-            <Link href="/panel/system-health">
-              Estado del sistema
-            </Link>
+          <div className="lmx-live-status">
+            <i aria-hidden="true" />
+            <span>Sincronizado</span>
           </div>
         </div>
 
-        <div className="lmn-topbar-actions">
-          <div className="lmn-command-search">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/34" />
+        <div className="lmx-topbar-actions">
+          <div className="lmx-search">
+            <Search aria-hidden="true" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Escape") setQuery("");
               }}
-              placeholder="Buscar modulo..."
-              aria-label="Buscar modulo del panel"
-              className="placeholder:text-white/30"
+              placeholder="Buscar en LumenAI"
+              aria-label="Buscar módulo del panel"
             />
-            <Command className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/22" />
+            <span className="lmx-search-shortcut"><Command aria-hidden="true" /> K</span>
 
             {results.length ? (
-              <div className="lmn-search-results" role="listbox" aria-label="Resultados de busqueda">
+              <div className="lmx-search-results" role="listbox" aria-label="Resultados de búsqueda">
                 {results.map((item) => (
                   <Link
                     key={item.href}
@@ -157,9 +143,9 @@ function PanelTopbar({
                     role="option"
                     aria-selected="false"
                   >
-                    <span className="block text-sm font-black text-white">{item.label}</span>
+                    <span>{item.label}</span>
                     {item.desc ? (
-                      <span className="block truncate text-xs text-white/42">{item.desc}</span>
+                      <small>{item.desc}</small>
                     ) : null}
                   </Link>
                 ))}
@@ -167,33 +153,25 @@ function PanelTopbar({
             ) : null}
           </div>
 
-          <Link
-            href="/panel/radar"
-            className="lmn-text-command"
-            aria-current={activeItem?.href === "/panel/radar" ? "page" : undefined}
-          >
-            <Bell className="h-4 w-4" />
-            Pulse Radar
+          <button type="button" className="lmx-icon-button" onClick={onToggleMode} aria-label="Cambiar tema">
+            {mode === "light" ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
+          </button>
+          <Link href="/panel/radar" className="lmx-icon-button" aria-label="Abrir Pulse Radar">
+            <Sparkles aria-hidden="true" />
           </Link>
-          <Link
-            href="/panel/system-health"
-            className="lmn-icon-command"
-            aria-label="Abrir salud del sistema"
-          >
-            <HeartPulse className="h-4 w-4" />
+          <Link href="/panel/system-health" className="lmx-icon-button lmx-notification" aria-label="Abrir salud del sistema">
+            <HeartPulse aria-hidden="true" />
+            <i aria-hidden="true" />
           </Link>
-          <Link
-            href="/panel/lumenite"
-            className="lmn-text-command"
-            data-accent="true"
-            aria-current={activeItem?.href === "/panel/lumenite" ? "page" : undefined}
-          >
-            <Workflow className="h-4 w-4" />
-            <span className="hidden sm:inline">Lumenite</span>
+          <Link href="/panel/lumenite" className="lmx-icon-button" aria-label="Abrir Lumenite">
+            <Workflow aria-hidden="true" />
+          </Link>
+          <Link href="/panel/approvals" className="lmx-icon-button" aria-label="Abrir notificaciones">
+            <Bell aria-hidden="true" />
           </Link>
           <Link
             href="/panel/settings"
-            className="lmn-icon-command lmn-profile-command"
+            className="lmx-profile-button"
             aria-label="Abrir perfil y preferencias"
           >
             {ownerProfile.avatarUrl ? (
@@ -205,8 +183,12 @@ function PanelTopbar({
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <UserCircle2 className="h-4 w-4" />
+              <UserCircle2 aria-hidden="true" />
             )}
+            <span>
+              <strong>{ownerProfile.displayName || "Mi negocio"}</strong>
+              <small>{userEmail || "Administrador"}</small>
+            </span>
           </Link>
         </div>
       </div>
@@ -224,13 +206,22 @@ export default function PanelShell({
   ownerProfile?: OwnerProfile;
 }) {
   const [assistantReady, setAssistantReady] = useState(false);
-  const [mode, setMode] = useState<"light" | "dark">(readModePreference);
+  const [mode, setMode] = useState<"light" | "dark">("light");
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile>(
     initialOwnerProfile ?? {
       ...EMPTY_OWNER_PROFILE,
       email: userEmail ?? "",
     },
   );
+
+  const toggleMode = () => {
+    const nextMode = mode === "light" ? "dark" : "light";
+    const nextTheme: Partial<PanelThemeColors> = { mode: nextMode };
+    setMode(nextMode);
+    applyPanelThemeToRoot(nextTheme);
+    savePanelThemeToStorage(nextTheme);
+    window.dispatchEvent(new CustomEvent(PANEL_THEME_EVENT, { detail: nextTheme }));
+  };
 
   useEffect(() => {
     const idleWindow = window as Window & {
@@ -286,19 +277,14 @@ export default function PanelShell({
   }, []);
 
   return (
-    <div
-      className="apex-os lmn-minimal-shell lmn-vision-os lmn-obsidian-system lmn-vercel-system lmn-july4-system relative isolate min-h-screen w-full overflow-x-hidden text-white"
-      style={{
-        colorScheme: mode,
-      }}
-    >
+    <div className="lmx-app" data-theme={mode} style={{ colorScheme: mode }}>
       <PanelThemeRuntime />
       <a className="lmn-skip-link" href="#lmn-main-content">
         Saltar al contenido principal
       </a>
 
-      <div className="relative z-10 w-full px-0 py-0">
-        <div className="lmn-panel-grid grid grid-cols-1 gap-0 md:grid-cols-[248px_minmax(0,1fr)]">
+      <div className="lmx-shell">
+        <div className="lmx-layout lmn-panel-grid">
           <AnimatedSidebar
             brand="LumenAI"
             subline={ownerProfile.displayName || userEmail || "Panel"}
@@ -306,26 +292,19 @@ export default function PanelShell({
             links={PANEL_NAV}
           />
 
-          <div
-            className="min-w-0"
-            style={{
-              contain: "style",
-            }}
-          >
+          <div className="lmx-workspace" style={{ contain: "style" }}>
+            <PanelTopbar
+              userEmail={userEmail}
+              ownerProfile={ownerProfile}
+              mode={mode}
+              onToggleMode={toggleMode}
+            />
             <main
               id="lmn-main-content"
               tabIndex={-1}
-              className="lmn-vision-workspace relative min-h-screen min-w-0 bg-transparent px-0 py-0 md:px-0 md:py-0"
-              style={{
-                background: "transparent",
-              }}
+              className="lmx-main"
             >
-              <PanelTopbar userEmail={userEmail} ownerProfile={ownerProfile} />
-              <div className="relative z-10 mx-auto w-full">
-                <div className="lmn-panel-content">
-                  {children}
-                </div>
-              </div>
+              <div className="lmx-content">{children}</div>
             </main>
           </div>
         </div>

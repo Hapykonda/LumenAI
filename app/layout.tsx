@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import "./lumenai-obsidian.css";
+import "./lumenai-product.css";
 
 export const metadata: Metadata = {
   title: {

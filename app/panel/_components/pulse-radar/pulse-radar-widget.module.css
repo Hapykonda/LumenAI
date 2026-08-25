@@ -1207,6 +1207,219 @@
   }
 }
 
+/* Product OS visual layer: Pulse behaves like a calm companion, not a second dashboard. */
+:global(.lmx-app) .widget {
+  --pulse-accent: #246bfd;
+  --pulse-accent-2: #7758e8;
+  right: max(22px, env(safe-area-inset-right));
+  bottom: max(22px, env(safe-area-inset-bottom));
+}
+
+:global(.lmx-app) .launcher {
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(36, 107, 253, 0.22);
+  border-radius: 17px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(32, 55, 96, 0.18);
+}
+
+:global(.lmx-app) .launcherCore {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #eef4ff, #ffffff);
+}
+
+:global(.lmx-app) .healthRing {
+  display: none;
+}
+
+:global(.lmx-app) .launcherCopy {
+  right: calc(100% + 10px);
+  display: grid;
+  padding: 7px 10px;
+  border: 1px solid #e1e8f3;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #16213a;
+  box-shadow: 0 12px 28px rgba(31, 50, 86, 0.12);
+}
+
+:global(.lmx-app) .launcherCopy small {
+  margin-top: 2px;
+  color: #7a879d;
+}
+
+:global(.lmx-app[data-theme="light"]) .widget {
+  --pulse-surface: #ffffff;
+  --pulse-surface-soft: #f6f8fc;
+  --pulse-border: #e2e8f2;
+  --pulse-copy: #16213a;
+  --pulse-muted: #718097;
+  --pulse-shadow: 0 28px 80px rgba(26, 43, 76, 0.2);
+}
+
+:global(.lmx-app[data-theme="light"]) .panel {
+  width: min(402px, calc(100vw - 30px));
+  max-height: min(680px, calc(100svh - 30px));
+  border-radius: 18px;
+  background: #ffffff;
+  backdrop-filter: none;
+}
+
+:global(.lmx-app[data-theme="light"]) .panelHeader {
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  padding: 15px;
+  background: linear-gradient(135deg, #f4f8ff, #ffffff 62%);
+}
+
+:global(.lmx-app[data-theme="light"]) .headerMark {
+  width: 45px;
+  height: 45px;
+  border-color: #dbe6f7;
+  border-radius: 13px;
+  background: #eef4ff;
+}
+
+:global(.lmx-app[data-theme="light"]) .panelHeader h2,
+:global(.lmx-app[data-theme="light"]) .message h4,
+:global(.lmx-app[data-theme="light"]) .healthHeading strong,
+:global(.lmx-app[data-theme="light"]) .context strong {
+  color: #16213a;
+}
+
+:global(.lmx-app[data-theme="light"]) .headerActions button:hover {
+  background: #edf3ff;
+  color: #246bfd;
+}
+
+:global(.lmx-app[data-theme="light"]) .optionsMenu {
+  border-radius: 11px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(31, 50, 86, 0.18);
+}
+
+:global(.lmx-app[data-theme="light"]) .optionsMenu button,
+:global(.lmx-app[data-theme="light"]) .optionsMenu a {
+  border-bottom-color: #e8edf5;
+  color: #26334b;
+}
+
+:global(.lmx-app[data-theme="light"]) .optionsMenu button:hover,
+:global(.lmx-app[data-theme="light"]) .optionsMenu a:hover {
+  background: #f4f7fc;
+}
+
+:global(.lmx-app[data-theme="light"]) .health {
+  padding: 11px 15px;
+  background: #fbfcff;
+}
+
+:global(.lmx-app[data-theme="light"]) .healthTrack {
+  background: #e9eef5;
+}
+
+:global(.lmx-app[data-theme="light"]) .context {
+  background: #f7f9fd;
+}
+
+:global(.lmx-app[data-theme="light"]) .context p,
+:global(.lmx-app[data-theme="light"]) .message p {
+  color: #56657c;
+}
+
+:global(.lmx-app[data-theme="light"]) .stream {
+  gap: 10px;
+  padding: 14px;
+  scrollbar-color: #c9d3e2 transparent;
+}
+
+:global(.lmx-app[data-theme="light"]) .message {
+  border-color: #e4eaf3;
+  border-radius: 13px;
+  background: #f7f9fc;
+}
+
+:global(.lmx-app[data-theme="light"]) .message[data-role="user"] {
+  border-color: #ccdcff;
+  background: #edf3ff;
+}
+
+:global(.lmx-app[data-theme="light"]) .emphasis {
+  color: #1d2a43;
+}
+
+:global(.lmx-app[data-theme="light"]) .messageActions a {
+  border-radius: 8px;
+  color: #33425b;
+}
+
+:global(.lmx-app[data-theme="light"]) .messageActions a[data-kind="primary"] {
+  background: #246bfd;
+  color: #ffffff;
+}
+
+:global(.lmx-app[data-theme="light"]) .suggestions button {
+  border-radius: 8px;
+  background: #f7f9fc;
+  color: #66758d;
+}
+
+:global(.lmx-app[data-theme="light"]) .suggestions button:hover {
+  border-color: #b9ccf5;
+  color: #246bfd;
+}
+
+:global(.lmx-app[data-theme="light"]) .composer {
+  background: #ffffff;
+}
+
+:global(.lmx-app[data-theme="light"]) .composer > div {
+  border-color: #dce4ef;
+  border-radius: 11px;
+  background: #f8faff;
+}
+
+:global(.lmx-app[data-theme="light"]) .composer input {
+  color: #16213a;
+}
+
+:global(.lmx-app[data-theme="light"]) .composer input::placeholder,
+:global(.lmx-app[data-theme="light"]) .composer > small {
+  color: #8c98aa;
+}
+
+:global(.lmx-app[data-theme="light"]) .composer > div button {
+  border-left-color: #e0e7f1;
+  color: #246bfd;
+}
+
+:global(.lmx-app[data-theme="light"]) .composer > div button:hover:not(:disabled) {
+  background: #246bfd;
+  color: #ffffff;
+}
+
+:global(.lmx-app[data-theme="light"]) .panelFooter a {
+  color: #246bfd;
+}
+
+:global(.lmx-app[data-theme="light"]) .teaser {
+  border-color: #dce6f6;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #16213a;
+}
+
+:global(.lmx-app[data-theme="light"]) .teaser::after {
+  border-color: #dce6f6;
+  background: #ffffff;
+}
+
+:global(.lmx-app[data-theme="light"]) .teaser p {
+  color: #62708a;
+}
+
 @keyframes pulse-mark-arrive {
   0% {
     opacity: 0.4;

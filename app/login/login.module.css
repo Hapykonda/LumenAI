@@ -1,18 +1,165 @@
-.shell { background: #020307 !important; }
-.shell::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .2; background-image: linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px); background-size: 80px 80px; mask-image: radial-gradient(circle at 50% 30%,black,transparent 76%); }
-.intro { position: relative; min-height: 650px; padding: 54px 46% 46px 42px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); border-radius: 24px; background: radial-gradient(620px 520px at 76% 36%,rgba(31,101,255,.3),transparent 65%),linear-gradient(145deg,#07111f,#03060c 74%); box-shadow: inset 0 1px rgba(255,255,255,.055),0 36px 120px rgba(0,0,0,.45); }
-.intro h1 { position: relative; z-index: 2; font-size: clamp(3.4rem,5.1vw,6.3rem) !important; line-height: .85 !important; letter-spacing: -.065em !important; }
-.intro > p, .intro > div:not(.pulseVisual) { position: relative; z-index: 2; }
-.pulseVisual { position: absolute; z-index: 1; right: -12px; bottom: 18px; width: 48%; height: 62%; pointer-events: none; filter: drop-shadow(0 32px 70px rgba(15,82,255,.28)); }
-.pulseVisual::before { content: ""; position: absolute; inset: 20% 8% 3%; border-radius: 50%; background: radial-gradient(circle,rgba(60,142,255,.26),transparent 70%); filter: blur(20px); }
-.pulseVisual img { position: relative; width: 100%; height: 100%; object-fit: contain; object-position: bottom center; }
-.shell :global(.lmn-auth-layout) { gap: 22px; grid-template-columns: minmax(0,1.2fr) minmax(390px,456px); }
-.shell :global(.lmn-auth-card) { border-radius: 24px !important; background: linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.018)) !important; }
-.shell :global(.lmn-auth-form) { border-radius: 17px !important; padding: 30px !important; background: rgba(4,7,13,.95) !important; }
-.shell :global(.lmn-auth-form input), .shell :global(.lmn-auth-form button) { border-radius: 10px !important; }
-.shell :global(.lmn-auth-submit) { border-radius: 10px !important; background: linear-gradient(135deg,#58ddff,#2168ff 48%,#2838cf) !important; box-shadow: 0 18px 46px rgba(25,86,255,.26) !important; }
-.shell :global(.lmn-auth-accent) { color: transparent !important; background: linear-gradient(90deg,#fff,#77dfff 48%,#4267ff); background-clip: text; -webkit-background-clip: text; }
-@media (max-width: 1100px) { .intro { padding-right: 40%; } .pulseVisual { opacity: .8; } }
-@media (max-width: 1023px) { .shell :global(.lmn-auth-layout) { grid-template-columns: 1fr; max-width: 620px; } }
-@media (max-width: 600px) { .shell :global(.lmn-auth-form) { padding: 21px !important; } }
-@media (prefers-reduced-motion: reduce) { .pulseVisual { filter: none; } }
+.shell {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(48, 112, 255, .11), transparent 30%),
+    #eef3f9 !important;
+  color: #17223a !important;
+}
+
+.shell::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(24, 49, 92, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 49, 92, .025) 1px, transparent 1px);
+  background-size: 72px 72px;
+  content: "";
+  pointer-events: none;
+}
+
+.intro {
+  position: relative;
+  min-height: 650px;
+  overflow: hidden;
+  padding: 52px 44% 44px 42px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 26px;
+  background:
+    radial-gradient(560px 460px at 82% 38%, rgba(59, 124, 255, .34), transparent 65%),
+    linear-gradient(145deg, #172b56, #0d1932 76%);
+  box-shadow: 0 34px 90px rgba(26, 48, 87, .2);
+  color: #fff;
+}
+
+.intro h1 {
+  position: relative;
+  z-index: 2;
+  max-width: 650px;
+  font-size: clamp(3rem, 4.4vw, 5.2rem) !important;
+  line-height: .92 !important;
+  letter-spacing: -.058em !important;
+}
+
+.intro > p,
+.intro > div:not(.pulseVisual) {
+  position: relative;
+  z-index: 2;
+}
+
+.pulseVisual {
+  position: absolute;
+  z-index: 1;
+  right: -8px;
+  bottom: 14px;
+  width: 46%;
+  height: 59%;
+  filter: drop-shadow(0 28px 55px rgba(28, 83, 210, .22));
+  pointer-events: none;
+}
+
+.pulseVisual::before {
+  position: absolute;
+  inset: 20% 8% 3%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(89, 149, 255, .24), transparent 68%);
+  content: "";
+  filter: blur(22px);
+}
+
+.pulseVisual img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+}
+
+.shell :global(.lmn-auth-layout) {
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.18fr) minmax(390px, 468px);
+}
+
+.shell :global(.lmn-auth-card) {
+  border: 1px solid #dbe3ef !important;
+  border-radius: 26px !important;
+  background: #ffffff !important;
+  box-shadow: 0 28px 80px rgba(31, 51, 87, .14) !important;
+}
+
+.shell :global(.lmn-auth-form) {
+  padding: 31px !important;
+  border: 1px solid #e3e9f2 !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  color: #17223a !important;
+  box-shadow: none !important;
+}
+
+.shell :global(.lmn-auth-form [class*="text-white"]) {
+  color: #17223a !important;
+}
+
+.shell :global(.lmn-auth-form [class*="text-white/"]) {
+  color: #6f7d93 !important;
+}
+
+.shell :global(.lmn-auth-form [class*="border-white"]) {
+  border-color: #dfe6f0 !important;
+}
+
+.shell :global(.lmn-auth-form [class*="bg-black"]),
+.shell :global(.lmn-auth-form [class*="bg-white/"]) {
+  background: #f7f9fd !important;
+}
+
+.shell :global(.lmn-auth-form input),
+.shell :global(.lmn-auth-form button) {
+  border-radius: 11px !important;
+}
+
+.shell :global(.lmn-auth-form input) {
+  color: #17223a !important;
+}
+
+.shell :global(.lmn-auth-form input::placeholder) {
+  color: #a2adbd !important;
+}
+
+.shell :global(.lmn-auth-submit) {
+  border: 0 !important;
+  border-radius: 11px !important;
+  background: #246bfd !important;
+  color: #fff !important;
+  box-shadow: 0 14px 34px rgba(36, 107, 253, .22) !important;
+}
+
+.shell :global(.lmn-auth-submit:hover) {
+  background: #1758db !important;
+}
+
+.shell :global(.lmn-auth-accent) {
+  color: #8bb7ff !important;
+  background: none !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+@media (max-width: 1100px) {
+  .intro { padding-right: 39%; }
+  .pulseVisual { opacity: .86; }
+}
+
+@media (max-width: 1023px) {
+  .shell :global(.lmn-auth-layout) {
+    max-width: 630px;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .shell :global(.lmn-auth-form) { padding: 22px !important; }
+  .shell :global(.lmn-auth-card) { border-radius: 18px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulseVisual { filter: none; }
+}

@@ -63,7 +63,6 @@ export function AnimatedSidebar(props: AnimatedSidebarProps) {
 function DesktopSidebar({
   links,
   brand,
-  subline,
   avatarUrl,
   rightSlot,
 }: AnimatedSidebarProps) {
@@ -71,19 +70,19 @@ function DesktopSidebar({
   const grouped = useMemo(() => groupLinks(links), [links]);
 
   return (
-    <aside className="lmn-desktop-sidebar" aria-label="Navegacion del producto">
-      <div className="lmn-sidebar-frame">
-        <header className="lmn-sidebar-header">
+    <aside className="lmx-sidebar" aria-label="Navegación del producto">
+      <div className="lmx-sidebar-frame">
+        <header className="lmx-sidebar-header">
           <Link href="/panel/overview" aria-label="Abrir centro de mando">
-            <LumenLogo label={brand} subline={subline || "Intelligence OS"} priority />
+            <LumenLogo label={brand} subline="Business Intelligence" priority />
           </Link>
         </header>
 
-        {rightSlot ? <div className="lmn-sidebar-slot">{rightSlot}</div> : null}
+        {rightSlot ? <div className="lmx-sidebar-slot">{rightSlot}</div> : null}
 
-        <nav className="lmn-sidebar-nav" aria-label="Secciones de LumenAI">
+        <nav className="lmx-sidebar-nav" aria-label="Secciones de LumenAI">
           {grouped.map((group) => (
-            <section key={group.group} className="lmn-sidebar-group">
+            <section key={group.group} className="lmx-sidebar-group">
               <h2>{group.label}</h2>
               <div>
                 {group.items.map((item) => (
@@ -98,16 +97,17 @@ function DesktopSidebar({
           ))}
         </nav>
 
-        <footer className="lmn-sidebar-footer">
-          <Link href="/panel/system-health" className="lmn-sidebar-utility">
+        <footer className="lmx-sidebar-footer">
+          <Link href="/panel/system-health" className="lmx-system-status">
             <Activity aria-hidden="true" />
             <span>
-              <strong>Estado del sistema</strong>
-              <small>Integraciones y servicios</small>
+              <strong>Sistema operativo</strong>
+              <small>Todos los servicios conectados</small>
             </span>
+            <i aria-hidden="true" />
           </Link>
 
-          <div className="lmn-sidebar-footer-actions">
+          <div className="lmx-sidebar-footer-actions">
             <Link href="/support" aria-label="Abrir soporte" title="Soporte">
               <LifeBuoy aria-hidden="true" />
             </Link>
@@ -146,16 +146,15 @@ const SidebarLink = memo(function SidebarLink({
   return (
     <Link
       href={item.href}
-      className={cn("lmn-sidebar-link", active && "is-active")}
+      className={cn("lmx-sidebar-link", active && "is-active")}
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
     >
       {item.icon}
-      <span className="lmn-sidebar-link-copy">
+      <span className="lmx-sidebar-link-copy">
         <strong>{item.label}</strong>
-        {item.desc ? <small>{item.desc}</small> : null}
       </span>
-      {item.soon ? <span className="lmn-sidebar-badge">Pronto</span> : null}
+      {item.soon ? <span className="lmx-sidebar-badge">Pronto</span> : null}
     </Link>
   );
 });
@@ -163,7 +162,6 @@ const SidebarLink = memo(function SidebarLink({
 function MobileSidebar({
   links,
   brand,
-  subline,
   avatarUrl,
 }: AnimatedSidebarProps) {
   const [open, setOpen] = useState(false);
@@ -222,12 +220,12 @@ function MobileSidebar({
 
   return (
     <>
-      <header className="lmn-mobile-header">
+      <header className="lmx-mobile-header">
         <Link href="/panel/overview" aria-label="Abrir centro de mando">
-          <LumenLogo size="sm" label={brand} subline={subline || "Intelligence OS"} />
+          <LumenLogo size="sm" label={brand} subline="Business Intelligence" />
         </Link>
 
-        <div className="lmn-mobile-header-actions">
+        <div className="lmx-mobile-header-actions">
           <button type="button" onClick={openPulseAssistant} aria-label="Abrir Pulse Radar">
             <Sparkles aria-hidden="true" />
           </button>
@@ -253,22 +251,22 @@ function MobileSidebar({
       </header>
 
       {open ? (
-        <div className="lmn-mobile-nav-layer">
+        <div className="lmx-mobile-nav-layer">
           <button
             type="button"
-            className="lmn-mobile-nav-backdrop"
+            className="lmx-mobile-nav-backdrop"
             onClick={() => setOpen(false)}
             aria-label="Cerrar navegacion"
           />
           <div
             ref={drawerRef}
-            className="lmn-mobile-nav-drawer"
+            className="lmx-mobile-nav-drawer"
             role="dialog"
             aria-modal="true"
             aria-label="Navegacion de LumenAI"
           >
             <header>
-              <LumenLogo label={brand} subline={subline || "Intelligence OS"} />
+              <LumenLogo label={brand} subline="Business Intelligence" />
               <button type="button" onClick={() => setOpen(false)} aria-label="Cerrar navegacion">
                 <X aria-hidden="true" />
               </button>
@@ -276,7 +274,7 @@ function MobileSidebar({
 
             <nav aria-label="Secciones de LumenAI">
               {grouped.map((group) => (
-                <section key={group.group} className="lmn-mobile-nav-group">
+                <section key={group.group} className="lmx-mobile-nav-group">
                   <h2>{group.label}</h2>
                   <div>
                     {group.items.map((item) => (

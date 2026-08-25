@@ -36,7 +36,7 @@ test("WebGL and image editors remain outside initial interaction paths", () => {
   const suite = read("app/panel/_components/enterprise/Lumen21Suite.tsx");
   const widget = read("app/panel/widget/page.tsx");
   const settings = read("app/panel/settings/page.tsx");
-  assert.match(overview, /advancedOpen \? <div/);
+  assert.doesNotMatch(overview, /cobe-globe|three|WebGL/);
   assert.match(suite, /dynamic\([\s\S]*cobe-globe/);
   assert.doesNotMatch(suite, /import \{ Globe \} from "@\/components\/ui\/cobe-globe"/);
   assert.match(widget, /const ImageCropDialog = dynamic/);
