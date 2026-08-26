@@ -1,165 +1,280 @@
 .shell {
+  min-height: 100vh;
   background:
-    radial-gradient(circle at 12% 0%, rgba(48, 112, 255, .11), transparent 30%),
-    #eef3f9 !important;
-  color: #17223a !important;
+    linear-gradient(90deg, rgba(20, 38, 72, .025) 1px, transparent 1px),
+    #eef1f6 !important;
+  background-size: 80px 80px !important;
+  color: #121a2c !important;
 }
 
 .shell::before {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-image:
-    linear-gradient(rgba(24, 49, 92, .025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(24, 49, 92, .025) 1px, transparent 1px);
-  background-size: 72px 72px;
+  background:
+    radial-gradient(760px 520px at 8% 2%, rgba(48, 103, 255, .12), transparent 68%),
+    radial-gradient(620px 420px at 92% 100%, rgba(87, 145, 255, .08), transparent 70%);
   content: "";
   pointer-events: none;
 }
 
+.shell > :global(.lmn-animated-hero-lights),
+.shell > div[aria-hidden="true"] {
+  opacity: 0 !important;
+}
+
+.shell > nav {
+  width: min(1420px, 100%);
+  padding-top: 18px !important;
+  padding-bottom: 0 !important;
+}
+
+.shell > nav :global(.lmn-brand-copy strong) { color: #10192c; }
+.shell > nav :global(.lmn-brand-copy small) { color: #7b879b; }
+.shell > nav :global(.lmn-brand-mark) {
+  border: 1px solid #d6dde8;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(25, 43, 79, .08);
+}
+
+.shell > nav > a:last-child {
+  border-color: #d9dfe8 !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #58667e !important;
+  box-shadow: 0 8px 24px rgba(25, 43, 79, .05);
+}
+
+.shell :global(.lmn-auth-layout) {
+  width: min(1420px, 100%);
+  min-height: calc(100svh - 72px);
+  grid-template-columns: minmax(0, 1.3fr) minmax(390px, 470px);
+  gap: 18px;
+  align-items: center;
+}
+
 .intro {
   position: relative;
-  min-height: 650px;
+  min-height: min(730px, calc(100svh - 112px));
   overflow: hidden;
-  padding: 52px 44% 44px 42px;
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 26px;
-  background:
-    radial-gradient(560px 460px at 82% 38%, rgba(59, 124, 255, .34), transparent 65%),
-    linear-gradient(145deg, #172b56, #0d1932 76%);
-  box-shadow: 0 34px 90px rgba(26, 48, 87, .2);
+  padding: 54px 45% 48px 48px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 22px;
   color: #fff;
+  background:
+    linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px),
+    radial-gradient(620px 460px at 86% 35%,rgba(60,118,255,.28),transparent 68%),
+    #05070a;
+  background-size: 64px 64px,64px 64px,auto,auto;
+  box-shadow: 0 32px 90px rgba(25, 42, 76, .18);
 }
+
+.intro::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  width: 5px;
+  background: #326dff;
+  box-shadow: 0 0 40px rgba(50,109,255,.64);
+  content: "";
+}
+
+.intro::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  height: 54px;
+  border-top: 1px solid rgba(255,255,255,.09);
+  background: rgba(2,4,8,.78);
+  content: "LUMENAI / SECURE ACCESS / 2026";
+  padding: 20px 24px 0;
+  color: rgba(255,255,255,.27);
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+
+.intro > div:first-child {
+  position: relative;
+  z-index: 5;
+  border-color: rgba(255,255,255,.12) !important;
+  border-radius: 999px !important;
+  background: rgba(255,255,255,.045) !important;
+  color: rgba(255,255,255,.62) !important;
+  font-size: 9px !important;
+  letter-spacing: .05em;
+}
+
+.intro > div:first-child svg { color: #7da9ff !important; }
 
 .intro h1 {
   position: relative;
-  z-index: 2;
-  max-width: 650px;
-  font-size: clamp(3rem, 4.4vw, 5.2rem) !important;
-  line-height: .92 !important;
-  letter-spacing: -.058em !important;
+  z-index: 5;
+  max-width: 690px;
+  margin-top: 34px !important;
+  font-size: clamp(3.4rem, 5.4vw, 6.8rem) !important;
+  font-weight: 680 !important;
+  letter-spacing: -.073em !important;
+  line-height: .86 !important;
 }
 
 .intro > p,
 .intro > div:not(.pulseVisual) {
   position: relative;
-  z-index: 2;
+  z-index: 5;
 }
+
+.intro > p {
+  max-width: 570px !important;
+  color: rgba(230,237,250,.55) !important;
+  font-size: 13px !important;
+  line-height: 1.72 !important;
+}
+
+.intro > div:nth-of-type(3) {
+  grid-template-columns: 1fr !important;
+  gap: 1px !important;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  background: rgba(255,255,255,.08);
+}
+
+.intro > div:nth-of-type(3) > div {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: rgba(5,8,14,.88) !important;
+  padding: 12px !important;
+}
+
+.intro > div:nth-of-type(3) p { display: none; }
+.intro > div:nth-of-type(4) { margin-top: 22px !important; }
 
 .pulseVisual {
   position: absolute;
   z-index: 1;
-  right: -8px;
-  bottom: 14px;
-  width: 46%;
-  height: 59%;
-  filter: drop-shadow(0 28px 55px rgba(28, 83, 210, .22));
+  top: 34px;
+  right: 42px;
+  bottom: 76px;
+  width: 39%;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 9px;
+  background: #163b91;
+  box-shadow: -36px 36px 90px rgba(0,0,0,.38);
+  transform: rotate(2deg);
   pointer-events: none;
 }
 
-.pulseVisual::before {
+.pulseVisual::before,
+.pulseVisual::after {
   position: absolute;
-  inset: 20% 8% 3%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(89, 149, 255, .24), transparent 68%);
+  inset: 22px -36px -20px 36px;
+  z-index: -1;
+  border: 1px solid rgba(255,255,255,.08);
+  background: #111621;
   content: "";
-  filter: blur(22px);
 }
+
+.pulseVisual::after { inset: 48px -68px -38px 68px; opacity: .55; }
 
 .pulseVisual img {
-  position: relative;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  object-position: bottom center;
-}
-
-.shell :global(.lmn-auth-layout) {
-  gap: 20px;
-  grid-template-columns: minmax(0, 1.18fr) minmax(390px, 468px);
+  object-fit: cover;
 }
 
 .shell :global(.lmn-auth-card) {
-  border: 1px solid #dbe3ef !important;
-  border-radius: 26px !important;
-  background: #ffffff !important;
-  box-shadow: 0 28px 80px rgba(31, 51, 87, .14) !important;
+  overflow: hidden;
+  border: 1px solid #d7dde7 !important;
+  border-radius: 22px !important;
+  padding: 9px !important;
+  background: rgba(255,255,255,.74) !important;
+  box-shadow: 0 28px 80px rgba(25, 43, 79, .14) !important;
+  backdrop-filter: blur(18px);
 }
 
 .shell :global(.lmn-auth-form) {
-  padding: 31px !important;
-  border: 1px solid #e3e9f2 !important;
-  border-radius: 18px !important;
-  background: #ffffff !important;
-  color: #17223a !important;
+  padding: 30px !important;
+  border: 1px solid #e1e6ed !important;
+  border-radius: 15px !important;
+  background: #fff !important;
+  color: #172138 !important;
   box-shadow: none !important;
 }
 
-.shell :global(.lmn-auth-form [class*="text-white"]) {
-  color: #17223a !important;
-}
-
-.shell :global(.lmn-auth-form [class*="text-white/"]) {
-  color: #6f7d93 !important;
-}
-
-.shell :global(.lmn-auth-form [class*="border-white"]) {
-  border-color: #dfe6f0 !important;
-}
-
+.shell :global(.lmn-auth-form [class*="text-white"]) { color: #172138 !important; }
+.shell :global(.lmn-auth-form [class*="text-white/"]) { color: #6d788b !important; }
+.shell :global(.lmn-auth-form [class*="border-white"]) { border-color: #dfe4ec !important; }
 .shell :global(.lmn-auth-form [class*="bg-black"]),
-.shell :global(.lmn-auth-form [class*="bg-white/"]) {
-  background: #f7f9fd !important;
-}
+.shell :global(.lmn-auth-form [class*="bg-white/"]) { background: #f7f8fb !important; }
 
 .shell :global(.lmn-auth-form input),
-.shell :global(.lmn-auth-form button) {
-  border-radius: 11px !important;
-}
+.shell :global(.lmn-auth-form button) { border-radius: 8px !important; }
 
 .shell :global(.lmn-auth-form input) {
-  color: #17223a !important;
+  border-color: #dbe1e9 !important;
+  background: #fafbfc !important;
+  color: #172138 !important;
+  box-shadow: inset 0 1px 2px rgba(20,31,52,.025);
 }
 
-.shell :global(.lmn-auth-form input::placeholder) {
-  color: #a2adbd !important;
+.shell :global(.lmn-auth-form input:focus) {
+  border-color: #6c91ee !important;
+  box-shadow: 0 0 0 3px rgba(47,104,255,.09);
 }
+
+.shell :global(.lmn-auth-form input::placeholder) { color: #a0a9b7 !important; }
 
 .shell :global(.lmn-auth-submit) {
-  border: 0 !important;
-  border-radius: 11px !important;
-  background: #246bfd !important;
+  border: 1px solid #111722 !important;
+  border-radius: 8px !important;
+  background: #111722 !important;
   color: #fff !important;
-  box-shadow: 0 14px 34px rgba(36, 107, 253, .22) !important;
+  box-shadow: 0 14px 32px rgba(17,23,34,.18) !important;
 }
 
-.shell :global(.lmn-auth-submit:hover) {
-  background: #1758db !important;
-}
+.shell :global(.lmn-auth-submit:hover) { background: #223762 !important; }
 
 .shell :global(.lmn-auth-accent) {
-  color: #8bb7ff !important;
-  background: none !important;
-  -webkit-text-fill-color: currentColor;
+  display: block;
+  margin-top: 6px;
+  color: transparent !important;
+  background: linear-gradient(94deg,#fff,#c9dbff 38%,#73a0ff 100%) !important;
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent;
+  animation: login-title 900ms cubic-bezier(.2,.75,.2,1) both;
 }
 
-@media (max-width: 1100px) {
-  .intro { padding-right: 39%; }
-  .pulseVisual { opacity: .86; }
+@keyframes login-title {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateY(14px); }
+  to { opacity: 1; clip-path: inset(0 0 0 0); transform: translateY(0); }
+}
+
+@media (max-width: 1180px) {
+  .intro { padding-right: 40%; }
+  .pulseVisual { right: 24px; width: 36%; }
 }
 
 @media (max-width: 1023px) {
-  .shell :global(.lmn-auth-layout) {
-    max-width: 630px;
-    grid-template-columns: 1fr;
-  }
+  .shell :global(.lmn-auth-layout) { max-width: 640px; grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
+  .shell > nav { padding-right: 14px !important; padding-left: 14px !important; }
+  .shell > nav :global(.lmn-brand-copy small) { display: none; }
+  .shell :global(.lmn-auth-layout) { padding-right: 12px !important; padding-left: 12px !important; }
+  .shell :global(.lmn-auth-card) { border-radius: 16px !important; }
   .shell :global(.lmn-auth-form) { padding: 22px !important; }
-  .shell :global(.lmn-auth-card) { border-radius: 18px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pulseVisual { filter: none; }
+  .shell *, .shell *::before, .shell *::after { animation: none !important; transition-duration: .001ms !important; }
 }

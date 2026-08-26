@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Bell,
   ChevronRight,
   Command,
   HeartPulse,
@@ -14,7 +13,6 @@ import {
   Sparkles,
   Sun,
   UserCircle2,
-  Workflow,
 } from "lucide-react";
 import { AnimatedSidebar } from "./AnimatedSidebar";
 import { isPanelActive, PANEL_NAV } from "./panel-nav";
@@ -30,6 +28,8 @@ import {
   savePanelThemeToStorage,
   type PanelThemeColors,
 } from "@/lib/panel-theme";
+import { ModuleStage } from "./ModuleStage";
+import { getModuleExperience } from "./module-experience";
 
 const PanelInsightsAssistant = dynamic(
   () =>
@@ -163,12 +163,6 @@ function PanelTopbar({
             <HeartPulse aria-hidden="true" />
             <i aria-hidden="true" />
           </Link>
-          <Link href="/panel/lumenite" className="lmx-icon-button" aria-label="Abrir Lumenite">
-            <Workflow aria-hidden="true" />
-          </Link>
-          <Link href="/panel/approvals" className="lmx-icon-button" aria-label="Abrir notificaciones">
-            <Bell aria-hidden="true" />
-          </Link>
           <Link
             href="/panel/settings"
             className="lmx-profile-button"
@@ -205,6 +199,12 @@ export default function PanelShell({
   userEmail?: string;
   ownerProfile?: OwnerProfile;
 }) {
+  const pathname = usePathname() || "/panel/overview";
+  const moduleExperience = useMemo(
+    () => getModuleExperience(pathname),
+    [pathname],
+  );
+  const compactStage = pathname.split("/").filter(Boolean).length > 2;
   const [assistantReady, setAssistantReady] = useState(false);
   const [mode, setMode] = useState<"light" | "dark">("light");
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile>(
@@ -304,7 +304,10 @@ export default function PanelShell({
               tabIndex={-1}
               className="lmx-main"
             >
-              <div className="lmx-content">{children}</div>
+              <div className="lmx-canvas" data-module={moduleExperience.id}>
+                <ModuleStage experience={moduleExperience} compact={compactStage} />
+                <div className="lmx-content">{children}</div>
+              </div>
             </main>
           </div>
         </div>

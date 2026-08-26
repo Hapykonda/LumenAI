@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import "./lumenai-obsidian.css";
 import "./lumenai-product.css";
+import "./lumenai-studio.css";
 
 export const metadata: Metadata = {
   title: {

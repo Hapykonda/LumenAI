@@ -25,7 +25,7 @@ export default function SectionIntroGate({
   bullets,
   primaryActionLabel = "Entrar al área",
   skipActionLabel = "Omitir",
-  storageKey,
+  storageKey: rawStorageKey,
   children,
   reverseLayout = false,
 }: SectionIntroGateProps) {
@@ -33,8 +33,10 @@ export default function SectionIntroGate({
   const operator = getOperator(operatorId);
   const titleId = useId();
   const descriptionId = useId();
+  const storageKey = `${rawStorageKey}:studio-v2`;
   const [open, setOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
 
   const close = useCallback(
     (result: "completed" | "skipped" = "completed") => {
@@ -67,6 +69,14 @@ export default function SectionIntroGate({
     return () => window.cancelAnimationFrame(frame);
   }, [storageKey]);
 
+  function advance() {
+    if (activeStep < bullets.length - 1) {
+      setActiveStep((current) => current + 1);
+      return;
+    }
+    close("completed");
+  }
+
   function openAssistant() {
     close("completed");
     window.setTimeout(() => {
@@ -82,7 +92,10 @@ export default function SectionIntroGate({
         <button
           type="button"
           className={styles.reopen}
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setActiveStep(0);
+            setOpen(true);
+          }}
           aria-label={`Volver a ver el tutorial de esta sección con ${operator.name}`}
         >
           <PulsePersona size={30} expression="greeting" />
@@ -118,8 +131,9 @@ export default function SectionIntroGate({
               <PulsePersona className={styles.persona} size={230} expression="greeting" />
               <span className={styles.personaLabel}>
                 <Sparkles />
-                {operator.name} · guía activa
+                {operator.name} · operador elegido
               </span>
+              <span className={styles.stageIndex}>LUMEN / {String(activeStep + 1).padStart(2, "0")}</span>
             </div>
 
             <div className={styles.content}>
@@ -127,18 +141,25 @@ export default function SectionIntroGate({
               <h2 id={titleId}>{title}</h2>
               <p id={descriptionId}>{description}</p>
 
+              <div className={styles.progress} aria-label={`Paso ${activeStep + 1} de ${bullets.length}`}>
+                <span style={{ width: `${((activeStep + 1) / Math.max(bullets.length, 1)) * 100}%` }} />
+                <small>{String(activeStep + 1).padStart(2, "0")} / {String(bullets.length).padStart(2, "0")}</small>
+              </div>
+
               <ol className={styles.steps}>
                 {bullets.map((bullet, index) => (
-                  <li key={bullet}>
-                    <span>{String(index + 1).padStart(2, "0")}</span>
-                    <p>{bullet}</p>
+                  <li key={bullet} data-active={index === activeStep ? "true" : "false"}>
+                    <button type="button" onClick={() => setActiveStep(index)} aria-current={index === activeStep ? "step" : undefined}>
+                      <span className={styles.stepNumber}>{String(index + 1).padStart(2, "0")}</span>
+                      <span className={styles.stepCopy}>{bullet}</span>
+                    </button>
                   </li>
                 ))}
               </ol>
 
               <div className={styles.actions}>
-                <button type="button" className={styles.primary} onClick={() => close("completed")} data-autofocus>
-                  {primaryActionLabel}
+                <button type="button" className={styles.primary} onClick={advance} data-autofocus>
+                  {activeStep === bullets.length - 1 ? primaryActionLabel : "Siguiente paso"}
                   <ArrowRight aria-hidden="true" />
                 </button>
                 <button type="button" className={styles.assistant} onClick={openAssistant}>

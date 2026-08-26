@@ -411,7 +411,7 @@ export default function LoginPage() {
 
       <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-8">
         <Link href="/" aria-label="Volver a LumenAI">
-          <LumenLogo label="LumenAI" subline="Obsidian Intelligence OS" priority />
+          <LumenLogo label="LumenAI" subline="Intelligence Operating System" priority />
         </Link>
 
         <Link
@@ -431,18 +431,16 @@ export default function LoginPage() {
           </div>
 
           <div className={styles.pulseVisual} aria-hidden="true">
-            <Image src="/brand/operators/pulse/welcome.webp" alt="" width={400} height={400} priority sizes="420px" />
+            <Image src="/brand/studio/lumenai-editorial-poster.webp" alt="" width={972} height={1619} priority sizes="520px" />
           </div>
 
           <h1 className="mt-7 max-w-3xl text-6xl font-black leading-[.9] tracking-[-0.055em] text-white xl:text-7xl">
-            Tu empresa ya está lista para sentirse{" "}
-            <span className="lmn-auth-accent">viva</span>
-            .
+            La inteligencia de tu empresa, <span className="lmn-auth-accent">lista para entrar.</span>
           </h1>
 
           <p className="mt-6 max-w-2xl text-base leading-7 text-white/56">
-            Entra al espacio donde Pulse entiende el negocio, conecta sus datos
-            y convierte cada conversación en una siguiente acción.
+            Accede al espacio donde Pulse entiende el negocio, conecta sus datos y
+            convierte cada conversación en una siguiente acción verificable.
           </p>
 
           <div className="mt-8 grid max-w-3xl grid-cols-3 gap-3">
