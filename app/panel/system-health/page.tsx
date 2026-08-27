@@ -166,7 +166,7 @@ export default function SystemHealthPage() {
   }
 
   return (
-    <main className="grid gap-5 pb-10">
+    <main className="lmn-module-page lmn-health-page grid gap-5 pb-10">
       <PanelSectionHeader
         variant="hero"
         eyebrow="System QA Agent"

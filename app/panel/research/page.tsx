@@ -265,7 +265,7 @@ export default function ResearchPage() {
   }, []);
 
   return (
-    <main className="grid gap-5 pb-10">
+    <main className="lmn-module-page lmn-research-page grid gap-5 pb-10">
       <PanelSectionHeader
         variant="hero"
         eyebrow="Inteligencia"

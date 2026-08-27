@@ -235,7 +235,7 @@ export function LumenitePermissions() {
   const autoPolicies = data.policies?.filter((policy) => policy.enabled && policy.allowsAutoExecute).length ?? 0;
 
   return (
-    <main className={styles.page}>
+    <main className={`lmn-module-page lmn-permissions-page ${styles.page}`}>
       <section className={styles.hero}>
         <AnimatedHeroLights intensity="medium" />
         <div className={styles.heroCopy}>

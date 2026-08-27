@@ -334,7 +334,7 @@ export default function PanelWidgetPage() {
       storageKey="lumenai:intro:widget:v1"
       reverseLayout
     >
-      <div className="flex flex-col gap-5">
+      <div className="lmn-module-page lmn-widget-page flex flex-col gap-5">
       <PanelSectionHeader
         eyebrow="Instalación pública"
         title="Instalación del Widget"

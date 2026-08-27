@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 import { ActionButton } from "./ActionButton";
-import { LumenSectionHero } from "@/components/ui/lumen-section-hero";
 
 type PanelSectionHeaderProps = {
   eyebrow?: string;
@@ -40,35 +39,15 @@ export function PanelSectionHeader({
       </ActionButton>
     ) : null;
 
-  if (variant === "hero") {
-    return (
-      <LumenSectionHero
-        eyebrow={eyebrow}
-        title={title}
-        subtitle={description}
-        status={
-          status ? (
-            <span className="lmn-section-status" data-tone={statusTone}>
-              {status}
-            </span>
-          ) : null
-        }
-        action={action}
-        secondary={secondary}
-        animatedLights
-      >
-        {children}
-      </LumenSectionHero>
-    );
-  }
-
   return (
     <section
       className="lmn-section-header"
       data-has-content={children ? "true" : "false"}
+      data-variant={variant}
     >
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="min-w-0">
+          <div className="lmn-section-eyebrow">{eyebrow}</div>
           <div className="lmn-section-title-wrap">
             {headingLevel === 1 ? (
               <h1 className="lmn-section-title">

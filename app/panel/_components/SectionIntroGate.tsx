@@ -33,7 +33,7 @@ export default function SectionIntroGate({
   const operator = getOperator(operatorId);
   const titleId = useId();
   const descriptionId = useId();
-  const storageKey = `${rawStorageKey}:studio-v2`;
+  const storageKey = `${rawStorageKey}:agency-v3`;
   const [open, setOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [activeStep, setActiveStep] = useState(0);

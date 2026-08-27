@@ -377,7 +377,7 @@ export default function ChatPage() {
   ];
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div className="lmn-module-page lmn-chat-page" style={{ display: "grid", gap: 16 }}>
       <style jsx global>{`
         @keyframes lumenPulseDot {
           0% {

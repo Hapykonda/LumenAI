@@ -464,7 +464,7 @@ export default function ChatDetailPage() {
   }, [loading, chatId]);
 
   return (
-    <div className="lmn-chat-detail-page" style={{ display: "grid", gap: 16 }}>
+    <div className="lmn-module-page lmn-chat-detail-page" style={{ display: "grid", gap: 16 }}>
       <header
         className="lmn-chat-detail-header"
         style={{

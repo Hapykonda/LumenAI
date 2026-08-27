@@ -29,13 +29,22 @@ import {
   type PanelThemeColors,
 } from "@/lib/panel-theme";
 import { ModuleStage } from "./ModuleStage";
-import { getModuleExperience } from "./module-experience";
+import { getModuleExperience, getModuleTour } from "./module-experience";
+import SectionIntroGate from "./SectionIntroGate";
 
 const PanelInsightsAssistant = dynamic(
   () =>
     import("./PanelInsightsAssistant").then((module) => module.PanelInsightsAssistant),
   { ssr: false },
 );
+
+const DEDICATED_TOUR_MODULES = new Set([
+  "knowledge",
+  "lumen-eye",
+  "radar",
+  "settings",
+  "widget",
+]);
 
 function PanelThemeRuntime() {
   useEffect(() => {
@@ -47,14 +56,14 @@ function PanelThemeRuntime() {
     };
     const stored = readPanelThemeFromStorage();
     const currentVersion = window.localStorage.getItem("lmn_theme_version");
-    const shouldUpgradeDefault = currentVersion !== "lumenai-product-os-20260825";
+    const shouldUpgradeDefault = currentVersion !== "lumenai-agency-system-20260827";
 
     const initialTheme = shouldUpgradeDefault ? premiumTheme : stored || premiumTheme;
 
     applyPanelThemeToRoot(initialTheme);
     if (shouldUpgradeDefault) {
       savePanelThemeToStorage(initialTheme);
-      window.localStorage.setItem("lmn_theme_version", "lumenai-product-os-20260825");
+      window.localStorage.setItem("lmn_theme_version", "lumenai-agency-system-20260827");
     }
 
     const handleThemeChange = (event: Event) => {
@@ -205,6 +214,8 @@ export default function PanelShell({
     [pathname],
   );
   const compactStage = pathname.split("/").filter(Boolean).length > 2;
+  const moduleTour = useMemo(() => getModuleTour(moduleExperience.id), [moduleExperience.id]);
+  const hasDedicatedTour = DEDICATED_TOUR_MODULES.has(moduleExperience.id);
   const [assistantReady, setAssistantReady] = useState(false);
   const [mode, setMode] = useState<"light" | "dark">("light");
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile>(
@@ -307,6 +318,19 @@ export default function PanelShell({
               <div className="lmx-canvas" data-module={moduleExperience.id}>
                 <ModuleStage experience={moduleExperience} compact={compactStage} />
                 <div className="lmx-content">{children}</div>
+                {!hasDedicatedTour ? (
+                  <SectionIntroGate
+                    title={moduleTour.title}
+                    description={moduleTour.description}
+                    bullets={moduleTour.bullets}
+                    primaryActionLabel="Comenzar"
+                    skipActionLabel="Omitir recorrido"
+                    storageKey={`lumenai:intro:${moduleExperience.id}:v3`}
+                    reverseLayout={Number(moduleExperience.index) % 2 === 1}
+                  >
+                    {null}
+                  </SectionIntroGate>
+                ) : null}
               </div>
             </main>
           </div>

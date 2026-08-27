@@ -181,7 +181,7 @@ export function ApprovalInbox() {
   const supportsUndo = Boolean(dryRun && typeof dryRun === "object" && (dryRun as Record<string, unknown>).supportsUndo);
 
   return (
-    <main className={styles.page}>
+    <main className={`lmn-module-page lmn-approvals-page ${styles.page}`}>
       <section className={styles.hero}>
         <AnimatedHeroLights intensity="medium" />
         <div className={styles.heroCopy}><span><ShieldCheck aria-hidden="true" /> Decision ledger</span><h1>Approval Inbox</h1></div>

@@ -729,7 +729,7 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
 
   if (loadingGate) {
     return (
-      <main className={styles.page}>
+      <main className={`lmn-module-page lmn-knowledge-page ${styles.page}`}>
         <PanelSectionHeader
           eyebrow="Knowledge"
           title="Cargando base del negocio."
@@ -754,7 +754,7 @@ function updateHours(day: DayKey, patch: Partial<DayHours>) {
       skipActionLabel="Omitir"
       storageKey="lumenai:intro:knowledge:v1"
     >
-      <main className={`${styles.page} ${saveBarVisible ? styles.pageWithBar : ""}`}>
+      <main className={`lmn-module-page lmn-knowledge-page ${styles.page} ${saveBarVisible ? styles.pageWithBar : ""}`}>
       <PanelSectionHeader
         variant="hero"
         eyebrow="Cerebro del negocio"

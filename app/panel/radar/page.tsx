@@ -255,7 +255,7 @@ export default function RadarPage() {
       storageKey="lumenai:intro:radar:v1"
       reverseLayout
     >
-      <main className="lmn-radar-page grid gap-4 pb-8">
+      <main className="lmn-module-page lmn-radar-page grid gap-4 pb-8">
         <PanelSectionHeader
           eyebrow="Pulse Radar"
           title="Pulse Radar"

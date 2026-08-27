@@ -25,12 +25,12 @@ export function FieldGroup({
     >
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
-          <h3 className="text-base font-semibold tracking-[-0.03em] text-white">
+          <h3 className="text-base font-semibold tracking-[-0.03em]">
             {title}
           </h3>
 
           {description ? (
-            <p className="mt-2 max-w-[760px] text-sm leading-6 text-white/50">
+            <p className="lmn-field-group-description mt-2 max-w-[760px] text-sm leading-6">
               {description}
             </p>
           ) : null}

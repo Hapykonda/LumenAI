@@ -30,8 +30,8 @@ export function ActionButton(props: ActionButtonProps) {
   const disabled = props.disabled;
 
   const baseClass = cn(
-    "apex-button lmn-action-button lmn-focus-ring inline-flex h-10 items-center justify-center gap-2 border px-3 text-xs font-black transition duration-150",
-    "hover:bg-white/[0.055] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/35",
+    "apex-button lmn-action-button lmn-focus-ring inline-flex h-10 items-center justify-center gap-2 border px-3 text-xs font-bold transition duration-150",
+    "active:translate-y-px focus-visible:outline-none",
     variant === "icon" && "w-10 px-0",
     disabled && "pointer-events-none opacity-50",
     props.className
@@ -41,7 +41,14 @@ export function ActionButton(props: ActionButtonProps) {
     const { href, children, style } = props;
 
     return (
-      <Link href={href} className={baseClass} data-variant={variant} style={style}>
+      <Link
+        href={href}
+        className={baseClass}
+        data-variant={variant}
+        style={style}
+        aria-disabled={disabled || undefined}
+        tabIndex={disabled ? -1 : undefined}
+      >
         {children}
       </Link>
     );

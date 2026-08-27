@@ -460,7 +460,7 @@ export default function LeadsPage() {
   }, [loading, status]);
 
   return (
-    <main className="grid gap-5 pb-10">
+    <main className="lmn-module-page lmn-leads-page grid gap-5 pb-10">
       <PanelSectionHeader
         variant="hero"
         eyebrow="CRM comercial"

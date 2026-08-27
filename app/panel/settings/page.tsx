@@ -802,7 +802,7 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className={styles.page} style={{ ...cssVars, fontFamily: pageFont }}>
+      <div className={`lmn-module-page lmn-settings-page ${styles.page}`} style={{ ...cssVars, fontFamily: pageFont }}>
         <PanelSectionHeader
           eyebrow="Settings"
           title="Cargando configuración."
@@ -844,7 +844,7 @@ export default function SettingsPage() {
       storageKey="lumenai:intro:settings:v1"
     >
       <div
-        className={`${styles.page} ${saveBarVisible && tab !== "account" ? styles.pageWithBar : ""}`}
+        className={`lmn-module-page lmn-settings-page ${styles.page} ${saveBarVisible && tab !== "account" ? styles.pageWithBar : ""}`}
         style={{ ...cssVars, fontFamily: pageFont }}
       >
       <PanelSectionHeader

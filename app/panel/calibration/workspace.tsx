@@ -1591,7 +1591,7 @@ export function CalibrationWorkspace({
   }
 
   return (
-    <div className={`${styles.workspace} ${dirty || saving || publishing || status === "error" ? styles.withDock : ""}`}>
+    <div className={`lmn-module-page lmn-calibration-studio ${styles.workspace} ${dirty || saving || publishing || status === "error" ? styles.withDock : ""}`}>
       <CalibrationRail activeSection={activeSection} scores={scores} onSectionChange={onSectionChange} />
 
       <div className={styles.main}>
@@ -1729,7 +1729,7 @@ export function CalibrationWorkspace({
 
 export function CalibrationWorkspaceSkeleton() {
   return (
-    <div className={styles.workspace} aria-label="Cargando Calibration Studio">
+    <div className={`lmn-module-page lmn-calibration-studio ${styles.workspace}`} aria-label="Cargando Calibration Studio">
       <div className={`${styles.rail} ${styles.skeletonRail}`} aria-hidden="true" />
       <div className={styles.main}>
         <div className={`${styles.toolbar} ${styles.skeletonBlock}`} aria-hidden="true" />

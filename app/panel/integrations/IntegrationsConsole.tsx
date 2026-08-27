@@ -167,7 +167,7 @@ export function IntegrationsConsole() {
   const connected = connection?.status === "connected" || connection?.status === "degraded";
 
   return (
-    <main className={styles.page} id="main-content">
+    <main className={`lmn-module-page lmn-integrations-page ${styles.page}`} id="main-content">
       <header className={styles.hero}>
         <div>
           <span><Link2 aria-hidden="true" /> Conexiones autorizadas</span>

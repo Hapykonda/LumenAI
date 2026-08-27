@@ -5,23 +5,23 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(4, 6, 10, .78);
-  backdrop-filter: blur(18px) saturate(90%);
+  background: rgba(5, 12, 28, .70);
+  backdrop-filter: blur(20px) saturate(110%);
 }
 
 .dialog {
   position: relative;
   display: grid;
-  width: min(1120px, 100%);
-  max-height: min(840px, calc(100vh - 48px));
-  grid-template-columns: minmax(320px, .86fr) minmax(440px, 1.14fr);
+  width: min(1000px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  grid-template-columns: minmax(300px, .78fr) minmax(430px, 1.22fr);
   overflow: auto;
   border: 1px solid rgba(255,255,255,.16);
-  border-radius: 5px;
+  border-radius: 16px;
   outline: none;
   color: #0a0d14;
-  background: #efefec;
-  box-shadow: 0 70px 180px rgba(0,0,0,.55);
+  background: #f6f8fc;
+  box-shadow: 0 60px 150px rgba(2,12,38,.48);
 }
 
 .dialog::after {
@@ -47,7 +47,7 @@
   height: 40px;
   place-items: center;
   border: 1px solid rgba(8,10,16,.15);
-  border-radius: 3px;
+  border-radius: 9px;
   color: rgba(8,10,16,.6);
   background: rgba(255,255,255,.7);
   transition: background 160ms ease, color 160ms ease;
@@ -58,19 +58,19 @@
 .personaStage {
   position: relative;
   display: grid;
-  min-height: 680px;
+  min-height: 600px;
   place-items: center;
   overflow: hidden;
   border-right: 1px solid rgba(255,255,255,.1);
   background:
     linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px),
-    radial-gradient(circle at 50% 40%, rgba(42,105,255,.42), transparent 35%),
-    #080a10;
+    radial-gradient(circle at 50% 40%, rgba(42,105,255,.38), transparent 35%),
+    #071329;
   background-size: 38px 38px, 38px 38px, auto, auto;
 }
 .dialog[data-reverse="true"] .personaStage { border-right: 0; border-left: 1px solid rgba(8,10,16,.1); }
-.personaStage::before { position: absolute; inset: 28px; border: 1px solid rgba(255,255,255,.12); content: ""; }
+.personaStage::before { position: absolute; inset: 24px; border: 1px solid rgba(255,255,255,.11); border-radius: 10px; content: ""; }
 .personaStage::after { position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(255,255,255,.1); content: ""; }
 
 .persona { position: relative; z-index: 2; filter: drop-shadow(0 30px 40px rgba(0,0,0,.4)); animation: guide-arrive 650ms cubic-bezier(.18,.8,.2,1) both; }
@@ -88,7 +88,7 @@
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid rgba(255,255,255,.15);
-  border-radius: 2px;
+  border-radius: 8px;
   color: rgba(255,255,255,.72);
   background: rgba(7,9,14,.72);
   font-size: 8px;
@@ -99,10 +99,10 @@
 .personaLabel svg { width: 13px; color: #73a0ff; }
 .stageIndex { position: absolute; top: 45px; left: 48px; z-index: 2; color: rgba(255,255,255,.42); font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 9px; letter-spacing: .18em; }
 
-.content { display: flex; min-width: 0; flex-direction: column; justify-content: center; padding: 66px 58px 48px; }
+.content { display: flex; min-width: 0; flex-direction: column; justify-content: center; padding: 48px 46px 38px; }
 .eyebrow { color: #2969ee; font-size: 9px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
-.content h2 { max-width: 650px; margin: 16px 0 0; color: #0b0e15; font-size: clamp(2.8rem,4.6vw,5.4rem); font-weight: 620; line-height: .86; letter-spacing: -.07em; }
-.content > p { max-width: 620px; margin: 22px 0 0; color: rgba(9,12,19,.58); font-size: 13px; line-height: 1.72; }
+.content h2 { max-width: 650px; margin: 14px 0 0; color: #0b1324; font-size: clamp(2.2rem,3.6vw,4rem); font-weight: 680; line-height: .94; letter-spacing: -.06em; }
+.content > p { max-width: 620px; margin: 17px 0 0; color: #5a667c; font-size: 12px; line-height: 1.66; }
 
 .progress { position: relative; height: 22px; margin-top: 26px; border-bottom: 1px solid rgba(9,12,19,.16); }
 .progress > span { position: absolute; bottom: -1px; left: 0; height: 2px; background: #2e6ff4; transition: width 260ms ease; }
@@ -117,6 +117,7 @@
 
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
 .actions button { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 9px; border-radius: 3px; padding: 0 16px; font-size: 10px; font-weight: 850; }
+.actions button { border-radius: 8px; }
 .actions svg { width: 14px; }
 .primary { border: 1px solid #0a0d14; color: #fff; background: #0a0d14; box-shadow: 0 14px 34px rgba(9,12,18,.18); }
 .assistant { border: 1px solid rgba(9,12,18,.16); color: #1a263b; background: rgba(255,255,255,.56); }
@@ -125,7 +126,7 @@
 .reopen {
   position: fixed;
   bottom: 18px;
-  left: 276px;
+  left: 248px;
   z-index: 85;
   display: inline-flex;
   min-height: 44px;
@@ -133,9 +134,9 @@
   gap: 8px;
   padding: 5px 10px 5px 5px;
   border: 1px solid rgba(16,26,43,.12);
-  border-radius: 4px;
+  border-radius: 10px;
   color: #172238;
-  background: rgba(248,248,245,.94);
+  background: rgba(255,255,255,.94);
   box-shadow: 0 16px 42px rgba(19,31,54,.16);
   backdrop-filter: blur(18px);
   font-size: 8px;
@@ -159,7 +160,7 @@
 
 @media (max-width: 560px) {
   .backdrop { align-items: end; padding: 8px; }
-  .dialog { max-height: calc(100vh - 16px); border-radius: 4px; }
+  .dialog { max-height: calc(100vh - 16px); border-radius: 12px; }
   .personaStage { min-height: 205px; }
   .content { padding: 32px 20px 22px; }
   .content h2 { font-size: 2.8rem; }

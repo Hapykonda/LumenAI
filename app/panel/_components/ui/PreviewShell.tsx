@@ -28,12 +28,12 @@ export function PreviewShell({
     >
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold tracking-[-0.02em] text-white">
+          <h3 className="text-sm font-semibold tracking-[-0.02em]">
             {title}
           </h3>
 
           {description ? (
-            <p className="mt-1 text-xs leading-5 text-white/42">
+            <p className="lmn-preview-description mt-1 text-xs leading-5">
               {description}
             </p>
           ) : null}

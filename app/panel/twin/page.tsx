@@ -216,7 +216,7 @@ export default function TwinPage() {
   );
 
   return (
-    <main className="grid gap-5 pb-10">
+    <main className="lmn-module-page lmn-twin-page grid gap-5 pb-10">
       <PanelSectionHeader
         variant="hero"
         eyebrow="LumenAI Business Twin"
@@ -441,4 +441,3 @@ function Empty({ title, text }: { title: string; text: string }) {
     </div>
   );
 }
-

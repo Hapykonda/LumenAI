@@ -431,7 +431,7 @@ export function LumeniteCommandCenter() {
   const hasReceipt = Object.keys(receipt).length > 0;
 
   return (
-    <main className={styles.page} aria-busy={Boolean(busy)}>
+    <main className={`lmn-module-page lmn-lumenite-page ${styles.page}`} aria-busy={Boolean(busy)}>
       <p className="sr-only" aria-live="polite">{liveStatus(busy)}</p>
       <section className={styles.hero}>
         <AnimatedHeroLights intensity={busy ? "high" : "medium"} />

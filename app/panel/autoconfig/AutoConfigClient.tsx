@@ -456,7 +456,7 @@ export default function AutoConfigClient() {
   }, [messages.length]);
 
   return (
-    <div className="lmn-autoconfig-page flex flex-col gap-5">
+    <div className="lmn-module-page lmn-autoconfig-page flex flex-col gap-5">
       {error ? (
         <div className="lmn-autoconfig-error" role="alert">{error}</div>
       ) : null}
@@ -712,4 +712,3 @@ export default function AutoConfigClient() {
     </div>
   );
 }
-

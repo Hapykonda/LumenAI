@@ -265,7 +265,7 @@ export default function ColorMixPage() {
 
   return (
     <div
-      className="lmn-color-mix-page"
+      className="lmn-module-page lmn-color-mix-page"
       style={
         {
           "--mix-base": theme.base,

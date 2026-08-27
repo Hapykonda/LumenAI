@@ -196,7 +196,7 @@ export default function CampaignsPage() {
   };
 
   return (
-    <main className="grid gap-5 pb-10">
+    <main className="lmn-module-page lmn-campaigns-page grid gap-5 pb-10">
       <PanelSectionHeader
         variant="hero"
         eyebrow="LumenAI Campaign Studio"
@@ -465,4 +465,3 @@ function Empty({ title, text }: { title: string; text: string }) {
     </div>
   );
 }
-

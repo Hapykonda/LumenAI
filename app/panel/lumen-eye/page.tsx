@@ -193,7 +193,7 @@ export default function LumenEyePage() {
       skipActionLabel="Omitir"
       storageKey="lumenai:intro:lumen-eye:v1"
     >
-      <main className="grid gap-5 pb-10">
+      <main className="lmn-module-page lmn-eye-page grid gap-5 pb-10">
       <PanelSectionHeader
         variant="hero"
         eyebrow="Inteligencia"
