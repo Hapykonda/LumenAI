@@ -2,7 +2,6 @@
 
 import { KeyboardEvent } from "react";
 import { ArrowRight, Loader2, Rocket, Send, WandSparkles } from "lucide-react";
-import { AnimatedHeroLights } from "@/components/ui/animated-hero-lights";
 import { ConfigurationBlueprint } from "@/components/ui/configuration-blueprint";
 import { ProfessionalTypingMessage } from "@/components/ui/professional-typing-message";
 
@@ -61,7 +60,6 @@ export function ConfigAiCommandCenter({
 
   return (
     <section className="lmn-config-ai-command-center">
-      <AnimatedHeroLights intensity={proposal ? "high" : "medium"} />
       <div className="lmn-config-ai-command-copy">
         <span className="lmn-command-eyebrow">
           <WandSparkles className="h-3.5 w-3.5" />

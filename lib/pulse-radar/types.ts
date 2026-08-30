@@ -222,7 +222,7 @@ export function isSafePulseRoute(value: unknown): value is string {
 
 export function pulseSectionFromPath(pathname: string) {
   const entry = [
-    ["/panel/lumenite", "Lumenite Action OS"],
+    ["/panel/lumenite", "LumenAI Action OS"],
     ["/panel/calibration", "Calibration Studio"],
     ["/panel/autoconfig", "Config IA"],
     ["/panel/knowledge", "Knowledge"],

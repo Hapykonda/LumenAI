@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Activity,
   ChevronRight,
   Command,
   HeartPulse,
@@ -49,21 +50,21 @@ const DEDICATED_TOUR_MODULES = new Set([
 function PanelThemeRuntime() {
   useEffect(() => {
     const premiumTheme: PanelThemeColors = {
-      base: "#F4F7FB",
-      primary: "#246BFD",
-      secondary: "#7C5CFC",
-      mode: "light",
+      base: "#050505",
+      primary: "#54D9FF",
+      secondary: "#C7FF00",
+      mode: "dark",
     };
     const stored = readPanelThemeFromStorage();
     const currentVersion = window.localStorage.getItem("lmn_theme_version");
-    const shouldUpgradeDefault = currentVersion !== "lumenai-agency-system-20260827";
+    const shouldUpgradeDefault = currentVersion !== "lumenai-command-system-20260830";
 
     const initialTheme = shouldUpgradeDefault ? premiumTheme : stored || premiumTheme;
 
     applyPanelThemeToRoot(initialTheme);
     if (shouldUpgradeDefault) {
       savePanelThemeToStorage(initialTheme);
-      window.localStorage.setItem("lmn_theme_version", "lumenai-agency-system-20260827");
+      window.localStorage.setItem("lmn_theme_version", "lumenai-command-system-20260830");
     }
 
     const handleThemeChange = (event: Event) => {
@@ -117,14 +118,15 @@ function PanelTopbar({
     <header className="lmx-topbar">
       <div className="lmx-topbar-inner">
         <div className="lmx-topbar-context">
+          <span className="lmx-system-id">LMN / OS</span>
           <div className="lmx-breadcrumb">
-            <Link href="/panel/overview">LumenAI</Link>
+            <Link href="/panel/overview">Workspace</Link>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/24" />
             <strong>{activeItem?.label ?? "Panel"}</strong>
           </div>
           <div className="lmx-live-status">
-            <i aria-hidden="true" />
-            <span>Sincronizado</span>
+            <Activity aria-hidden="true" />
+            <span>Operación sincronizada</span>
           </div>
         </div>
 
@@ -137,7 +139,7 @@ function PanelTopbar({
               onKeyDown={(event) => {
                 if (event.key === "Escape") setQuery("");
               }}
-              placeholder="Buscar en LumenAI"
+              placeholder="Ir a módulo o comando"
               aria-label="Buscar módulo del panel"
             />
             <span className="lmx-search-shortcut"><Command aria-hidden="true" /> K</span>
@@ -217,7 +219,7 @@ export default function PanelShell({
   const moduleTour = useMemo(() => getModuleTour(moduleExperience.id), [moduleExperience.id]);
   const hasDedicatedTour = DEDICATED_TOUR_MODULES.has(moduleExperience.id);
   const [assistantReady, setAssistantReady] = useState(false);
-  const [mode, setMode] = useState<"light" | "dark">("light");
+  const [mode, setMode] = useState<"light" | "dark">("dark");
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile>(
     initialOwnerProfile ?? {
       ...EMPTY_OWNER_PROFILE,
@@ -288,7 +290,12 @@ export default function PanelShell({
   }, []);
 
   return (
-    <div className="lmx-app" data-theme={mode} style={{ colorScheme: mode }}>
+    <div
+      className="lmx-app"
+      data-theme={mode}
+      data-design="enterprise-v4"
+      style={{ colorScheme: mode }}
+    >
       <PanelThemeRuntime />
       <a className="lmn-skip-link" href="#lmn-main-content">
         Saltar al contenido principal
@@ -325,7 +332,7 @@ export default function PanelShell({
                     bullets={moduleTour.bullets}
                     primaryActionLabel="Comenzar"
                     skipActionLabel="Omitir recorrido"
-                    storageKey={`lumenai:intro:${moduleExperience.id}:v3`}
+                    storageKey={`lumenai:intro:${moduleExperience.id}:v4`}
                     reverseLayout={Number(moduleExperience.index) % 2 === 1}
                   >
                     {null}

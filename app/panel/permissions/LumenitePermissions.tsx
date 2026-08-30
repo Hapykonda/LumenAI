@@ -15,7 +15,6 @@ import {
   TimerReset,
   UsersRound,
 } from "lucide-react";
-import { AnimatedHeroLights } from "@/components/ui/animated-hero-lights";
 import styles from "./permissions.module.css";
 
 type Policy = {
@@ -237,10 +236,9 @@ export function LumenitePermissions() {
   return (
     <main className={`lmn-module-page lmn-permissions-page ${styles.page}`}>
       <section className={styles.hero}>
-        <AnimatedHeroLights intensity="medium" />
         <div className={styles.heroCopy}>
           <span><ShieldCheck aria-hidden="true" /> Control plane</span>
-          <h1>Permisos de Lumenite</h1>
+          <h1>Permisos de LumenAI</h1>
         </div>
         <dl className={styles.heroStats}>
           <div><dt>Activas</dt><dd>{activePolicies}</dd></div>

@@ -59,7 +59,7 @@ export const PANEL_NAV: NavItem[] = [
     icon: Icon(LayoutDashboard),
   },
   {
-    label: "Lumenite",
+    label: "Action OS",
     href: "/panel/lumenite",
     desc: "Planes y acciones",
     group: "center",
@@ -194,8 +194,8 @@ export const PANEL_NAV: NavItem[] = [
 ];
 
 export const PANEL_NAV_GROUP_LABELS: Record<NavGroup, string> = {
-  center: "Principal",
+  center: "Comando",
   builder: "Inteligencia",
-  operation: "Operacion",
+  operation: "Operación",
   system: "Sistema",
 };

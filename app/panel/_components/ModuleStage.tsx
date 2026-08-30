@@ -175,19 +175,26 @@ function StageArtwork({ experience }: { experience: ModuleExperience }) {
 
   if (experience.visual === "command") {
     return (
-      <div className="lmx-stage-keyvisual lmx-stage-agency-flyer">
-        <Image
-          src="/brand/studio/lumenai-cinematic-keyvisual.webp"
-          alt="Escultura luminosa con el símbolo de LumenAI"
-          fill
-          priority
-          sizes="(max-width: 980px) 100vw, 48vw"
-        />
-        <span className="lmx-stage-keyvisual-shade" />
-        <span className="lmx-stage-flyer-copy">
-          <small>LUMENAI / WEEKLY SIGNAL</small>
-          <strong>Intelligence<br />Layer</strong>
-        </span>
+      <div className="lmx-command-matrix" aria-label="Lectura ejecutiva del sistema">
+        <header>
+          <span><i aria-hidden="true" /> COMMAND MATRIX</span>
+          <b>LIVE / 00</b>
+        </header>
+        <div className="lmx-command-matrix-plot" aria-hidden="true">
+          <span style={{ "--value": "38%" } as CSSProperties}><i /></span>
+          <span style={{ "--value": "54%" } as CSSProperties}><i /></span>
+          <span style={{ "--value": "47%" } as CSSProperties}><i /></span>
+          <span style={{ "--value": "71%" } as CSSProperties}><i /></span>
+          <span style={{ "--value": "66%" } as CSSProperties}><i /></span>
+          <span style={{ "--value": "82%" } as CSSProperties}><i /></span>
+          <span style={{ "--value": "76%" } as CSSProperties}><i /></span>
+          <span style={{ "--value": "93%" } as CSSProperties}><i /></span>
+        </div>
+        <footer>
+          <span><small>OPERACIÓN</small><strong>94</strong></span>
+          <span><small>SEÑALES</small><strong>08</strong></span>
+          <span><small>RIESGO</small><strong>LOW</strong></span>
+        </footer>
       </div>
     );
   }

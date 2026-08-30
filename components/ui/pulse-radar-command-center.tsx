@@ -1,7 +1,6 @@
 "use client";
 
 import { Activity, Clock3, RefreshCw } from "lucide-react";
-import { AnimatedHeroLights } from "@/components/ui/animated-hero-lights";
 import { PulseRadar } from "@/components/ui/pulse-radar";
 import { PulseExecutiveOperator } from "@/components/ui/pulse-executive-operator";
 import { PulseSignalStream, type PulseSignalItem } from "@/components/ui/pulse-signal-stream";
@@ -75,8 +74,6 @@ export function PulseRadarCommandCenter({
 
   return (
     <section className={`lmn-pulse-command-center is-${state.overallStatus}`} data-mood={state.systemMood}>
-      <AnimatedHeroLights intensity={state.overallStatus === "warning" ? "high" : "medium"} />
-
       <header className="lmn-pulse-command-header">
         <div>
           <span className="lmn-command-eyebrow">Centro operativo LumenAI</span>

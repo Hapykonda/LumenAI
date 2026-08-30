@@ -20,7 +20,6 @@ import {
   Workflow,
   XCircle,
 } from "lucide-react";
-import { AnimatedHeroLights } from "@/components/ui/animated-hero-lights";
 import { LumenSystemState } from "@/components/ui/lumen-system-state";
 import type { LumeniteActionRun, LumenitePlan } from "@/lib/ai/lumenite/contracts";
 import styles from "./lumenite-command-center.module.css";
@@ -136,10 +135,10 @@ function inputValue(value: unknown): string {
 
 function liveStatus(busy: "loading" | "planning" | "executing" | "undo" | null) {
   if (busy === "loading") return "Cargando capacidades y actividad reciente.";
-  if (busy === "planning") return "Lumenite está preparando y validando el plan.";
+  if (busy === "planning") return "LumenAI está preparando y validando el plan.";
   if (busy === "executing") return "La acción autorizada está en ejecución.";
-  if (busy === "undo") return "Lumenite está revirtiendo y verificando el cambio.";
-  return "Lumenite está preparado.";
+  if (busy === "undo") return "LumenAI está revirtiendo y verificando el cambio.";
+  return "LumenAI está preparado.";
 }
 
 function timelineFor(run: LumeniteActionRun) {
@@ -211,7 +210,7 @@ export function LumeniteCommandCenter() {
         credentials: "include",
       });
       const json = (await response.json().catch(() => null)) as DashboardData | null;
-      if (!response.ok || !json?.ok) throw new Error(json?.error || "No se pudo cargar Lumenite.");
+      if (!response.ok || !json?.ok) throw new Error(json?.error || "No se pudo cargar LumenAI Action OS.");
       const runs = json.runs ?? [];
       setHistory(runs);
       setApprovals(json.approvals ?? []);
@@ -220,7 +219,7 @@ export function LumeniteCommandCenter() {
       mergePlanRuns(runs);
       setError(null);
     } catch (loadError) {
-      if (!silent) setError(loadError instanceof Error ? loadError.message : "No se pudo cargar Lumenite.");
+      if (!silent) setError(loadError instanceof Error ? loadError.message : "No se pudo cargar LumenAI Action OS.");
     } finally {
       if (!silent) setBusy(null);
     }
@@ -434,10 +433,9 @@ export function LumeniteCommandCenter() {
     <main className={`lmn-module-page lmn-lumenite-page ${styles.page}`} aria-busy={Boolean(busy)}>
       <p className="sr-only" aria-live="polite">{liveStatus(busy)}</p>
       <section className={styles.hero}>
-        <AnimatedHeroLights intensity={busy ? "high" : "medium"} />
         <div className={styles.heroCopy}>
           <span className={styles.eyebrow}><Workflow aria-hidden="true" /> Agent Foundation</span>
-          <h1>Lumenite Action OS</h1>
+          <h1>LumenAI Action OS</h1>
           <p>Observa. Planifica. Autoriza. Ejecuta. Verifica.</p>
         </div>
         <div className={styles.policySummary}>
@@ -451,10 +449,10 @@ export function LumeniteCommandCenter() {
         <div className={styles.commandInput}>
           <Sparkles aria-hidden="true" />
           <textarea
-            aria-label="Solicitud para Lumenite"
+            aria-label="Solicitud para LumenAI"
             value={command}
             onChange={(event) => setCommand(event.target.value)}
-            placeholder="¿Qué debe preparar Lumenite?"
+            placeholder="¿Qué debe preparar LumenAI?"
             rows={2}
             disabled={Boolean(busy)}
           />
@@ -483,7 +481,7 @@ export function LumeniteCommandCenter() {
       {error ? (
         <LumenSystemState
           state="error"
-          title="Lumenite no pudo completar la operación"
+          title="LumenAI no pudo completar la operación"
           description={error}
           compact
         />
@@ -537,7 +535,7 @@ export function LumeniteCommandCenter() {
             <LumenSystemState
               state="empty"
               title="Sin plan activo"
-              description="Elige una solicitud segura para iniciar. Lumenite preparará una simulación antes de ejecutar."
+              description="Elige una solicitud segura para iniciar. LumenAI preparará una simulación antes de ejecutar."
               icon={<Workflow aria-hidden="true" />}
               className={styles.embeddedState}
             />

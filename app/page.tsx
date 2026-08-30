@@ -26,7 +26,7 @@ import styles from "./marketing.module.css";
 
 const systemModules = [
   { icon: Radar, title: "Pulse Radar", copy: "Explica cambios, riesgo y oportunidad con señales reales del negocio.", code: "SIGNAL / 01", visual: "radar", wide: true },
-  { icon: Workflow, title: "Lumenite", copy: "Convierte intención en planes aprobables, acciones y evidencia.", code: "ACTION / 02", visual: "flow" },
+  { icon: Workflow, title: "Action OS", copy: "Convierte intención en planes aprobables, acciones y evidencia.", code: "ACTION / 02", visual: "flow" },
   { icon: BrainCircuit, title: "Knowledge", copy: "Servicios, precios y políticas se transforman en memoria utilizable.", code: "MEMORY / 03", visual: "memory" },
   { icon: MessageSquareText, title: "Conversaciones", copy: "Atención humana e IA comparten contexto, historial y siguiente paso.", code: "LIVE / 04", visual: "chat", wide: true },
   { icon: Target, title: "Growth", copy: "Prioriza oportunidades según intención, impacto y capacidad comercial.", code: "GROWTH / 05", visual: "growth" },
@@ -47,7 +47,7 @@ const operatingFlow = [
   ["01", "Escucha", "El widget y los canales capturan conversaciones y señales."],
   ["02", "Comprende", "Knowledge y la calibración entregan contexto verificable."],
   ["03", "Prioriza", "Pulse organiza riesgos, oportunidades y urgencia."],
-  ["04", "Actúa", "Lumenite prepara y ejecuta únicamente lo autorizado."],
+  ["04", "Actúa", "LumenAI prepara y ejecuta únicamente lo autorizado."],
 ];
 
 export default function Home() {

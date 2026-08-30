@@ -75,7 +75,7 @@ const MODULE_TOURS: Record<string, ModuleTour> = {
     ],
   },
   lumenite: {
-    title: "Lumenite convierte instrucciones en planes controlados.",
+    title: "LumenAI convierte instrucciones en planes controlados.",
     description: "Aquí la IA puede preparar acciones, pero el alcance, el riesgo y la aprobación siempre quedan visibles.",
     bullets: [
       "Describe la acción que necesitas y revisa el plan antes de ejecutarlo.",
@@ -268,7 +268,7 @@ const EXPERIENCES: ModuleExperience[] = [
   {
     id: "lumenite",
     path: "/panel/lumenite",
-    eyebrow: "Lumenite · Action OS",
+    eyebrow: "LumenAI · Action OS",
     title: "De intención a ejecución.",
     accent: "Con control humano.",
     description:

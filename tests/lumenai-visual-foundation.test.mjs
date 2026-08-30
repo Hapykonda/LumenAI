@@ -55,9 +55,9 @@ test("every panel module has its own visual and guided operating contract", asyn
     "chat", "leads", "widget", "integration", "settings", "appearance", "health",
   ];
 
-  for (const module of modules) {
-    assert.match(experience, new RegExp(`(?:^|\\s)["']?${module.replace("-", "\\-")}["']?\\s*:`));
-    assert.match(experience, new RegExp(`id:\\s*["']${module}["']`));
+  for (const moduleName of modules) {
+    assert.match(experience, new RegExp(`(?:^|\\s)["']?${moduleName.replace("-", "\\-")}["']?\\s*:`));
+    assert.match(experience, new RegExp(`id:\\s*["']${moduleName}["']`));
   }
 
   for (const visual of visuals) {

@@ -17,7 +17,6 @@ import {
   Undo2,
   X,
 } from "lucide-react";
-import { AnimatedHeroLights } from "@/components/ui/animated-hero-lights";
 import type { LumeniteActionRun, LumeniteApprovalInboxItem } from "@/lib/ai/lumenite/contracts";
 import styles from "./approvals.module.css";
 
@@ -57,8 +56,8 @@ function formatValue(value: unknown): string {
 function expectedResult(run: LumeniteActionRun) {
   const dryRun = run.planSnapshot.dryRun;
   return dryRun && typeof dryRun === "object"
-    ? String((dryRun as Record<string, unknown>).expectedResult || "Resultado verificado por Lumenite")
-    : "Resultado verificado por Lumenite";
+    ? String((dryRun as Record<string, unknown>).expectedResult || "Resultado verificado por LumenAI")
+    : "Resultado verificado por LumenAI";
 }
 
 function permissionLabel(run: LumeniteActionRun) {
@@ -183,7 +182,6 @@ export function ApprovalInbox() {
   return (
     <main className={`lmn-module-page lmn-approvals-page ${styles.page}`}>
       <section className={styles.hero}>
-        <AnimatedHeroLights intensity="medium" />
         <div className={styles.heroCopy}><span><ShieldCheck aria-hidden="true" /> Decision ledger</span><h1>Approval Inbox</h1></div>
         <dl><div><dt>Pendientes</dt><dd>{inbox.pending.length}</dd></div><div><dt>Historial</dt><dd>{total}</dd></div></dl>
       </section>

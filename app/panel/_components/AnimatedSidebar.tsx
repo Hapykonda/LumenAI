@@ -63,6 +63,7 @@ export function AnimatedSidebar(props: AnimatedSidebarProps) {
 function DesktopSidebar({
   links,
   brand,
+  subline,
   avatarUrl,
   rightSlot,
 }: AnimatedSidebarProps) {
@@ -74,11 +75,19 @@ function DesktopSidebar({
       <div className="lmx-sidebar-frame">
         <header className="lmx-sidebar-header">
           <Link href="/panel/overview" aria-label="Abrir centro de mando">
-            <LumenLogo label={brand} subline="Business Intelligence" priority />
+            <LumenLogo label={brand} subline="Enterprise Intelligence" priority />
           </Link>
+          <span className="lmx-sidebar-edition">04</span>
         </header>
 
         {rightSlot ? <div className="lmx-sidebar-slot">{rightSlot}</div> : null}
+
+        <button type="button" className="lmx-sidebar-pulse" onClick={openPulseAssistant}>
+          <span className="lmx-sidebar-pulse-signal"><i aria-hidden="true" /> PULSE / ONLINE</span>
+          <strong>Inteligencia operativa</strong>
+          <small>{subline || "Sistema empresarial"}</small>
+          <Sparkles aria-hidden="true" />
+        </button>
 
         <nav className="lmx-sidebar-nav" aria-label="Secciones de LumenAI">
           {grouped.map((group) => (
@@ -153,6 +162,7 @@ const SidebarLink = memo(function SidebarLink({
       {item.icon}
       <span className="lmx-sidebar-link-copy">
         <strong>{item.label}</strong>
+        {active && item.desc ? <small>{item.desc}</small> : null}
       </span>
       {item.soon ? <span className="lmx-sidebar-badge">Pronto</span> : null}
     </Link>

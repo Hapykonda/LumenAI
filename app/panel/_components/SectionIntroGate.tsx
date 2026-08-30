@@ -33,7 +33,7 @@ export default function SectionIntroGate({
   const operator = getOperator(operatorId);
   const titleId = useId();
   const descriptionId = useId();
-  const storageKey = `${rawStorageKey}:agency-v3`;
+  const storageKey = `${rawStorageKey}:command-v4`;
   const [open, setOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
@@ -137,7 +137,7 @@ export default function SectionIntroGate({
             </div>
 
             <div className={styles.content}>
-              <span className={styles.eyebrow}>Recorrido de la sección</span>
+              <span className={styles.eyebrow}>LumenAI / briefing de módulo</span>
               <h2 id={titleId}>{title}</h2>
               <p id={descriptionId}>{description}</p>
 

@@ -972,7 +972,7 @@ function BrandIdentityCard({
       <div className={styles.lumeniteNote}>
         <Sparkles />
         <div>
-          <strong>Recomendación de Lumenite</strong>
+          <strong>Recomendación de LumenAI</strong>
           <span>
             {quality === 100
               ? "La identidad tiene suficiente contexto para orientar respuestas consistentes."
