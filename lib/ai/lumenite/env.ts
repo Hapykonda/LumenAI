@@ -1,19 +1,25 @@
 import { getOptionalEnv } from "@/lib/env";
 
-export type LumeniteAgentKey =
+export type LumenAiPillarKey =
+  | "calibration"
+  | "config-ai"
+  | "lumen-eye"
+  | "pulse-radar"
+  | "research"
   | "widget"
-  | "autoconfig"
-  | "panel"
-  | "radar"
-  | "growth"
-  | "twin"
-  | "campaigns";
+  | "chats"
+  | "knowledge"
+  | "interface"
+  | "overview"
+  | "access";
 
-type AgentEnvConfig = {
+/** Kept as an internal compatibility name for the action engine. */
+export type LumeniteAgentKey = LumenAiPillarKey;
+
+type PillarEnvConfig = {
   keyEnv: string;
   modelEnv: string;
   fallbackModel: string;
-  fallbackAgents?: LumeniteAgentKey[];
 };
 
 export const LUMENITE_PRIMARY_MODEL = "openai/gpt-oss-120b";
@@ -24,99 +30,56 @@ const DEPRECATED_MODEL_ALIASES = new Set([
   "meta-llama/llama-3.3-70b-versatile",
 ]);
 
-const FALLBACK_MODEL = LUMENITE_PRIMARY_MODEL;
-
-export const LUMENITE_AGENT_ENV: Record<LumeniteAgentKey, AgentEnvConfig> = {
-  widget: {
-    keyEnv: "GROQ_WIDGET_API_KEY",
-    modelEnv: "GROQ_WIDGET_MODEL",
-    fallbackModel: FALLBACK_MODEL,
-    fallbackAgents: ["panel"],
-  },
-  autoconfig: {
-    keyEnv: "GROQ_AUTOCONFIG_API_KEY",
-    modelEnv: "GROQ_AUTOCONFIG_MODEL",
-    fallbackModel: FALLBACK_MODEL,
-    fallbackAgents: ["panel"],
-  },
-  panel: {
-    keyEnv: "GROQ_PANEL_API_KEY",
-    modelEnv: "GROQ_PANEL_MODEL",
-    fallbackModel: FALLBACK_MODEL,
-  },
-  radar: {
-    keyEnv: "GROQ_RADAR_API_KEY",
-    modelEnv: "GROQ_RADAR_MODEL",
-    fallbackModel: FALLBACK_MODEL,
-    fallbackAgents: ["panel"],
-  },
-  growth: {
-    keyEnv: "GROQ_GROWTH_API_KEY",
-    modelEnv: "GROQ_GROWTH_MODEL",
-    fallbackModel: FALLBACK_MODEL,
-    fallbackAgents: ["panel"],
-  },
-  twin: {
-    keyEnv: "GROQ_TWIN_API_KEY",
-    modelEnv: "GROQ_TWIN_MODEL",
-    fallbackModel: FALLBACK_MODEL,
-    fallbackAgents: ["panel"],
-  },
-  campaigns: {
-    keyEnv: "GROQ_CAMPAIGNS_API_KEY",
-    modelEnv: "GROQ_CAMPAIGNS_MODEL",
-    fallbackModel: FALLBACK_MODEL,
-    fallbackAgents: ["panel"],
-  },
+export const LUMENAI_PILLAR_ENV: Record<LumenAiPillarKey, PillarEnvConfig> = {
+  calibration: { keyEnv: "GROQ_CALIBRATION_API_KEY", modelEnv: "GROQ_CALIBRATION_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
+  "config-ai": { keyEnv: "GROQ_CONFIG_AI_API_KEY", modelEnv: "GROQ_CONFIG_AI_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
+  "lumen-eye": { keyEnv: "GROQ_LUMEN_EYE_API_KEY", modelEnv: "GROQ_LUMEN_EYE_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
+  "pulse-radar": { keyEnv: "GROQ_PULSE_API_KEY", modelEnv: "GROQ_PULSE_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
+  research: { keyEnv: "GROQ_RESEARCH_API_KEY", modelEnv: "GROQ_RESEARCH_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
+  widget: { keyEnv: "GROQ_WIDGET_API_KEY", modelEnv: "GROQ_WIDGET_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
+  chats: { keyEnv: "GROQ_CHATS_API_KEY", modelEnv: "GROQ_CHATS_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
+  knowledge: { keyEnv: "GROQ_KNOWLEDGE_API_KEY", modelEnv: "GROQ_KNOWLEDGE_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
+  interface: { keyEnv: "GROQ_INTERFACE_API_KEY", modelEnv: "GROQ_INTERFACE_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
+  overview: { keyEnv: "GROQ_OVERVIEW_API_KEY", modelEnv: "GROQ_OVERVIEW_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
+  access: { keyEnv: "GROQ_ACCESS_API_KEY", modelEnv: "GROQ_ACCESS_MODEL", fallbackModel: LUMENITE_PRIMARY_MODEL },
 };
-
-function readEnv(name: string) {
-  return getOptionalEnv(name);
-}
 
 export function normalizeLumeniteModel(model: string) {
   const value = String(model || "").trim();
-  if (!value) return FALLBACK_MODEL;
-
+  if (!value) return LUMENITE_PRIMARY_MODEL;
   return DEPRECATED_MODEL_ALIASES.has(value.toLowerCase())
     ? LUMENITE_PRIMARY_MODEL
     : value;
 }
 
-export function resolveLumeniteEnv(agent: LumeniteAgentKey) {
-  const config = LUMENITE_AGENT_ENV[agent];
-  const dedicatedKey = readEnv(config.keyEnv);
-  const fallbackFromAgent = (config.fallbackAgents ?? [])
-    .map((fallbackAgent) => LUMENITE_AGENT_ENV[fallbackAgent].keyEnv)
-    .find((envName) => Boolean(readEnv(envName)));
-  const fallbackKey =
-    fallbackFromAgent ? readEnv(fallbackFromAgent) : readEnv("GROQ_API_KEY");
-  const apiKey = dedicatedKey || fallbackKey || readEnv("GROQ_API_KEY");
-  const fallbackEnv = fallbackFromAgent || (readEnv("GROQ_API_KEY") ? "GROQ_API_KEY" : null);
+export function resolveLumenAiEnv(pillar: LumenAiPillarKey) {
+  const config = LUMENAI_PILLAR_ENV[pillar];
+  const dedicatedKey = getOptionalEnv(config.keyEnv);
+  const genericKey = getOptionalEnv("GROQ_API_KEY");
+  const apiKey = dedicatedKey || genericKey;
 
   return {
-    agent,
+    pillar,
+    agent: pillar,
     keyEnv: config.keyEnv,
     modelEnv: config.modelEnv,
     configured: Boolean(apiKey),
     dedicatedKey: Boolean(dedicatedKey),
-    usingFallbackKey: !dedicatedKey && Boolean(apiKey),
-    fallbackEnv,
+    usingFallbackKey: !dedicatedKey && Boolean(genericKey),
+    fallbackEnv: !dedicatedKey && genericKey ? "GROQ_API_KEY" : null,
     apiKey,
     model: normalizeLumeniteModel(
-      readEnv(config.modelEnv) ||
-        (fallbackEnv === "GROQ_PANEL_API_KEY" ? readEnv("GROQ_PANEL_MODEL") : "") ||
-        readEnv("GROQ_MODEL") ||
-        config.fallbackModel
+      getOptionalEnv(config.modelEnv) || getOptionalEnv("GROQ_MODEL") || config.fallbackModel,
     ),
   };
 }
 
-export function getLumenitePublicStatus(agent: LumeniteAgentKey) {
-  const resolved = resolveLumeniteEnv(agent);
+export const resolveLumeniteEnv = resolveLumenAiEnv;
 
+export function getLumenitePublicStatus(pillar: LumenAiPillarKey) {
+  const resolved = resolveLumenAiEnv(pillar);
   return {
-    provider: "lumenite",
+    provider: "groq",
     configured: resolved.configured,
     dedicatedKey: resolved.dedicatedKey,
     usingFallbackKey: resolved.usingFallbackKey,
@@ -125,12 +88,8 @@ export function getLumenitePublicStatus(agent: LumeniteAgentKey) {
   };
 }
 
-export function requireLumeniteEnv(agent: LumeniteAgentKey) {
-  const resolved = resolveLumeniteEnv(agent);
-
-  if (!resolved.apiKey) {
-    throw new Error(`Missing ${resolved.keyEnv}`);
-  }
-
+export function requireLumeniteEnv(pillar: LumenAiPillarKey) {
+  const resolved = resolveLumenAiEnv(pillar);
+  if (!resolved.apiKey) throw new Error(`Missing ${resolved.keyEnv}`);
   return resolved;
 }

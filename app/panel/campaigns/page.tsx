@@ -199,9 +199,9 @@ export default function CampaignsPage() {
     <main className="lmn-module-page lmn-campaigns-page grid gap-5 pb-10">
       <PanelSectionHeader
         variant="hero"
-        eyebrow="LumenAI Campaign Studio"
-        title="Estudio de campanas comerciales"
-        description="Convierte una idea en oferta, mensajes, tareas y experimentos listos para ejecutar manualmente."
+        eyebrow="Config AI · Campaign Builder"
+        title="Preparación contextual de campañas"
+        description="Convierte una intención comercial en oferta, mensajes, tareas y experimentos. Esta capacidad vive dentro de Config AI."
         status={`${summary.campaigns} campanas`}
         statusTone={summary.active > 0 ? "active" : "muted"}
         secondary={
@@ -399,7 +399,7 @@ export default function CampaignsPage() {
               <Send className="h-3.5 w-3.5" />
               Enviar a Config AI
             </ActionButton>
-            <ActionButton href="/panel/growth" variant="secondary">
+            <ActionButton href="/panel/lumen-eye?view=growth" variant="secondary">
               Crear playbook
               <ArrowRight className="h-3.5 w-3.5" />
             </ActionButton>

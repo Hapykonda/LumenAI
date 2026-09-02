@@ -579,13 +579,17 @@ export async function GET(req: Request) {
     const leadComparison = sevenDayComparison(leads);
     const activity24h = auditRows.filter((row) => dateValue(row.created_at) >= now - day);
     const lumeniteAgents: LumeniteAgentKey[] = [
+      "calibration",
+      "config-ai",
+      "lumen-eye",
+      "pulse-radar",
+      "research",
       "widget",
-      "autoconfig",
-      "panel",
-      "radar",
-      "growth",
-      "twin",
-      "campaigns",
+      "chats",
+      "knowledge",
+      "interface",
+      "overview",
+      "access",
     ];
     const environmentStatus = lumeniteAgents.map((agent) => ({
       agent,
@@ -624,7 +628,7 @@ export async function GET(req: Request) {
           period: "Estado actual",
           comparison: `${healthWarnings} advertencia(s); ${missingEnvironment.length} entorno(s) pendiente(s)`,
           state: healthState,
-          href: "/panel/system-health",
+          href: "/panel/access?view=security",
           actionLabel: "Abrir salud",
         }),
         metric({
@@ -637,7 +641,7 @@ export async function GET(req: Request) {
           updatedAt: newestDate([...pulseSignals, ...actionRuns, ...approvals]) || generatedAt,
           comparison: `${criticalPulseSignals.length} Pulse; ${failedActions24h.length} ejecucion(es); ${expiredApprovals.length} vencida(s)`,
           state: criticalAlerts > 0 ? "critical" : "ready",
-          href: criticalPulseSignals.length ? "/panel/radar" : "/panel/system-health",
+          href: criticalPulseSignals.length ? "/panel/radar" : "/panel/access?view=security",
           actionLabel: criticalAlerts > 0 ? "Resolver alertas" : "Ver estado",
         }),
         metric({
@@ -650,7 +654,7 @@ export async function GET(req: Request) {
           updatedAt: newestDate(approvals) || generatedAt,
           comparison: `${expiredApprovals.length} solicitud(es) vencida(s) detectada(s)`,
           state: activeApprovals.length > 0 ? "warning" : "ready",
-          href: "/panel/approvals",
+          href: "/panel/overview?view=decisions",
           actionLabel: "Revisar inbox",
         }),
         metric({
@@ -663,7 +667,7 @@ export async function GET(req: Request) {
           updatedAt: newestDate(actionRuns) || generatedAt,
           comparison: `${completedActions7d.length} completada(s) o revertida(s) en 7 dias`,
           state: failedActions24h.length ? "critical" : activeActionRuns.length ? "active" : "ready",
-          href: "/panel/lumenite",
+          href: "/panel/radar?view=actions",
           actionLabel: "Abrir Lumenite",
         }),
         metric({
@@ -689,7 +693,7 @@ export async function GET(req: Request) {
           updatedAt: newestDate(leads) || generatedAt,
           comparison: `${stats.leads_won} ganada(s); ${stats.leads_lost} perdida(s)`,
           state: opportunityLeads.length ? "active" : "muted",
-          href: "/panel/leads",
+          href: "/panel/chat?view=leads",
           actionLabel: "Priorizar leads",
         }),
         metric({
@@ -715,7 +719,7 @@ export async function GET(req: Request) {
           updatedAt: newestDate(leads) || generatedAt,
           comparison: leadComparison.label,
           state: leads.length ? "active" : "muted",
-          href: "/panel/leads",
+          href: "/panel/chat?view=leads",
           actionLabel: "Ver pipeline",
         }),
         metric({
@@ -728,7 +732,7 @@ export async function GET(req: Request) {
           updatedAt: newestDate(auditRows, ["created_at"]) || generatedAt,
           comparison: `${auditRows.length} evento(s) disponibles en la ventana consultada`,
           state: activity24h.length ? "active" : "muted",
-          href: "/panel/system-health",
+          href: "/panel/access?view=security",
           actionLabel: "Revisar actividad",
         }),
         metric({

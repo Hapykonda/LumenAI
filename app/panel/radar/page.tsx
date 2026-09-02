@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ArrowRight, Clock3, Database, Newspaper, TimerOff, X } from "lucide-react";
 import { GlassCard } from "../_components/ui/GlassCard";
 import { PanelSectionHeader } from "../_components/ui/PanelSectionHeader";
@@ -12,6 +13,14 @@ import {
 } from "@/components/ui/pulse-radar-command-center";
 import type { InsightMood, PulseOverallStatus, PulseRecommendation } from "@/lib/pulse-insights";
 import type { PulseRadarInsight } from "@/lib/pulse-radar/types";
+
+const LumeniteCommandCenter = dynamic(
+  () =>
+    import("../lumenite/LumeniteCommandCenter").then(
+      (module) => module.LumeniteCommandCenter,
+    ),
+  { ssr: false },
+);
 
 type LegacySignal = {
   label: string;
@@ -181,6 +190,7 @@ export default function RadarPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [signalBusy, setSignalBusy] = useState<string | null>(null);
+  const [embeddedView, setEmbeddedView] = useState<"actions" | null>(null);
 
   async function load(refresh = false) {
     setLoading(true);
@@ -206,6 +216,8 @@ export default function RadarPage() {
   }
 
   useEffect(() => {
+    const view = new URLSearchParams(window.location.search).get("view");
+    setEmbeddedView(view === "actions" ? "actions" : null);
     void load();
   }, []);
 
@@ -239,6 +251,22 @@ export default function RadarPage() {
     } finally {
       setSignalBusy(null);
     }
+  }
+
+  if (embeddedView === "actions") {
+    return (
+      <main className="lmn-module-page lmn-radar-page grid gap-4 pb-8">
+        <PanelSectionHeader
+          eyebrow="Pulse Radar · Actions"
+          title="Acciones preparadas"
+          description="Action OS trabaja aquí como motor interno: planifica, solicita aprobación, ejecuta y conserva recibos sin convertirse en otro pilar."
+          status="Control humano activo"
+          statusTone="active"
+          secondary={<Link href="/panel/radar" className="lmn-btn lmn-btn-secondary">Volver al Daily Brief</Link>}
+        />
+        <LumeniteCommandCenter />
+      </main>
+    );
   }
 
   return (

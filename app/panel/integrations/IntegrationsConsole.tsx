@@ -234,7 +234,7 @@ export function IntegrationsConsole() {
         </form>
 
         <section className={styles.history} aria-labelledby="draft-history-title">
-          <header><div><small>Trazabilidad</small><h2 id="draft-history-title">Borradores recientes</h2></div><Link href="/panel/approvals">Abrir aprobaciones</Link></header>
+          <header><div><small>Trazabilidad</small><h2 id="draft-history-title">Borradores recientes</h2></div><Link href="/panel/overview?view=decisions">Abrir decisiones</Link></header>
           <div className={styles.draftList}>
             {data?.drafts?.length ? data.drafts.map((draft) => (
               <article key={draft.id}>
@@ -242,7 +242,7 @@ export function IntegrationsConsole() {
                 <h3>{draft.subject}</h3>
                 <p>{draft.recipient}</p>
                 {draft.error_message ? <small className={styles.draftError}>{draft.error_message}</small> : null}
-                {draft.external_url ? <a href={draft.external_url} target="_blank" rel="noreferrer">Abrir borrador <ExternalLink /></a> : <Link href="/panel/approvals">Ver plan pendiente</Link>}
+                {draft.external_url ? <a href={draft.external_url} target="_blank" rel="noreferrer">Abrir borrador <ExternalLink /></a> : <Link href="/panel/overview?view=decisions">Ver decisión pendiente</Link>}
               </article>
             )) : <p className={styles.empty}>{busy === "load" ? "Cargando historial..." : "Aun no hay borradores externos."}</p>}
           </div>

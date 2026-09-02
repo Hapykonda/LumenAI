@@ -107,11 +107,11 @@ function DesktopSidebar({
         </nav>
 
         <footer className="lmx-sidebar-footer">
-          <Link href="/panel/system-health" className="lmx-system-status">
+          <Link href="/panel/access?view=security" className="lmx-system-status">
             <Activity aria-hidden="true" />
             <span>
-              <strong>Sistema operativo</strong>
-              <small>Todos los servicios conectados</small>
+              <strong>Guardian activo</strong>
+              <small>Seguridad y permisos</small>
             </span>
             <i aria-hidden="true" />
           </Link>
@@ -128,7 +128,7 @@ function DesktopSidebar({
             >
               <Sparkles aria-hidden="true" />
             </button>
-            <Link href="/panel/settings" aria-label="Abrir perfil y ajustes" title="Perfil y ajustes">
+            <Link href="/panel/access" aria-label="Abrir identidad y cuenta" title="Access">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />
@@ -239,7 +239,7 @@ function MobileSidebar({
           <button type="button" onClick={openPulseAssistant} aria-label="Abrir Pulse Radar">
             <Sparkles aria-hidden="true" />
           </button>
-          <Link href="/panel/settings" aria-label="Abrir perfil y ajustes">
+          <Link href="/panel/access" aria-label="Abrir identidad y cuenta">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />

@@ -46,7 +46,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      ai: getGroqStatus("campaigns"),
+      ai: getGroqStatus("config-ai"),
       summary: {
         campaigns: safeCampaigns.length,
         active: safeCampaigns.filter((item) => item.status === "active").length,

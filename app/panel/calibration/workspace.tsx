@@ -21,7 +21,6 @@ import {
   MessageSquareText,
   Minus,
   MoreHorizontal,
-  Palette,
   Plus,
   RefreshCw,
   Rocket,
@@ -59,7 +58,6 @@ export type CalibrationSectionKey =
   | "objections"
   | "guardrails"
   | "escalation"
-  | "widget"
   | "review";
 
 export type CalibrationWorkspaceStatus =
@@ -173,7 +171,6 @@ const SECTION_RAIL: Array<{
   { key: "objections", label: "Objeciones", stage: "sales", icon: MessageSquareText },
   { key: "guardrails", label: "Guardrails", stage: "rules", icon: ShieldCheck },
   { key: "escalation", label: "Escalamiento", stage: "rules", icon: ShieldAlert },
-  { key: "widget", label: "Widget", stage: "rules", icon: Palette },
   { key: "review", label: "Revisión final", stage: "review", icon: Rocket },
 ];
 
@@ -187,7 +184,6 @@ const BEHAVIOR_TABS: Array<{
   { label: "Ventas", section: "sales", stage: "sales" },
   { label: "Objeciones", section: "objections", stage: "sales" },
   { label: "Guardrails", section: "guardrails", stage: "rules" },
-  { label: "Widget", section: "widget", stage: "rules" },
 ];
 
 const LAB_SCENARIOS = [
@@ -289,8 +285,6 @@ function sectionScores(draft: CalibrationDoc): SectionScore[] {
   const sales = asRecord(draft.calibration.sales);
   const guardrails = asRecord(draft.calibration.guardrails);
   const escalation = asRecord(guardrails.escalate);
-  const widget = asRecord(draft.widget);
-  const theme = asRecord(widget.theme);
   const objections = asRecord(sales.objectionHandling);
   const lexicon = draft.calibration.lexicon;
 
@@ -351,14 +345,14 @@ function sectionScores(draft: CalibrationDoc): SectionScore[] {
       ],
     },
     {
-      key: "widget",
+      key: "tone",
       stage: "rules",
-      label: "Widget",
+      label: "Brand Constitution",
       checks: [
-        hasText(widget.greeting, 12),
-        asStringArray(widget.quickActions).length >= 2,
-        hasText(theme.primaryColor),
-        hasText(theme.gradientTo),
+        asStringArray(identity.values).length >= 2,
+        hasText(brief.howToSound, 12),
+        hasText(brief.howNotToSound, 12),
+        asStringArray(lexicon.forbiddenPhrases).length > 0,
       ],
     },
   ];
@@ -381,7 +375,7 @@ function sectionStateForRail(section: CalibrationSectionKey, scores: SectionScor
   }
 
   if (section === "tone") {
-    return scores.find((item) => item.key === "personality")?.state ?? "warning";
+    return scores.find((item) => item.key === "tone")?.state ?? "warning";
   }
 
   if (section === "escalation") {
@@ -1445,7 +1439,7 @@ function EditorDrawer({
         : stage === "sales"
           ? "Ventas y objeciones"
           : stage === "rules"
-            ? "Guardrails, escalamiento y widget"
+            ? "Guardrails y escalamiento"
             : "Revisión final";
   const dialogRef = useModalAccessibility<HTMLElement>({ onClose });
 

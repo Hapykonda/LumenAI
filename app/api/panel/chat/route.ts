@@ -248,7 +248,7 @@ ${kbText || "(vacía)"}
 
     assistant =
       (await callGroqChat({
-        purpose: "panel",
+        purpose: "chats",
         messages: [{ role: "system", content: sys }, ...history],
         temperature: 0.2,
       })) || "";

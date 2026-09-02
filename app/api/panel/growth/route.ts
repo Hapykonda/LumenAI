@@ -57,7 +57,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      ai: getGroqStatus("growth"),
+      ai: getGroqStatus("lumen-eye"),
       business: snapshot.business,
       summary: {
         opportunities: safeOpportunities.length,

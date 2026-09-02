@@ -64,7 +64,6 @@ type CalibrationReadiness = CalibrationReadinessSummary;
 
 const accentA = "var(--lmn-accent-rgb, 0,229,255)";
 const accentB = "var(--lmn-accent-2-rgb, 27,67,255)";
-const PANEL_THEME_EVENT = "lumen-theme:update";
 
 const SECTION_STAGE: Record<CalibrationSectionKey, StageKey> = {
   overview: "base",
@@ -75,7 +74,6 @@ const SECTION_STAGE: Record<CalibrationSectionKey, StageKey> = {
   objections: "sales",
   guardrails: "rules",
   escalation: "rules",
-  widget: "rules",
   review: "review",
 };
 
@@ -236,12 +234,19 @@ const PSYCHOLOGY_BLUEPRINTS = [
 ];
 
 const MIX_FIELDS = [
+  ["joy", "Calidez", "Transmite apertura y ánimo positivo."],
   ["empathy", "Empatia", "Entiende antes de vender."],
   ["brevity", "Brevedad", "Responde corto y accionable."],
   ["directivity", "Direccion", "Guia hacia el siguiente paso."],
   ["elegance", "Elegancia", "Lenguaje premium y claro."],
   ["energy", "Energia", "Ritmo vivo sin ser agresivo."],
   ["closeness", "Cercania", "Trato humano y natural."],
+  ["humor", "Humor", "Ligereza apropiada para la marca."],
+  ["persuasion", "Persuasion", "Orienta sin presión falsa."],
+  ["technicalLevel", "Nivel tecnico", "Profundidad de las explicaciones."],
+  ["emojiUse", "Emojis", "Frecuencia de apoyo visual en el lenguaje."],
+  ["exclusivity", "Exclusividad", "Percepción premium y selectiva."],
+  ["autonomy", "Autonomia", "Cuánto avanza sin confirmación conversacional."],
 ] as const;
 
 function isObj(v: unknown): v is AnyObj {
@@ -294,26 +299,6 @@ async function fetchWithTimeout(
   }
 }
 
-function normalizeHex(hex?: unknown, fallback = "#00E5FF") {
-  const raw = String(hex || "").trim();
-  if (!raw) return fallback;
-
-  const withHash = raw.startsWith("#") ? raw : `#${raw}`;
-  return /^#([0-9a-fA-F]{6})$/.test(withHash)
-    ? withHash.toUpperCase()
-    : fallback;
-}
-
-function hexToRgbString(hex: string) {
-  const safe = normalizeHex(hex);
-  const value = safe.slice(1);
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-
-  return `${r}, ${g}, ${b}`;
-}
-
 function clampNumber(value: unknown, min: number, max: number, fallback: number) {
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return fallback;
@@ -355,34 +340,6 @@ function textToDictionary(text: string) {
   return out;
 }
 
-function applyLivePanelTheme(input: {
-  primaryColor?: string;
-  gradientFrom?: string;
-  gradientTo?: string;
-}) {
-  if (typeof window === "undefined") return;
-
-  const primary = normalizeHex(input.primaryColor || input.gradientFrom, "#2F7CFF");
-  const secondary = normalizeHex(input.gradientTo || input.gradientFrom, "#5BE0C2");
-  const root = document.documentElement;
-
-  root.style.setProperty("--lmn-accent", primary);
-  root.style.setProperty("--lmn-accent-2", secondary);
-  root.style.setProperty("--lmn-accent-rgb", hexToRgbString(primary));
-  root.style.setProperty("--lmn-accent-2-rgb", hexToRgbString(secondary));
-
-  window.localStorage.setItem("lmn_theme_primary", primary);
-  window.localStorage.setItem("lmn_theme_secondary", secondary);
-  window.localStorage.setItem("widget_primary_color", primary);
-  window.localStorage.setItem("widget_secondary_color", secondary);
-
-  window.dispatchEvent(
-    new CustomEvent(PANEL_THEME_EVENT, {
-      detail: { primary, secondary },
-    })
-  );
-}
-
 function formatDate(value: unknown) {
   if (!value) return "Sin publicar";
 
@@ -415,8 +372,6 @@ function buildCalibrationReadiness(
   const sales = draft.calibration.sales || {};
   const guardrails = draft.calibration.guardrails || {};
   const lexicon = draft.calibration.lexicon;
-  const widget = draft.widget || {};
-  const theme = widget.theme;
   const escalate = guardrails.escalate;
 
   const signals: ReadinessSignal[] = [
@@ -466,15 +421,15 @@ function buildCalibrationReadiness(
         hasMinItems(lexicon.forbiddenPhrases, 1),
     },
     {
-      key: "widget",
-      label: "Widget publicable",
-      detail: "Saludo, acciones rapidas y color del asistente estan definidos.",
+      key: "constitution",
+      label: "Brand Constitution",
+      detail: "Valores, lenguaje y límites de marca están documentados.",
       stage: "rules",
       done:
-        hasUsefulText(widget.greeting, 12) &&
-        hasMinItems(widget.quickActions, 2) &&
-        hasUsefulText(theme.primaryColor) &&
-        hasUsefulText(theme.gradientTo),
+        hasMinItems(identity.values, 2) &&
+        hasUsefulText(brandBrief.howToSound, 12) &&
+        hasUsefulText(brandBrief.howNotToSound, 12) &&
+        hasMinItems(lexicon.forbiddenPhrases, 1),
     },
     {
       key: "production",
@@ -535,8 +490,6 @@ export default function CalibrationStudio() {
   const lexicon = draft.calibration.lexicon;
   const sales = draft.calibration.sales;
   const guardrails = draft.calibration.guardrails;
-  const widget = draft.widget;
-  const theme = widget.theme || {};
   const savedProfiles = Array.isArray(personality.savedProfiles)
     ? (personality.savedProfiles as SavedProfile[])
     : [];
@@ -553,8 +506,8 @@ export default function CalibrationStudio() {
       Boolean(brandBrief.differentiation?.trim()),
       Boolean(brandBrief.objections?.trim()),
       Boolean(personality.freeNotes?.trim()),
-      Boolean(widget.greeting?.trim()),
-      Boolean(Array.isArray(widget.quickActions) && widget.quickActions.length >= 2),
+      Boolean(brandBrief.howToSound?.trim()),
+      Boolean(brandBrief.howNotToSound?.trim()),
       Boolean(sales.psychologyDefault),
     ];
     const done = checks.filter(Boolean).length;
@@ -564,7 +517,7 @@ export default function CalibrationStudio() {
       total: checks.length,
       percent: Math.round((done / checks.length) * 100),
     };
-  }, [identity, brandBrief, personality, widget, sales]);
+  }, [identity, brandBrief, personality, sales]);
 
   const readiness = useMemo(
     () => buildCalibrationReadiness(draft, publicKey, published),
@@ -800,34 +753,6 @@ export default function CalibrationStudio() {
     } as Partial<CalibrationDoc>);
   }
 
-  function updateWidget(patch: AnyObj) {
-    updateDraft({
-      widget: {
-        ...widget,
-        ...patch,
-      },
-    } as Partial<CalibrationDoc>);
-  }
-
-  function updateWidgetTheme(patch: AnyObj) {
-    const nextTheme = {
-      ...theme,
-      ...patch,
-    };
-
-    if (
-      patch.primaryColor !== undefined ||
-      patch.gradientFrom !== undefined ||
-      patch.gradientTo !== undefined
-    ) {
-      applyLivePanelTheme(nextTheme);
-    }
-
-    updateWidget({
-      theme: nextTheme,
-    });
-  }
-
   function applyBlueprint(id: string) {
     const preset = PSYCHOLOGY_BLUEPRINTS.find((item) => item.id === id);
     if (!preset) return;
@@ -1026,12 +951,8 @@ export default function CalibrationStudio() {
       <RulesStage
         lexicon={lexicon}
         guardrails={guardrails}
-        widget={widget}
-        theme={theme}
         updateLexicon={updateLexicon}
         updateGuardrails={updateGuardrails}
-        updateWidget={updateWidget}
-        updateWidgetTheme={updateWidgetTheme}
       />
     ) : (
       <ReviewStage
@@ -1357,6 +1278,30 @@ function BaseStage({
         </GlassCard>
       </div>
 
+      <GlassCard variant="base" accent className="p-5">
+        <CardTitle title="Brand Constitution" subtitle="La definición estructurada de quiénes somos, cómo hablamos y qué jamás deberíamos representar." />
+        <div className="mt-5 grid gap-4 lg:grid-cols-3">
+          <AudioTextArea
+            label="Nuestra historia y propósito"
+            value={brandBrief.story || ""}
+            onChange={(value) => updateBrandBrief("story", value)}
+            placeholder="Por qué existe la empresa, qué defiende y qué cambio quiere producir."
+          />
+          <AudioTextArea
+            label="Cómo queremos sonar y hacer sentir"
+            value={brandBrief.howToSound || ""}
+            onChange={(value) => updateBrandBrief("howToSound", value)}
+            placeholder="Precisa, cercana, segura; el cliente debe sentirse comprendido y bien orientado."
+          />
+          <AudioTextArea
+            label="Cómo jamás debemos sonar"
+            value={brandBrief.howNotToSound || ""}
+            onChange={(value) => updateBrandBrief("howNotToSound", value)}
+            placeholder="Nunca arrogante, robótica, agresiva, confusa ni insistente."
+          />
+        </div>
+      </GlassCard>
+
       <GlassCard variant="soft" className="p-5">
         <CardTitle title="Valores de marca" subtitle="Una linea por valor. Esto guia el tono del asistente." />
         <TextAreaField
@@ -1473,6 +1418,16 @@ function PersonalityStage({
                 min={1}
                 max={5}
                 onChange={(value) => onRulesChange({ maxOptions: value })}
+              />
+              <SelectField
+                label="Extensión de respuesta"
+                value={rules.responseLength || "balanced"}
+                onChange={(value) => onRulesChange({ responseLength: value })}
+                options={[
+                  { value: "short", label: "Breve y directa" },
+                  { value: "balanced", label: "Equilibrada" },
+                  { value: "detailed", label: "Detallada y educativa" },
+                ]}
               />
             </div>
           </GlassCard>
@@ -1675,6 +1630,16 @@ function SalesStage({
           />
         </GlassCard>
       </div>
+
+      <GlassCard variant="soft" className="p-5">
+        <CardTitle title="Comportamiento por contexto" subtitle="Define cómo debe adaptarse LumenAI sin perder la Brand Constitution." />
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <TextAreaField label="Cliente molesto" value={brandBrief.upsetCustomer || ""} onChange={(value) => updateBrandBrief("upsetCustomer", value)} placeholder="Validar, bajar tensión, no vender y ofrecer una solución o derivación." rows={4} />
+          <TextAreaField label="Cliente indeciso" value={brandBrief.indecisiveCustomer || ""} onChange={(value) => updateBrandBrief("indecisiveCustomer", value)} placeholder="Reducir opciones, aclarar criterios y proponer un micro-compromiso." rows={4} />
+          <TextAreaField label="Comprador recurrente" value={brandBrief.recurringBuyer || ""} onChange={(value) => updateBrandBrief("recurringBuyer", value)} placeholder="Reconocer continuidad, evitar repetir lo básico y priorizar velocidad." rows={4} />
+          <TextAreaField label="Lead de alto valor" value={brandBrief.highValueLead || ""} onChange={(value) => updateBrandBrief("highValueLead", value)} placeholder="Profundizar contexto, elevar la atención y preparar derivación prioritaria." rows={4} />
+        </div>
+      </GlassCard>
     </div>
   );
 }
@@ -1682,28 +1647,20 @@ function SalesStage({
 function RulesStage({
   lexicon,
   guardrails,
-  widget,
-  theme,
   updateLexicon,
   updateGuardrails,
-  updateWidget,
-  updateWidgetTheme,
 }: {
   lexicon: CalibrationDoc["calibration"]["lexicon"];
   guardrails: CalibrationDoc["calibration"]["guardrails"];
-  widget: CalibrationDoc["widget"];
-  theme: CalibrationDoc["widget"]["theme"];
   updateLexicon(patch: AnyObj): void;
   updateGuardrails(patch: AnyObj): void;
-  updateWidget(patch: AnyObj): void;
-  updateWidgetTheme(patch: AnyObj): void;
 }) {
   return (
     <div className="grid gap-5">
       <SectionIntro
         icon={ShieldCheck}
         title="Reglas que protegen la experiencia"
-        text="Controla palabras, derivacion humana, saludo del widget y estilo visual sin tocar codigo."
+        text="Controla palabras, formalidad, derivación humana y límites. La apariencia pública pertenece exclusivamente a Widget."
       />
 
       <RulesSignalBoard />
@@ -1711,6 +1668,27 @@ function RulesStage({
       <div className="grid gap-5 lg:grid-cols-2">
         <GlassCard variant="base" accent className="p-5">
           <CardTitle title="Lenguaje permitido" subtitle="Una frase por linea. El asistente las usara como estilo de marca." />
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <SelectField
+              label="Tratamiento"
+              value={lexicon.formality}
+              onChange={(value) => updateLexicon({ formality: value })}
+              options={[
+                { value: "tu", label: "Tú: cercano" },
+                { value: "usted", label: "Usted: formal" },
+                { value: "mixto", label: "Adaptativo" },
+              ]}
+            />
+            <SelectField
+              label="Variante de español"
+              value={lexicon.locale}
+              onChange={(value) => updateLexicon({ locale: value })}
+              options={[
+                { value: "es-CL", label: "Español de Chile" },
+                { value: "es-419", label: "Español latinoamericano" },
+              ]}
+            />
+          </div>
           <TextAreaField
             className="mt-4"
             label="Frases permitidas"
@@ -1778,53 +1756,13 @@ function RulesStage({
         </GlassCard>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <GlassCard variant="base" accent className="p-5">
-          <CardTitle title="Saludo y acciones del widget" subtitle="Esto es lo primero que vera el cliente en la web." />
-          <AudioTextArea
-            className="mt-4"
-            label="Saludo inicial"
-            value={widget.greeting || ""}
-            onChange={(value) => updateWidget({ greeting: value })}
-            placeholder="Hola, soy LumenAI. Te ayudo a cotizar, resolver dudas o hablar con el equipo."
-          />
-          <TextAreaField
-            className="mt-4"
-            label="Botones rapidos"
-            value={listToText(widget.quickActions)}
-            onChange={(value) => updateWidget({ quickActions: textToList(value) })}
-            placeholder="Quiero cotizar&#10;Ver servicios&#10;Horarios&#10;Hablar con humano"
-            rows={4}
-          />
-        </GlassCard>
-
-        <GlassCard variant="base" accent className="p-5">
-          <CardTitle title="Color del asistente" subtitle="Se refleja en panel, preview y widget." />
-          <div className="mt-5 grid gap-4">
-            <ColorField
-              label="Color principal"
-              value={theme.primaryColor || "#2F7CFF"}
-              onChange={(value) => updateWidgetTheme({ primaryColor: value, gradientFrom: value })}
-            />
-            <ColorField
-              label="Color secundario"
-              value={theme.gradientTo || "#5BE0C2"}
-              onChange={(value) => updateWidgetTheme({ gradientTo: value })}
-            />
-            <SelectField
-              label="Posicion"
-              value={widget.position || "br"}
-              onChange={(value) => updateWidget({ position: value })}
-              options={[
-                { value: "br", label: "Abajo derecha" },
-                { value: "bl", label: "Abajo izquierda" },
-                { value: "tr", label: "Arriba derecha" },
-                { value: "tl", label: "Arriba izquierda" },
-              ]}
-            />
-          </div>
-        </GlassCard>
-      </div>
+      <GlassCard variant="soft" className="p-5">
+        <CardTitle title="Responsabilidad separada" subtitle="Calibration define cómo conversa la marca; Widget define cómo se presenta al cliente." />
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+          <p className="max-w-2xl text-sm leading-6 text-white/52">El saludo, los botones, colores, posición, responsive e instalación ya no se duplican aquí.</p>
+          <ActionButton href="/panel/widget" variant="secondary">Abrir Customer Experience Studio</ActionButton>
+        </div>
+      </GlassCard>
     </div>
   );
 }
@@ -2275,41 +2213,6 @@ function ToggleField({
         />
       </span>
     </button>
-  );
-}
-
-function ColorField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange(value: string): void;
-}) {
-  const safe = normalizeHex(value);
-
-  return (
-    <label className="grid gap-2">
-      <span className="text-xs font-black uppercase tracking-[0.12em] text-white/42">{label}</span>
-      <div className="flex items-center gap-2">
-        <span
-          className="apex-cut h-11 w-11 shrink-0 border border-white/[0.070]"
-          style={{ background: `linear-gradient(135deg, ${safe}, ${safe}88)` }}
-        />
-        <input
-          type="color"
-          value={safe}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-11 w-12 cursor-pointer bg-transparent"
-        />
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="apex-cut h-11 min-w-0 flex-1 border border-white/[0.060] bg-black/36 px-3 text-sm text-white outline-none focus:border-white/14"
-        />
-      </div>
-    </label>
   );
 }
 

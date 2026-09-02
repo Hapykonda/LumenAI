@@ -153,7 +153,7 @@ export async function POST() {
     });
     const fallback = fallbackOpportunities(snapshot);
     const aiText = await callGroqChat({
-      purpose: "growth",
+      purpose: "lumen-eye",
       responseFormat: "json_object",
       temperature: 0.18,
       maxTokens: 1600,
@@ -247,7 +247,7 @@ export async function POST() {
 
     return NextResponse.json({
       ok: true,
-      ai: getGroqStatus("growth"),
+      ai: getGroqStatus("lumen-eye"),
       generationMode: aiText ? "ai" : "evidence_rules",
       inserted,
       proposed: drafts,
@@ -262,6 +262,5 @@ export async function POST() {
     );
   }
 }
-
 
 

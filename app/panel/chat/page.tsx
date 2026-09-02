@@ -137,6 +137,11 @@ export default function ChatPage() {
   const [flashIds, setFlashIds] = useState<Record<string, number>>({});
   const flashTimer = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
+  useEffect(() => {
+    const view = new URLSearchParams(window.location.search).get("view");
+    if (view === "leads") setFilter("leads");
+  }, []);
+
   const computedStats = useMemo(() => {
     return {
       total: chats.length,

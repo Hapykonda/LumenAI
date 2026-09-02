@@ -64,7 +64,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       mode: hasRealResearch ? "real" : "preview",
-      ai: getGroqStatus("radar"),
+      ai: getGroqStatus("research"),
       business: snapshot.business,
       summary: {
         sources: sources.length,

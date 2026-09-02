@@ -257,7 +257,7 @@ export async function GET() {
           impact: `${Number(lead.score ?? 0)}%`,
           time: lead.updated_at ?? lead.created_at,
           action: "Crear oportunidad Growth",
-          href: "/panel/growth",
+          href: "/panel/lumen-eye?view=growth",
         })),
       ...signals.slice(0, 4).map((signal) => ({
         id: `signal-${signal.id}`,

@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         .limit(30)
     );
     const aiText = await callGroqChat({
-      purpose: "radar",
+      purpose: "research",
       responseFormat: "json_object",
       temperature: 0.18,
       maxTokens: 1700,
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      ai: getGroqStatus("radar"),
+      ai: getGroqStatus("research"),
       report,
       usedFallback: !aiText,
     });

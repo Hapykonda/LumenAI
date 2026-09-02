@@ -194,7 +194,7 @@ export async function POST(req: Request) {
       businessName: snapshot.business.name,
     });
     const aiText = await callGroqChat({
-      purpose: "campaigns",
+      purpose: "config-ai",
       responseFormat: "json_object",
       temperature: 0.24,
       maxTokens: 2200,
@@ -307,7 +307,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      ai: getGroqStatus("campaigns"),
+      ai: getGroqStatus("config-ai"),
       generationMode: aiText ? "ai" : "evidence_rules",
       campaign,
       assets: assets.data ?? [],
@@ -322,6 +322,5 @@ export async function POST(req: Request) {
     );
   }
 }
-
 
 

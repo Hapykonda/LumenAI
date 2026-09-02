@@ -36,7 +36,7 @@ export async function POST(request: Request) {
           signal,
           planId: signal.action_plan_id,
           runId: signal.action_run_id,
-          href: `/panel/lumenite?run=${encodeURIComponent(signal.action_run_id)}`,
+          href: `/panel/radar?view=actions&run=${encodeURIComponent(signal.action_run_id)}`,
         });
       }
 

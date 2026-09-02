@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -11,13 +12,14 @@ import {
   ChevronRight,
   CircleAlert,
   Clock3,
+  Eye,
   HeartPulse,
   MessageCircleMore,
   RefreshCw,
+  Search,
   ShieldCheck,
   Sparkles,
   Target,
-  TrendingUp,
   UsersRound,
   WandSparkles,
   Zap,
@@ -25,6 +27,11 @@ import {
 import { OperatorAvatar } from "@/components/brand/operator-avatar";
 import { panelFetch } from "@/lib/panel-fetch";
 import { usePanel } from "../_components/panel-context";
+
+const ApprovalInbox = dynamic(
+  () => import("../approvals/ApprovalInbox").then((module) => module.ApprovalInbox),
+  { ssr: false },
+);
 
 type OverviewData = {
   ok?: boolean;
@@ -129,8 +136,8 @@ function buildFocus(data: OverviewData | null): FocusItem[] {
     items.push({
       title: "Oportunidades nuevas sin siguiente paso",
       copy: `${stats?.leads_new ?? 0} leads ingresaron al pipeline y todavía no tienen una acción de seguimiento.`,
-      href: "/panel/leads",
-      action: "Abrir pipeline",
+      href: "/panel/chat?view=leads",
+      action: "Filtrar en Chats",
       tone: "cyan",
       icon: Target,
     });
@@ -162,8 +169,8 @@ function buildFocus(data: OverviewData | null): FocusItem[] {
     items.push({
       title: "La operación está bajo control",
       copy: "No hay bloqueos inmediatos. Pulse recomienda explorar la siguiente oportunidad de crecimiento.",
-      href: "/panel/growth",
-      action: "Abrir Growth",
+      href: "/panel/lumen-eye?view=growth",
+      action: "Abrir Lumen Eye",
       tone: "cyan",
       icon: Sparkles,
     });
@@ -179,6 +186,7 @@ export default function OverviewPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [embeddedView, setEmbeddedView] = useState<"decisions" | null>(null);
 
   async function loadOverview(silent = false) {
     if (silent) setRefreshing(true);
@@ -201,6 +209,8 @@ export default function OverviewPage() {
   }
 
   useEffect(() => {
+    const view = new URLSearchParams(window.location.search).get("view");
+    setEmbeddedView(view === "decisions" ? "decisions" : null);
     void loadOverview();
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") void loadOverview(true);
@@ -216,6 +226,23 @@ export default function OverviewPage() {
   const series = data?.performance?.growthSeries ?? [];
   const maxActivity = Math.max(1, ...series.map((point) => point.widgetUsers + point.leads));
   const healthLabel = health === "ready" ? "VERIFICADO" : health === "critical" ? "CRÍTICO" : "REVISIÓN";
+
+  if (embeddedView === "decisions") {
+    return (
+      <div className="lmx-overview lmx-command-overview">
+        <header className="lmx-command-pagebar">
+          <div>
+            <span><i aria-hidden="true" /> OVERVIEW / PENDING DECISIONS</span>
+            <p>Acciones que requieren aprobación humana, con riesgo, evidencia y trazabilidad.</p>
+          </div>
+          <Link href="/panel/overview" className="lmx-button lmx-button-ghost">
+            <ArrowRight className="rotate-180" aria-hidden="true" /> Volver al resumen
+          </Link>
+        </header>
+        <ApprovalInbox />
+      </div>
+    );
+  }
 
   return (
     <div className="lmx-overview lmx-command-overview">
@@ -268,7 +295,7 @@ export default function OverviewPage() {
 
           <div className="lmx-state-ledger">
             <StateLine label="Alertas críticas" value={summary?.criticalAlerts ?? 0} detail={(summary?.criticalAlerts ?? 0) ? "Requieren control" : "Sin bloqueos"} />
-            <StateLine label="Aprobaciones" value={summary?.pendingApprovals ?? 0} detail="Decisiones humanas" />
+            <StateLine label="Decisiones" value={summary?.pendingApprovals ?? 0} detail="Aprobación pendiente" />
             <StateLine label="Acciones activas" value={summary?.activeLumeniteActions ?? 0} detail="LumenAI ejecutando" />
           </div>
         </article>
@@ -300,7 +327,7 @@ export default function OverviewPage() {
 
       <section className="lmx-kpi-ledger" aria-label="Indicadores principales">
         <Metric icon={MessageCircleMore} code="CHT" label="Conversaciones" value={stats?.chats_total ?? 0} detail={`${stats?.chats_unread ?? 0} sin leer`} href="/panel/chat" loading={loading} />
-        <Metric icon={UsersRound} code="LD" label="Oportunidades" value={stats?.leads_total ?? 0} detail={`${stats?.leads_new ?? 0} nuevas`} href="/panel/leads" loading={loading} />
+        <Metric icon={UsersRound} code="LD" label="Oportunidades" value={stats?.leads_total ?? 0} detail={`${stats?.leads_new ?? 0} nuevas`} href="/panel/chat?view=leads" loading={loading} />
         <Metric icon={BrainCircuit} code="KB" label="Conocimiento" value={`${stats?.kb_published ?? 0}/${stats?.kb_total ?? 0}`} detail="Fuentes publicadas" href="/panel/knowledge" loading={loading} />
         <Metric icon={Bot} code="WGT" label="Canal público" value={data?.widget?.enabled ? "Online" : "Offline"} detail={data?.widget?.enabled ? "Recibiendo visitas" : "Pendiente de publicar"} href="/panel/widget" loading={loading} active={Boolean(data?.widget?.enabled)} />
       </section>
@@ -324,7 +351,7 @@ export default function OverviewPage() {
         </div>
 
         <div className="lmx-telemetry-panel">
-          <SectionTitle code="03 / TELEMETRÍA" title="Actividad de los últimos ciclos" copy="Interacciones y oportunidades detectadas." href="/panel/growth" action="Abrir Growth" />
+          <SectionTitle code="03 / LUMEN EYE" title="Actividad de los últimos ciclos" copy="Interacciones y oportunidades detectadas por Business Intelligence." href="/panel/lumen-eye?view=growth" action="Profundizar" />
           <div className="lmx-telemetry-total"><strong>{stats?.chats_total ?? 0}</strong><span>interacciones<br />acumuladas</span></div>
           <div className="lmx-telemetry-chart" aria-label="Actividad por periodo">
             {(series.length ? series.slice(-10) : Array.from({ length: 10 }, (_, index) => ({ label: `${index + 1}`, widgetUsers: 0, leads: 0, buyers: 0, date: "" }))).map((point, index) => {
@@ -356,10 +383,10 @@ export default function OverviewPage() {
         </div>
 
         <div className="lmx-live-panel">
-          <SectionTitle code="05 / PIPELINE" title="Oportunidades en movimiento" copy="Leads listos para una acción humana o automática." href="/panel/leads" action="Abrir pipeline" />
+          <SectionTitle code="05 / CHATS" title="Oportunidades en movimiento" copy="Leads listos para una acción humana o automática." href="/panel/chat?view=leads" action="Filtrar leads" />
           <div className="lmx-command-list">
             {loading ? <EmptyRow label="Leyendo pipeline…" /> : (data?.recentLeads ?? []).length ? (data?.recentLeads ?? []).slice(0, 4).map((lead) => (
-              <Link key={lead.id} href={lead.chat_id ? `/panel/chat/${lead.chat_id}` : "/panel/leads"}>
+              <Link key={lead.id} href={lead.chat_id ? `/panel/chat/${lead.chat_id}` : "/panel/chat?view=leads"}>
                 <span className="lmx-command-list-avatar">{leadName(lead).slice(0, 1).toUpperCase()}</span>
                 <span><strong>{leadName(lead)}</strong><small>{lead.status === "new" ? "Nuevo lead" : lead.status} · Potencial comercial</small></span>
                 <b>{lead.score ?? 0}<small>%</small></b>
@@ -370,14 +397,18 @@ export default function OverviewPage() {
       </section>
 
       <section className="lmx-capability-index">
-        <SectionTitle code="06 / CAPACIDADES" title="Arquitectura LumenAI" copy="Cada módulo cumple una función dentro del sistema comercial." />
+        <SectionTitle code="06 / 10 PILARES OPERATIVOS" title="Una arquitectura, responsabilidades claras" copy="Access gestiona identidad antes y fuera de esta navegación operativa." />
         <div>
-          <Module href="/panel/calibration" code="CAL" icon={Zap} title="Calibración" copy="Identidad, ventas y límites" />
+          <Module href="/panel/overview" code="OVR" icon={HeartPulse} title="Overview" copy="Business Command Center" />
+          <Module href="/panel/calibration" code="CAL" icon={Zap} title="Calibration" copy="Brand Intelligence" />
+          <Module href="/panel/autoconfig" code="CFG" icon={WandSparkles} title="Config AI" copy="Natural Language Configuration" />
+          <Module href="/panel/lumen-eye" code="EYE" icon={Eye} title="Lumen Eye" copy="Business Intelligence" />
+          <Module href="/panel/radar" code="PLS" icon={Sparkles} title="Pulse Radar" copy="AI Chief of Staff" />
+          <Module href="/panel/research" code="RSH" icon={Search} title="Research" copy="External Intelligence" />
+          <Module href="/panel/widget" code="WGT" icon={Bot} title="Widget" copy="Customer Experience Studio" />
+          <Module href="/panel/chat" code="CHT" icon={MessageCircleMore} title="Chats" copy="Omnichannel Center" />
           <Module href="/panel/knowledge" code="KNW" icon={BookOpenText} title="Knowledge" copy="Memoria operativa" />
-          <Module href="/panel/radar" code="RAD" icon={Sparkles} title="Pulse Radar" copy="Señales y decisiones" />
-          <Module href="/panel/growth" code="GTH" icon={TrendingUp} title="Growth" copy="Demanda y conversión" />
-          <Module href="/panel/approvals" code="APR" icon={ShieldCheck} title="Aprobaciones" copy="Control humano" />
-          <Module href="/panel/system-health" code="SYS" icon={HeartPulse} title="System Health" copy="Servicios y evidencia" />
+          <Module href="/panel/interface" code="INT" icon={ShieldCheck} title="Interface" copy="Personal Workspace" />
         </div>
       </section>
     </div>

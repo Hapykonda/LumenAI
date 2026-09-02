@@ -317,12 +317,12 @@ export function LumeniteCommandCenter() {
     const requestedRun = params.get("run")?.trim();
     if (requestedRun && /^[0-9a-f-]{36}$/i.test(requestedRun)) {
       setSelectedRunId(requestedRun);
-      window.history.replaceState(null, "", "/panel/lumenite");
+      window.history.replaceState(null, "", "/panel/radar?view=actions");
     }
     const signalId = params.get("signal")?.trim();
     if (signalId && /^[0-9a-f-]{36}$/i.test(signalId) && params.get("autoplan") === "1") {
       setCommand("Preparar accion desde Pulse Radar");
-      window.history.replaceState(null, "", "/panel/lumenite");
+      window.history.replaceState(null, "", "/panel/radar?view=actions");
       void preparePulseSignal(signalId, params.get("retry") === "1");
       return;
     }
@@ -335,7 +335,7 @@ export function LumeniteCommandCenter() {
       resourceId: params.get("resourceId"),
       capability: params.get("capability"),
     };
-    window.history.replaceState(null, "", "/panel/lumenite");
+    window.history.replaceState(null, "", "/panel/radar?view=actions");
     if (params.get("autoplan") === "1") void createPlan(prompt, handoff);
   }, [createPlan, preparePulseSignal]);
 
@@ -661,7 +661,7 @@ export function LumeniteCommandCenter() {
 
       <div className={styles.lowerGrid}>
         <section className={styles.approvalPanel}>
-          <header className={styles.sectionHeader}><div><span>Approval inbox</span><h2>Pendientes</h2></div><Link href="/panel/approvals" aria-label="Abrir bandeja de aprobaciones"><strong>{approvals.length}</strong><ChevronRight aria-hidden="true" /></Link></header>
+          <header className={styles.sectionHeader}><div><span>Pending decisions</span><h2>Pendientes</h2></div><Link href="/panel/overview?view=decisions" aria-label="Abrir decisiones pendientes"><strong>{approvals.length}</strong><ChevronRight aria-hidden="true" /></Link></header>
           <div className={styles.list}>
             {approvals.length ? approvals.slice(0, 6).map((run) => (
               <button key={run.id} type="button" onClick={() => setSelectedRunId(run.id)}>

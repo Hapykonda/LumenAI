@@ -22,35 +22,35 @@ export const metadata: Metadata = {
 
 const plans = [
   {
-    slug: "inicio",
+    slug: "start",
     number: "01",
-    label: "Inicio",
+    label: "LumenAI Start",
     title: "Activa tu primera operación inteligente.",
     description: "La base para negocios que quieren atender mejor y convertir su conocimiento en respuestas útiles.",
     price: "$29.990",
-    capacity: "1 negocio · 1 widget",
-    features: ["Knowledge esencial", "Conversaciones y leads", "Configuración IA guiada", "Métricas operativas básicas"],
+    capacity: "1 negocio · 2 usuarios · 1 canal",
+    features: ["Knowledge esencial", "Conversaciones incluidas con uso razonable", "Config AI guiado", "Lumen Eye esencial"],
   },
   {
-    slug: "crecimiento",
+    slug: "business",
     number: "02",
-    label: "Crecimiento",
+    label: "LumenAI Business",
     title: "Convierte cada señal en una decisión.",
     description: "Control, automatización y Pulse Radar para equipos que ya venden, atienden y necesitan avanzar más rápido.",
     price: "$69.990",
-    capacity: "Operación aumentada",
+    capacity: "3 negocios · 10 usuarios · 4 canales",
     featured: true,
-    features: ["Todo lo incluido en Inicio", "Pulse Radar y recomendaciones", "Campañas y Growth", "Permisos, aprobaciones y calibración", "Soporte prioritario"],
+    features: ["Todo lo incluido en Start", "Pulse Radar y recomendaciones", "Lumen Eye avanzado", "Calibration y aprobaciones", "Research mensual"],
   },
   {
-    slug: "escala",
+    slug: "scale",
     number: "03",
-    label: "Escala",
+    label: "LumenAI Scale",
     title: "Orquesta procesos e integraciones reales.",
     description: "Capacidad ampliada, controles avanzados y acompañamiento para operaciones que no pueden detenerse.",
     price: "$149.990",
-    capacity: "Arquitectura empresarial",
-    features: ["Todo lo incluido en Crecimiento", "Integraciones empresariales", "Business Twin y Research", "Configuración asistida", "Seguimiento de implementación"],
+    capacity: "Negocios y usuarios ampliados · omnicanal",
+    features: ["Todo lo incluido en Business", "Research continuo", "Mayor autonomía gobernada", "Historial ampliado", "Soporte de implementación"],
   },
 ];
 
@@ -104,7 +104,7 @@ export default function SubscriptionsPage() {
 
       <section className={styles.pricingSection} id="planes" aria-label="Planes disponibles">
         <Reveal className={styles.sectionHeading}>
-          <div><span className={styles.kicker}>03 niveles · una sola inteligencia</span><h2>Capacidad para cada etapa.</h2></div>
+          <div><span className={styles.kicker}>03 membresías · una sola inteligencia</span><h2>Capacidad para cada etapa.</h2></div>
           <p>Todos los planes comparten la misma identidad, seguridad y experiencia. Cambia la profundidad operativa, no la calidad del producto.</p>
         </Reveal>
 
@@ -145,7 +145,7 @@ export default function SubscriptionsPage() {
 
       <Reveal className={styles.finalCta}>
         <span className={styles.kicker}>Listo cuando tú lo estés</span><h2>Tu siguiente etapa ya tiene sistema.</h2>
-        <Link href="/login?plan=crecimiento">Crear mi espacio <ArrowRight size={18} /></Link>
+        <Link href="/login?plan=business">Crear mi espacio <ArrowRight size={18} /></Link>
       </Reveal>
     </main>
   );

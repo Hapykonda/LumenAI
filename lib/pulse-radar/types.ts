@@ -192,22 +192,16 @@ export type PulseAssistantReply = {
 
 export const PULSE_ALLOWED_ROUTE_PREFIXES = [
   "/panel/overview",
-  "/panel/lumenite",
   "/panel/calibration",
   "/panel/autoconfig",
-  "/panel/knowledge",
-  "/panel/chat",
-  "/panel/leads",
-  "/panel/widget",
-  "/panel/radar",
   "/panel/lumen-eye",
+  "/panel/radar",
   "/panel/research",
-  "/panel/growth",
-  "/panel/twin",
-  "/panel/campaigns",
-  "/panel/settings",
-  "/panel/color-mix",
-  "/panel/system-health",
+  "/panel/widget",
+  "/panel/chat",
+  "/panel/knowledge",
+  "/panel/interface",
+  "/panel/access",
 ] as const;
 
 export function isSafePulseRoute(value: unknown): value is string {
@@ -215,30 +209,29 @@ export function isSafePulseRoute(value: unknown): value is string {
     return false;
   }
 
-  return PULSE_ALLOWED_ROUTE_PREFIXES.some(
-    (route) => value === route || value.startsWith(`${route}/`),
-  );
+  try {
+    const url = new URL(value, "https://lumenai.local");
+    return url.origin === "https://lumenai.local" && PULSE_ALLOWED_ROUTE_PREFIXES.some(
+      (route) => url.pathname === route || url.pathname.startsWith(`${route}/`),
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function pulseSectionFromPath(pathname: string) {
   const entry = [
-    ["/panel/lumenite", "LumenAI Action OS"],
-    ["/panel/calibration", "Calibration Studio"],
-    ["/panel/autoconfig", "Config IA"],
-    ["/panel/knowledge", "Knowledge"],
-    ["/panel/chat", "Chat"],
-    ["/panel/leads", "Leads"],
-    ["/panel/widget", "Widget"],
-    ["/panel/radar", "Radar"],
+    ["/panel/calibration", "Calibration"],
+    ["/panel/autoconfig", "Config AI"],
     ["/panel/lumen-eye", "Lumen Eye"],
+    ["/panel/radar", "Pulse Radar"],
     ["/panel/research", "Research"],
-    ["/panel/growth", "Growth"],
-    ["/panel/twin", "Business Twin"],
-    ["/panel/campaigns", "Campaigns"],
-    ["/panel/settings", "Settings"],
-    ["/panel/color-mix", "Color Mix"],
-    ["/panel/system-health", "System Health"],
+    ["/panel/widget", "Widget"],
+    ["/panel/chat", "Chats"],
+    ["/panel/knowledge", "Knowledge"],
+    ["/panel/interface", "Interface"],
     ["/panel/overview", "Overview"],
+    ["/panel/access", "Access"],
   ].find(([route]) => pathname === route || pathname.startsWith(`${route}/`));
 
   return entry?.[1] ?? "Overview";

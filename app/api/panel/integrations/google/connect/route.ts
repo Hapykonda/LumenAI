@@ -31,7 +31,7 @@ export async function GET(req: Request) {
       provider: GOOGLE_GMAIL_PROVIDER,
       state_hash: sha256Hex(state),
       encrypted_code_verifier: encryptIntegrationSecret({ verifier }),
-      redirect_path: "/panel/integrations",
+      redirect_path: "/panel/interface?view=connections",
       expires_at: expiresAt,
     }).select("id").single();
     if (transaction.error || !transaction.data?.id) throw new Error("OAUTH_STATE_CREATE_FAILED");

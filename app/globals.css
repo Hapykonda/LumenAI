@@ -334,6 +334,27 @@ body {
   }
 }
 
+html[data-lumen-motion="reduced"] *,
+html[data-lumen-motion="reduced"] *::before,
+html[data-lumen-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
+html[data-lumen-density="compact"] .lmx-content {
+  --lmn-panel-gap: 0.75rem;
+}
+
+html[data-lumen-density="compact"] :where(.lmn-module-page, .lmx-overview) {
+  gap: 0.75rem !important;
+}
+
+html[data-lumen-density="compact"] :where(.lmn-module-card, .lmn-color-mix-panel) {
+  padding: 1rem !important;
+}
+
 @layer base {
   .theme {
     --animate-gradient: gradient 8s linear infinite;

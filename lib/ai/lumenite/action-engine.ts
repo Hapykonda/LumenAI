@@ -29,7 +29,7 @@ import { LumeniteSafeError } from "./errors";
 import { requireLumeniteActionContext } from "./permissions";
 import { authorizeRegisteredAction } from "./policy-engine";
 import { safeJson, validateLumenitePlan } from "./schemas";
-import type { LumeniteAgentKey } from "./env";
+import type { LumenAiPillarKey } from "./env";
 import { readPulseSignal, syncPulseSignalForRun } from "@/lib/pulse-radar/lifecycle";
 
 type ActionContext = Awaited<ReturnType<typeof requireLumeniteActionContext>>;
@@ -73,11 +73,28 @@ const PUBLIC_RUN_COLUMNS =
 
 const PRIVATE_RUN_COLUMNS = `${PUBLIC_RUN_COLUMNS},payload,result,undo_payload`;
 
-function purposeForAgent(agentKey: string): LumeniteAgentKey {
-  if (["widget", "autoconfig", "panel", "radar", "growth", "twin", "campaigns"].includes(agentKey)) {
-    return agentKey as LumeniteAgentKey;
-  }
-  return "panel";
+function purposeForAgent(agentKey: string): LumenAiPillarKey {
+  const routes: Record<string, LumenAiPillarKey> = {
+    calibration: "calibration",
+    twin: "calibration",
+    "config-ai": "config-ai",
+    autoconfig: "config-ai",
+    campaigns: "config-ai",
+    "lumen-eye": "lumen-eye",
+    growth: "lumen-eye",
+    "pulse-radar": "pulse-radar",
+    radar: "pulse-radar",
+    research: "research",
+    widget: "widget",
+    chats: "chats",
+    knowledge: "knowledge",
+    interface: "interface",
+    overview: "overview",
+    panel: "overview",
+    access: "access",
+    system: "access",
+  };
+  return routes[agentKey] ?? "overview";
 }
 
 function asSource(value: unknown): LumeniteActionSource {
@@ -249,7 +266,7 @@ export async function planLumeniteActions(input: {
     return fallback;
   }
   const aiText = await callGroqChat({
-    purpose: purposeForAgent(String(agent?.key ?? "panel")),
+    purpose: purposeForAgent(String(agent?.key ?? "overview")),
     responseFormat: "json_object",
     temperature: 0.1,
     maxTokens: 1200,

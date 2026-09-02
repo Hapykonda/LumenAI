@@ -16,6 +16,7 @@ export type CalibrationDoc = {
         reflectUnderstandingFirst: boolean;
         maxOptions: number;
         endWithQuestionOrCTA: boolean;
+        responseLength: "short" | "balanced" | "detailed";
       };
       freeNotes: string;
       savedProfiles?: Array<Record<string, unknown>>;

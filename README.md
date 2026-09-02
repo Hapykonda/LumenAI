@@ -1,109 +1,119 @@
 # LumenAI
 
-LumenAI es un SaaS de atencion, ventas y soporte con IA para PYMES y empresas.
-Centraliza widget publico, Knowledge, conversaciones, leads, calibracion, Config IA
-y Radar Ejecutivo en un panel operativo.
+LumenAI es un sistema empresarial inteligente para PYMES y compañías en
+crecimiento. Su experiencia se organiza en once responsabilidades claras y una
+infraestructura interna invisible para el usuario.
 
-## Stack
+## Arquitectura definitiva
 
-- Next.js App Router
-- React
-- TypeScript
-- Supabase
-- Vercel
-- CSS/Tailwind con sistema visual propio
+La navegación autenticada expone exactamente diez pilares operativos:
 
-## Modulos principales
+1. Overview — centro de mando del negocio.
+2. Calibration — Brand Intelligence y Brand Constitution.
+3. Config AI — configuración del sistema mediante lenguaje natural.
+4. Lumen Eye — inteligencia interna del negocio.
+5. Pulse Radar — AI Chief of Staff, recomendaciones y seguimiento.
+6. Research — inteligencia externa con fuentes y evidencia.
+7. Widget — Customer Experience Studio.
+8. Chats — centro omnicanal de conversaciones.
+9. Knowledge — memoria estructurada del negocio.
+10. Interface — espacio visual personal del propietario.
 
-- `/` landing publica
-- `/login` autenticacion
-- `/subscriptions` comparacion y seleccion de planes
-- `/onboarding` alta inicial de negocio
-- `/panel/overview` centro de mando
-- `/panel/autoconfig` Config IA con LumenAI
-- `/panel/calibration` studio de calibracion
-- `/panel/knowledge` memoria operativa del negocio
-- `/panel/chat` inbox de conversaciones
-- `/panel/leads` mini CRM
-- `/panel/widget` instalacion y configuracion del widget
-- `/panel/settings` personalizacion
-- `/widget/[key]` widget publico
+Access es el pilar 11 y cubre login, identidad, organización, perfiles, roles y
+onboarding. Aparece antes de entrar o dentro de la administración de cuenta, no
+como una entrada adicional de la barra lateral.
 
-## Identidad y Pulse
+Antes de crear una pantalla nueva se comprueba si la capacidad pertenece a uno
+de estos pilares. Growth, campañas, leads, aprobaciones, simulación e
+integraciones se presentan como vistas contextuales dentro de su pilar. Action
+OS, Guardian, Supabase, el router de modelos y las evaluaciones son
+infraestructura interna.
 
-- La interfaz publica usa el sistema visual LumenAI Obsidian: negro, blanco editorial, azul electrico y luz atmosferica.
-- El logotipo oficial vive en `public/brand/lumenai-official-mark.png`.
-- Los siete operadores y sus nueve estados optimizados viven en `public/brand/operators/`.
-- Pulse Radar carga datos reales por seccion, muestra salud del sistema y agrega una guia contextual para cada modulo del panel.
-- Las animaciones respetan `prefers-reduced-motion` y los controles principales incluyen nombres accesibles.
+## Rutas principales
 
-## Variables requeridas
+- `/`, `/login`, `/subscriptions` y `/onboarding`: experiencia pública y Access.
+- `/panel/overview`: Business Command Center.
+- `/panel/calibration`: identidad, comportamiento y simulación de marca.
+- `/panel/autoconfig`: Config AI y construcción contextual de campañas.
+- `/panel/lumen-eye`: rendimiento, embudos y oportunidades internas.
+- `/panel/radar`: Pulse Radar y acciones recomendadas.
+- `/panel/research`: mercado, competencia y tendencias externas.
+- `/panel/widget`: diseño, instalación y experiencias del asistente público.
+- `/panel/chat`: conversaciones y filtro de leads.
+- `/panel/knowledge`: productos, servicios, políticas y Knowledge Health.
+- `/panel/interface`: tema, densidad, movimiento, operador y conexiones.
+- `/panel/access`: perfil, permisos y seguridad.
+- `/widget/[key]`: widget público.
+
+Las rutas históricas se redirigen al pilar que ahora es responsable de esa
+capacidad, por lo que se conservan enlaces antiguos sin duplicar navegación.
+
+## Groq
+
+Groq se configura únicamente en el servidor. Cada pilar tiene una variable
+dedicada para aislar límites, observabilidad y rotación de secretos:
+
+- `GROQ_CALIBRATION_API_KEY`
+- `GROQ_CONFIG_AI_API_KEY`
+- `GROQ_LUMEN_EYE_API_KEY`
+- `GROQ_PULSE_API_KEY`
+- `GROQ_RESEARCH_API_KEY`
+- `GROQ_WIDGET_API_KEY`
+- `GROQ_CHATS_API_KEY`
+- `GROQ_KNOWLEDGE_API_KEY`
+- `GROQ_INTERFACE_API_KEY`
+- `GROQ_OVERVIEW_API_KEY`
+- `GROQ_ACCESS_API_KEY`
+
+Cada clave admite su variable `*_MODEL` correspondiente. `GROQ_API_KEY` puede
+usarse como fallback controlado en desarrollo. Ninguna clave Groq usa el prefijo
+`NEXT_PUBLIC_` ni se guarda en Git.
+
+## Variables base
 
 - `NEXT_PUBLIC_APP_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `GROQ_API_KEY` como fallback si sigue activo
-- `GROQ_AUTOCONFIG_API_KEY`
-- `GROQ_PANEL_API_KEY`
-- `GROQ_WIDGET_API_KEY` si el widget usa key dedicada
+- las once claves Groq server-only descritas arriba
 
-No exponer `SUPABASE_SERVICE_ROLE_KEY` ni claves de IA en cliente.
+Revisa el contrato completo en `.env.example` y ejecútalo con:
 
-## Desarrollo local
+```bash
+npm run check:env
+```
+
+## Desarrollo y validación
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Validacion
+Antes de publicar:
 
 ```bash
 npx tsc --noEmit
-npm run lint -- --quiet
+npm run lint
+node --test tests/*.test.mjs
+npm run audit:a11y
 npm run build
-```
-
-Smoke test:
-
-```bash
-npm run start -- -p 3002
-npm run test:smoke
-```
-
-Si usas otro puerto:
-
-```bash
-$env:LUMENAI_TEST_URL="http://127.0.0.1:3000"; npm run test:smoke
+npm run audit:performance
 ```
 
 ## Supabase
 
-Las migraciones en `supabase/migrations` crean la base operativa:
+Supabase es Data Core, no un módulo de usuario. Las migraciones en
+`supabase/migrations` administran Auth, negocios, perfiles, RLS, Knowledge,
+widget, chats, leads contextuales, memoria, eventos, auditoría y Action OS.
 
-- negocios y perfiles
-- widget settings
-- Knowledge
-- chats y mensajes
-- leads
-- automatizaciones
-- audit log
-- snapshots/rollback de Config IA
-- action runs
-- market feeds/items para Radar persistente
+Las migraciones deben probarse en una rama aislada antes de promoverlas a
+producción. Nunca se debe exponer `SUPABASE_SERVICE_ROLE_KEY` en el navegador.
 
-Aplicar migraciones antes de QA productivo.
+## Membresías
 
-## QA recomendado
-
-1. Entrar con cuenta real.
-2. Completar onboarding si aplica.
-3. Crear Knowledge de servicios/precios/pagos.
-4. Pedir a Config IA: `Agrega el servicio Web Profesional, precio $69.990 CLP, pago por transferencia, horario lunes a viernes.`
-5. Verificar que Knowledge, pagos y horario se actualicen.
-6. Aplicar propuesta si corresponde.
-7. Publicar calibracion.
-8. Abrir widget publico.
-9. Preguntar precios, horarios y pedir humano.
-10. Confirmar chat, mensajes y lead en Supabase.
+La experiencia comercial vende membresías Start, Business y Scale usando
+capacidades empresariales: negocios, usuarios, canales, conversaciones,
+integraciones, automatización, historial, Research, análisis, autonomía y
+soporte. Tokens, créditos de IA y costos por modelo son detalles internos y no
+forman parte de la interfaz comercial.

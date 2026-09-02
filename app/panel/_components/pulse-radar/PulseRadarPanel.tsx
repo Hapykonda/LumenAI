@@ -119,7 +119,7 @@ function PulseSystemHealth({
               </span>
             ))}
           </div>
-          <Link href="/panel/system-health">
+          <Link href="/panel/access?view=security">
             Abrir System Health
             <ExternalLink />
           </Link>
@@ -329,7 +329,7 @@ export default function PulseRadarPanel(props: PanelProps) {
             {proactiveEnabled ? <BellOff /> : <Settings2 />}
             {proactiveEnabled ? "Silenciar sugerencias en esta sesión" : "Activar sugerencias"}
           </button>
-          <Link href="/panel/settings">
+          <Link href="/panel/access">
             <Settings2 />
             Preferencias del panel
           </Link>

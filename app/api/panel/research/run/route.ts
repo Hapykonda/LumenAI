@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     const news = await fetchResearchNews(query);
     const fallback = fallbackResearchOutput({ query, snapshot, news });
     const aiText = await callGroqChat({
-      purpose: "radar",
+      purpose: "research",
       responseFormat: "json_object",
       temperature: 0.2,
       maxTokens: 2200,
@@ -194,7 +194,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      ai: getGroqStatus("radar"),
+      ai: getGroqStatus("research"),
       job: { ...job, status: "completed", finished_at: finishedAt },
       findings: findings ?? [],
       report,

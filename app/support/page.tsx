@@ -16,7 +16,7 @@ export default function SupportPage() {
           requeridas sin exponer secretos.
         </p>
         <div className="mt-6 grid gap-3 text-sm leading-7 text-white/58">
-          <p>1. Revisa `/panel/system-health` si ya tienes acceso.</p>
+          <p>1. Revisa Access → Seguridad operativa si ya tienes acceso.</p>
           <p>2. Verifica que el widget use `public_key` y que Knowledge este completo.</p>
           <p>3. Si el problema es de acceso, solicita un nuevo magic link desde Login.</p>
         </div>
@@ -28,7 +28,7 @@ export default function SupportPage() {
             Volver al acceso
           </Link>
           <Link
-            href="/panel/system-health"
+            href="/panel/access?view=security"
             className="inline-flex h-11 items-center rounded-[8px] border border-white/[0.08] bg-white/[0.035] px-4 text-sm font-black text-white/72"
           >
             Abrir Health

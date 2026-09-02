@@ -239,7 +239,7 @@ export function ApprovalInbox() {
                 <button type="button" onClick={() => void decide("cancel")} disabled={Boolean(busy)}><Ban /> Cancelar</button>
               </> : null}
               {selected.run.status === "undo_available" ? <button type="button" onClick={() => void undo()} disabled={Boolean(busy)}><Undo2 /> Ejecutar undo</button> : null}
-              <Link href={`/panel/lumenite?run=${selected.run.id}`}><ExternalLink /> Abrir plan</Link>
+              <Link href={`/panel/radar?view=actions&run=${selected.run.id}`}><ExternalLink /> Abrir plan</Link>
               <Link href="/panel/activity"><History /> Ver auditoria</Link>
             </div>
 

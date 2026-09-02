@@ -365,7 +365,7 @@ export default function GrowthPage() {
                 <ArrowRight className="h-3.5 w-3.5" />
               </ActionButton>
             ) : (
-              <ActionButton href="/panel/leads" variant="primary">
+              <ActionButton href="/panel/chat?view=leads" variant="primary">
                 Ver leads
                 <ArrowRight className="h-3.5 w-3.5" />
               </ActionButton>

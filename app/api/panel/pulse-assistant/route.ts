@@ -125,7 +125,7 @@ async function buildConversationInsight(input: {
   }
 
   const aiText = await callGroqChat({
-    purpose: "panel",
+    purpose: "pulse-radar",
     responseFormat: "json_object",
     temperature: 0.2,
     maxTokens: 650,

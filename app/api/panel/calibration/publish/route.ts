@@ -55,6 +55,10 @@ function compileCalibration(draft: ReturnType<typeof ensureShape>) {
     brandBrief.idealCustomer ? `Cliente ideal: ${brandBrief.idealCustomer}` : "",
     brandBrief.howToSound ? `Cómo debe sonar: ${brandBrief.howToSound}` : "",
     brandBrief.howNotToSound ? `Cómo no debe sonar: ${brandBrief.howNotToSound}` : "",
+    brandBrief.upsetCustomer ? `Cliente molesto: ${brandBrief.upsetCustomer}` : "",
+    brandBrief.indecisiveCustomer ? `Cliente indeciso: ${brandBrief.indecisiveCustomer}` : "",
+    brandBrief.recurringBuyer ? `Comprador recurrente: ${brandBrief.recurringBuyer}` : "",
+    brandBrief.highValueLead ? `Lead de alto valor: ${brandBrief.highValueLead}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -67,6 +71,11 @@ function compileCalibration(draft: ReturnType<typeof ensureShape>) {
       ? "Termina con una pregunta útil o un llamado a la acción."
       : "",
     `No mostrar más de ${personality.rules.maxOptions} opciones principales a la vez.`,
+    `Extensión de respuesta: ${personality.rules.responseLength || "balanced"}.`,
+    `Tratamiento: ${lexicon.formality || "tu"}; variante: ${lexicon.locale || "es-CL"}.`,
+    `Persuasión: ${Number(personality.mix.persuasion ?? 68)}%; nivel técnico: ${Number(personality.mix.technicalLevel ?? 45)}%.`,
+    `Emojis: ${Number(personality.mix.emojiUse ?? 18)}%; exclusividad: ${Number(personality.mix.exclusivity ?? 58)}%.`,
+    `Autonomía conversacional: ${Number(personality.mix.autonomy ?? 55)}%.`,
     sales.allowUrgency
       ? "Puedes usar urgencia comercial solo si es real y no manipuladora."
       : "No uses urgencia falsa ni presión artificial.",

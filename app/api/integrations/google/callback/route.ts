@@ -16,7 +16,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function integrationRedirect(req: Request, values: Record<string, string>) {
-  const url = new URL("/panel/integrations", new URL(req.url).origin);
+  const url = new URL("/panel/interface?view=connections", new URL(req.url).origin);
   for (const [key, value] of Object.entries(values)) url.searchParams.set(key, value);
   return NextResponse.redirect(url);
 }

@@ -124,7 +124,7 @@ export async function POST(req: Request) {
     });
     const fallback = fallbackReport(input, snapshot);
     const aiText = await callGroqChat({
-      purpose: "twin",
+      purpose: "calibration",
       responseFormat: "json_object",
       temperature: 0.2,
       maxTokens: 1800,
@@ -219,7 +219,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      ai: getGroqStatus("twin"),
+      ai: getGroqStatus("calibration"),
       generationMode,
       scenario,
       report: simulationReport,
@@ -232,6 +232,5 @@ export async function POST(req: Request) {
     );
   }
 }
-
 
 

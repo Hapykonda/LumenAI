@@ -219,7 +219,7 @@ function buildDeterministicRecommendations(metrics: PulseMetrics): PulseRecommen
         "sales",
         "success",
         "Ver leads",
-        "/panel/leads",
+        "/panel/chat?view=leads",
       ),
     );
   }
@@ -330,7 +330,7 @@ async function buildAiAssistantResponse(input: {
 }) {
   const fallback = assistantFallback(input.metrics, input.recommendations);
   const aiText = await callGroqChat({
-    purpose: "panel",
+    purpose: "pulse-radar",
     responseFormat: "json_object",
     temperature: 0.25,
     maxTokens: 700,
@@ -488,7 +488,7 @@ function buildPulseSignals(metrics: PulseMetrics, timestamp: string) {
       severity: metrics.hotLeads ? "success" as const : metrics.leads24h ? "info" as const : "info" as const,
       emoji: getInsightEmoji("lead", metrics.hotLeads ? "success" : "info"),
       timestamp,
-      actionHref: "/panel/leads",
+      actionHref: "/panel/chat?view=leads",
     },
     {
       id: "calibration",
@@ -671,10 +671,10 @@ function buildStructuredInsights(signals: PulseSignalRow[]): PulseRadarInsight[]
     const href = isSafePulseRoute(signal.source_route) ? signal.source_route : "/panel/overview";
     const retryable = ["failed", "partially_resolved", "reverted"].includes(signal.status);
     const actionHref = retryable
-      ? `/panel/lumenite?source=pulse_radar&signal=${encodeURIComponent(signal.id)}&autoplan=1&retry=1`
+      ? `/panel/radar?view=actions&source=pulse_radar&signal=${encodeURIComponent(signal.id)}&autoplan=1&retry=1`
       : signal.action_run_id
-        ? `/panel/lumenite?run=${encodeURIComponent(signal.action_run_id)}`
-        : `/panel/lumenite?source=pulse_radar&signal=${encodeURIComponent(signal.id)}&autoplan=1`;
+        ? `/panel/radar?view=actions&run=${encodeURIComponent(signal.action_run_id)}`
+        : `/panel/radar?view=actions&source=pulse_radar&signal=${encodeURIComponent(signal.id)}&autoplan=1`;
     return {
       id: signal.id,
       type: kind,
@@ -789,7 +789,7 @@ export async function buildPulseRadarPayload(section = "panel", request?: Reques
     assistant: {
       name: "Pulse Radar",
       role: "Asistente vivo del panel",
-      ai: getGroqStatus("panel"),
+      ai: getGroqStatus("pulse-radar"),
     },
     headline: rawMetrics.readiness >= 80 ? "LumenAI está listo para operar." : "LumenAI necesita ajustes clave.",
     brief: summary,

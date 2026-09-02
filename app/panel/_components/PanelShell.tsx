@@ -25,13 +25,16 @@ import {
 import {
   PANEL_THEME_EVENT,
   applyPanelThemeToRoot,
-  readPanelThemeFromStorage,
   savePanelThemeToStorage,
   type PanelThemeColors,
 } from "@/lib/panel-theme";
 import { ModuleStage } from "./ModuleStage";
 import { getModuleExperience, getModuleTour } from "./module-experience";
 import SectionIntroGate from "./SectionIntroGate";
+import {
+  DEFAULT_INTERFACE_PREFERENCES,
+  type InterfacePreferences,
+} from "@/lib/interface-preferences";
 
 const PanelInsightsAssistant = dynamic(
   () =>
@@ -42,30 +45,27 @@ const PanelInsightsAssistant = dynamic(
 const DEDICATED_TOUR_MODULES = new Set([
   "knowledge",
   "lumen-eye",
-  "radar",
-  "settings",
+  "pulse-radar",
   "widget",
 ]);
 
-function PanelThemeRuntime() {
-  useEffect(() => {
-    const premiumTheme: PanelThemeColors = {
-      base: "#050505",
-      primary: "#54D9FF",
-      secondary: "#C7FF00",
-      mode: "dark",
-    };
-    const stored = readPanelThemeFromStorage();
-    const currentVersion = window.localStorage.getItem("lmn_theme_version");
-    const shouldUpgradeDefault = currentVersion !== "lumenai-command-system-20260830";
+function PanelThemeRuntime({ preferences }: { preferences: InterfacePreferences }) {
+  const { theme, density, motion } = preferences;
 
-    const initialTheme = shouldUpgradeDefault ? premiumTheme : stored || premiumTheme;
+  useEffect(() => {
+    const currentVersion = window.localStorage.getItem("lmn_theme_version");
+    const shouldUpgradeDefault = currentVersion !== "lumenai-interface-v1-20260902";
+
+    const initialTheme = theme;
 
     applyPanelThemeToRoot(initialTheme);
     if (shouldUpgradeDefault) {
       savePanelThemeToStorage(initialTheme);
-      window.localStorage.setItem("lmn_theme_version", "lumenai-command-system-20260830");
+      window.localStorage.setItem("lmn_theme_version", "lumenai-interface-v1-20260902");
     }
+
+    document.documentElement.dataset.lumenDensity = density;
+    document.documentElement.dataset.lumenMotion = motion;
 
     const handleThemeChange = (event: Event) => {
       const customEvent = event as CustomEvent<Partial<PanelThemeColors>>;
@@ -82,7 +82,7 @@ function PanelThemeRuntime() {
         handleThemeChange as EventListener
       );
     };
-  }, []);
+  }, [density, motion, theme]);
 
   return null;
 }
@@ -170,12 +170,12 @@ function PanelTopbar({
           <Link href="/panel/radar" className="lmx-icon-button" aria-label="Abrir Pulse Radar">
             <Sparkles aria-hidden="true" />
           </Link>
-          <Link href="/panel/system-health" className="lmx-icon-button lmx-notification" aria-label="Abrir salud del sistema">
+          <Link href="/panel/access?view=security" className="lmx-icon-button lmx-notification" aria-label="Abrir seguridad operativa">
             <HeartPulse aria-hidden="true" />
             <i aria-hidden="true" />
           </Link>
           <Link
-            href="/panel/settings"
+            href="/panel/access"
             className="lmx-profile-button"
             aria-label="Abrir perfil y preferencias"
           >
@@ -205,10 +205,12 @@ export default function PanelShell({
   children,
   userEmail,
   ownerProfile: initialOwnerProfile,
+  interfacePreferences = DEFAULT_INTERFACE_PREFERENCES,
 }: {
   children: React.ReactNode;
   userEmail?: string;
   ownerProfile?: OwnerProfile;
+  interfacePreferences?: InterfacePreferences;
 }) {
   const pathname = usePathname() || "/panel/overview";
   const moduleExperience = useMemo(
@@ -219,7 +221,9 @@ export default function PanelShell({
   const moduleTour = useMemo(() => getModuleTour(moduleExperience.id), [moduleExperience.id]);
   const hasDedicatedTour = DEDICATED_TOUR_MODULES.has(moduleExperience.id);
   const [assistantReady, setAssistantReady] = useState(false);
-  const [mode, setMode] = useState<"light" | "dark">("dark");
+  const [mode, setMode] = useState<"light" | "dark">(
+    interfacePreferences.theme.mode === "light" ? "light" : "dark",
+  );
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile>(
     initialOwnerProfile ?? {
       ...EMPTY_OWNER_PROFILE,
@@ -294,9 +298,11 @@ export default function PanelShell({
       className="lmx-app"
       data-theme={mode}
       data-design="enterprise-v4"
+      data-density={interfacePreferences.density}
+      data-motion={interfacePreferences.motion}
       style={{ colorScheme: mode }}
     >
-      <PanelThemeRuntime />
+      <PanelThemeRuntime preferences={interfacePreferences} />
       <a className="lmn-skip-link" href="#lmn-main-content">
         Saltar al contenido principal
       </a>
@@ -332,7 +338,7 @@ export default function PanelShell({
                     bullets={moduleTour.bullets}
                     primaryActionLabel="Comenzar"
                     skipActionLabel="Omitir recorrido"
-                    storageKey={`lumenai:intro:${moduleExperience.id}:v4`}
+                    storageKey={`lumenai:intro:${moduleExperience.id}:pillars-v1`}
                     reverseLayout={Number(moduleExperience.index) % 2 === 1}
                   >
                     {null}

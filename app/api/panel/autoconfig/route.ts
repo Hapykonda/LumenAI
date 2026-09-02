@@ -661,6 +661,7 @@ function buildFallbackProposal(message: string, snapshot: Snapshot): Proposal {
           reflectUnderstandingFirst: true,
           maxOptions: 2,
           endWithQuestionOrCTA: true,
+          responseLength: "balanced",
         },
         freeNotes:
           "Interpretar primero la intencion del cliente, resumir lo entendido y avanzar con una pregunta o accion concreta. No saturar con opciones.",
@@ -926,7 +927,7 @@ async function buildAutoconfigChatReply(message: string, snapshot: Snapshot) {
   const fallback = buildFallbackChatReply(snapshot);
 
   const content = await callGroqChat({
-    purpose: "autoconfig",
+    purpose: "config-ai",
     temperature: 0.24,
     maxTokens: 360,
     messages: [
@@ -959,7 +960,7 @@ async function buildAiProposal(message: string, snapshot: Snapshot) {
   const fallback = buildFallbackProposal(message, snapshot);
 
   const content = await callGroqChat({
-    purpose: "autoconfig",
+    purpose: "config-ai",
     responseFormat: "json_object",
     temperature: 0.16,
     maxTokens: 1800,
@@ -1558,7 +1559,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      ai: getGroqStatus("autoconfig"),
+      ai: getGroqStatus("config-ai"),
       snapshot: compactSnapshot(snapshot),
       lastSnapshot: lastSnapshot
         ? {
@@ -1604,7 +1605,7 @@ export async function POST(req: Request) {
         ok: true,
         applied: result.restored,
         mode: "executed" satisfies AutoconfigMode,
-        ai: getGroqStatus("autoconfig"),
+        ai: getGroqStatus("config-ai"),
         assistantMessage: result.message,
         rollback: result,
       });
@@ -1640,7 +1641,7 @@ export async function POST(req: Request) {
           ok: true,
           applied: executed.results.length > 0,
           mode: "executed" satisfies AutoconfigMode,
-          ai: getGroqStatus("autoconfig"),
+          ai: getGroqStatus("config-ai"),
           assistantMessage: summary,
           executed,
         });
@@ -1659,7 +1660,7 @@ export async function POST(req: Request) {
         metadata: {
           request: message,
           mode: "chat" satisfies AutoconfigMode,
-          ai: getGroqStatus("autoconfig"),
+          ai: getGroqStatus("config-ai"),
         },
       });
 
@@ -1667,7 +1668,7 @@ export async function POST(req: Request) {
         ok: true,
         applied: false,
         mode: "chat" satisfies AutoconfigMode,
-        ai: getGroqStatus("autoconfig"),
+        ai: getGroqStatus("config-ai"),
         assistantMessage,
       });
     }
@@ -1679,7 +1680,7 @@ export async function POST(req: Request) {
         ok: true,
         applied: false,
         mode: "proposal" satisfies AutoconfigMode,
-        ai: getGroqStatus("autoconfig"),
+        ai: getGroqStatus("config-ai"),
         proposal: {
           ...proposal,
           blocked: [
@@ -1709,7 +1710,7 @@ export async function POST(req: Request) {
         ok: true,
         applied: false,
         mode: "proposal" satisfies AutoconfigMode,
-        ai: getGroqStatus("autoconfig"),
+        ai: getGroqStatus("config-ai"),
         proposal,
         preview: ensureShape(deepMerge(snapshot.draft, proposal.patch)),
       });
@@ -1721,7 +1722,7 @@ export async function POST(req: Request) {
       ok: true,
       applied: true,
       mode: "proposal" satisfies AutoconfigMode,
-      ai: getGroqStatus("autoconfig"),
+      ai: getGroqStatus("config-ai"),
       proposal,
       draft: applied.nextDraft,
       appliedAt: applied.appliedAt,

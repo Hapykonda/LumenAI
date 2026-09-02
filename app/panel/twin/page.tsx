@@ -219,9 +219,9 @@ export default function TwinPage() {
     <main className="lmn-module-page lmn-twin-page grid gap-5 pb-10">
       <PanelSectionHeader
         variant="hero"
-        eyebrow="LumenAI Business Twin"
-        title="Gemelo comercial del negocio"
-        description="Simula decisiones antes de aplicarlas. Entrega impacto, riesgos, supuestos y acciones preparadas."
+        eyebrow="Calibration · Lumen Twin"
+        title="Simulación contextual"
+        description="Prueba decisiones de identidad y estrategia antes de publicarlas. Twin funciona dentro de Calibration, no como otro pilar."
         status={`${data?.confidence ?? 0}% confianza`}
         statusTone={(data?.confidence ?? 0) >= 70 ? "active" : "warning"}
         secondary={
@@ -362,7 +362,7 @@ export default function TwinPage() {
               <Copy className="h-3.5 w-3.5" />
               Copiar informe
             </ActionButton>
-            <ActionButton href="/panel/campaigns" variant="secondary">
+            <ActionButton href="/panel/autoconfig?view=campaigns" variant="secondary">
               Crear campana
               <ArrowRight className="h-3.5 w-3.5" />
             </ActionButton>

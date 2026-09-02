@@ -46,7 +46,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      ai: getGroqStatus("twin"),
+      ai: getGroqStatus("calibration"),
       business: snapshot.business,
       context: {
         stats: snapshot.stats,

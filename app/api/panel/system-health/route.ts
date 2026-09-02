@@ -9,13 +9,17 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const AGENTS: LumeniteAgentKey[] = [
+  "calibration",
+  "config-ai",
+  "lumen-eye",
+  "pulse-radar",
+  "research",
   "widget",
-  "autoconfig",
-  "panel",
-  "radar",
-  "growth",
-  "twin",
-  "campaigns",
+  "chats",
+  "knowledge",
+  "interface",
+  "overview",
+  "access",
 ];
 
 type HealthStatus = "ready" | "warning" | "critical";
@@ -165,7 +169,7 @@ async function diagnoseSystem(
       status: status(Boolean(ctx.businessId)),
       detail: ctx.business.name || "Negocio LumenAI",
       category: "workspace",
-      action: { href: "/panel/settings", label: "Abrir ajustes" },
+      action: { href: "/panel/access", label: "Abrir Access" },
     },
     {
       key: "database_release",
@@ -175,7 +179,7 @@ async function diagnoseSystem(
         ? "La base confirma el marcador de seguridad 20260824071640 y el catalogo de operadores."
         : "Las migraciones finales de RLS, indices y operadores aun no estan validadas en esta base.",
       category: "release",
-      action: { href: "/panel/system-health", label: "Revisar migraciones" },
+      action: { href: "/panel/access?view=security", label: "Revisar migraciones" },
     },
     {
       key: "widget",
@@ -227,7 +231,7 @@ async function diagnoseSystem(
         ? "No se pudo validar la auditoria de acciones."
         : `${Array.isArray(actionRuns.data) ? actionRuns.data.length : 0} accion(es) recientes.`,
       category: "intelligence",
-      action: { href: "/panel/lumenite", label: "Abrir Lumenite" },
+      action: { href: "/panel/radar?view=actions", label: "Abrir acciones" },
     },
     {
       key: "deployment",
@@ -288,7 +292,7 @@ async function diagnoseSystem(
             key: nextCheck.key,
             title: nextCheck.label,
             detail: nextCheck.detail,
-            href: nextCheck.action?.href || "/panel/system-health",
+            href: nextCheck.action?.href || "/panel/access?view=security",
             label: nextCheck.action?.label || "Revisar",
           }
         : null,

@@ -12,7 +12,10 @@ import {
 import { ActionButton } from "../_components/ui/ActionButton";
 import { PanelSectionHeader } from "../_components/ui/PanelSectionHeader";
 import { StatusBadge } from "../_components/ui/StatusBadge";
-import { supabase } from "@/lib/supabase/client";
+import { DEFAULT_INTERFACE_PREFERENCES } from "@/lib/interface-preferences";
+import { OperatorAvatar } from "@/components/brand/operator-avatar";
+import { LUMEN_OPERATORS, type OperatorId } from "@/lib/operators/catalog";
+import { PANEL_OPERATOR_EVENT } from "../_components/panel-context";
 
 type ColorPreset = {
   name: string;
@@ -21,21 +24,16 @@ type ColorPreset = {
   note: string;
 };
 
-const DEFAULT_THEME: PanelThemeColors = {
-  base: "#000000",
-  primary: "#c7ff3d",
-  secondary: "#725cff",
-  mode: "dark",
-};
+const DEFAULT_THEME: PanelThemeColors = DEFAULT_INTERFACE_PREFERENCES.theme;
 
-const PANEL_THEME_VERSION = "lumenai-premium-blue-20260705";
+const PANEL_THEME_VERSION = "lumenai-interface-v1-20260902";
 
 const PRESETS: ColorPreset[] = [
   {
-    name: "Lime Orbit",
-    primary: "#c7ff3d",
-    secondary: "#725cff",
-    note: "Negro editorial con luz lime y profundidad violeta.",
+    name: "Lumen Electric",
+    primary: "#00e5ff",
+    secondary: "#1b43ff",
+    note: "Identidad oficial: cian eléctrico, azul profundo y contraste ejecutivo.",
   },
   {
     name: "Clinical Mint",
@@ -131,8 +129,11 @@ export default function ColorMixPage() {
   const [mode, setMode] = useState<"dark" | "light">("dark");
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [widgetSynced, setWidgetSynced] = useState(false);
-  const [syncingWidget, setSyncingWidget] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
+  const [motion, setMotion] = useState<"full" | "reduced">("full");
+  const [operatorId, setOperatorId] = useState<OperatorId>(DEFAULT_INTERFACE_PREFERENCES.operatorId);
 
   const bridge = useMemo(
     () => mixHex(primary, secondary, mixAmount),
@@ -158,11 +159,35 @@ export default function ColorMixPage() {
       setSecondary(stored.secondary || DEFAULT_THEME.secondary);
       setMode(stored.mode === "light" ? "light" : "dark");
     }
+
+    void fetch("/api/panel/interface", { credentials: "include", cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.preferences) return;
+        const preferences = payload.preferences;
+        setBase(preferences.theme.base);
+        setPrimary(preferences.theme.primary);
+        setSecondary(preferences.theme.secondary);
+        setMode(preferences.theme.mode === "light" ? "light" : "dark");
+        setDensity(preferences.density === "compact" ? "compact" : "comfortable");
+        setMotion(preferences.motion === "reduced" ? "reduced" : "full");
+        setOperatorId(preferences.operatorId || DEFAULT_INTERFACE_PREFERENCES.operatorId);
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
     applyPanelThemeToRoot(theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.dataset.lumenDensity = density;
+    document.documentElement.dataset.lumenMotion = motion;
+  }, [density, motion]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(PANEL_OPERATOR_EVENT, { detail: { operatorId } }));
+  }, [operatorId]);
 
   async function copyVars() {
     const value = [
@@ -191,64 +216,38 @@ export default function ColorMixPage() {
     setMode(nextMode);
     setBase((current) => {
       const safeCurrent = normalizeHex(current, nextMode === "light" ? "#f6f7fb" : "#000000");
-      const isDefaultDark = safeCurrent === "#000000";
+      const isDefaultDark = safeCurrent === "#000000" || safeCurrent === DEFAULT_THEME.base;
       const isDefaultLight = safeCurrent === "#f6f7fb";
 
       if (nextMode === "light" && isDefaultDark) return "#f6f7fb";
-      if (nextMode === "dark" && isDefaultLight) return "#000000";
+      if (nextMode === "dark" && isDefaultLight) return DEFAULT_THEME.base || "#05070b";
 
       return safeCurrent;
     });
   }
 
-  async function syncWidgetTheme() {
-    setSyncingWidget(true);
-
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      const headers = new Headers({ "Content-Type": "application/json" });
-
-      if (token) headers.set("Authorization", `Bearer ${token}`);
-
-      const res = await fetch("/api/panel/widget", {
-        method: "PATCH",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({
-          primaryColor: theme.primary,
-          gradientFrom: theme.primary,
-          gradientTo: theme.secondary,
-        }),
-      });
-
-      setWidgetSynced(res.ok);
-      window.setTimeout(() => setWidgetSynced(false), 1800);
-    } catch {
-      setWidgetSynced(false);
-    } finally {
-      setSyncingWidget(false);
-    }
-  }
-
   async function saveTheme() {
+    setSaving(true);
+    setError(null);
     savePanelThemeToStorage(theme);
     emitPanelThemeChange(theme);
     window.localStorage.setItem("lmn_theme_version", PANEL_THEME_VERSION);
-    window.localStorage.setItem(
-      "lmn_widget_theme",
-      JSON.stringify({
-        primaryColor: theme.primary,
-        gradientFrom: theme.primary,
-        gradientTo: theme.secondary,
-        mode: theme.mode,
-        bridge,
-      })
-    );
-    setSaved(true);
-    setWidgetSynced(true);
-    window.setTimeout(() => setSaved(false), 1400);
-    await syncWidgetTheme();
+    try {
+      const response = await fetch("/api/panel/interface", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme, density, motion, operatorId }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error || "No se pudo guardar Interface.");
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 1400);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "No se pudo guardar Interface.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function resetTheme() {
@@ -257,10 +256,12 @@ export default function ColorMixPage() {
     setSecondary(DEFAULT_THEME.secondary);
     setMixAmount(42);
     setMode("dark");
+    setDensity(DEFAULT_INTERFACE_PREFERENCES.density);
+    setMotion(DEFAULT_INTERFACE_PREFERENCES.motion);
+    setOperatorId(DEFAULT_INTERFACE_PREFERENCES.operatorId);
     savePanelThemeToStorage(DEFAULT_THEME);
     emitPanelThemeChange(DEFAULT_THEME);
     window.localStorage.setItem("lmn_theme_version", PANEL_THEME_VERSION);
-    window.localStorage.removeItem("lmn_widget_theme");
   }
 
   return (
@@ -277,17 +278,17 @@ export default function ColorMixPage() {
     >
       <PanelSectionHeader
         variant="hero"
-        eyebrow="Sistema visual"
-        title="Color Mix"
-        description="Mezcla las luces principales del panel y aplica un sistema de color coherente en todas las secciones de LumenAI."
-        status={saved ? "Tema guardado" : "Vista en vivo"}
-        statusTone="active"
+        eyebrow="LumenAI Personal Workspace"
+        title="Interface"
+        description="Personaliza la experiencia del propietario dentro del Design System. Estos cambios nunca modifican el Widget que ven tus clientes."
+        status={saving ? "Guardando" : saved ? "Interface guardada" : "Vista en vivo"}
+        statusTone={error ? "warning" : "active"}
         secondary={
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge tone={mode === "light" ? "muted" : "active"}>
               {mode === "light" ? "Modo blanco" : "Modo negro"}
             </StatusBadge>
-            {widgetSynced ? <StatusBadge tone="active">Widget sincronizado</StatusBadge> : null}
+            <StatusBadge tone="muted">Solo tu workspace</StatusBadge>
           </div>
         }
       />
@@ -298,24 +299,15 @@ export default function ColorMixPage() {
             <Sparkles className="h-3.5 w-3.5" />
             Live palette engine
           </div>
-          <h2>Dos luces, un sistema visual.</h2>
+          <h2>Tu espacio. Una identidad consistente.</h2>
           <p>
-            El panel conserva el fondo negro y solo cambia la energia visual:
-            acentos, botones, estados, luces de cards y elementos activos.
+            Ajusta fondo, acentos, estados y modo visual del panel. La identidad
+            orientada al cliente se administra exclusivamente desde Widget.
           </p>
           <div className="lmn-color-mix-actions">
-            <ActionButton type="button" variant="primary" onClick={() => void saveTheme()}>
+            <ActionButton type="button" variant="primary" onClick={() => void saveTheme()} disabled={saving}>
               <Check className="h-3.5 w-3.5" />
-              Guardar mezcla
-            </ActionButton>
-            <ActionButton
-              type="button"
-              variant="secondary"
-              onClick={() => void syncWidgetTheme()}
-              disabled={syncingWidget}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              {syncingWidget ? "Aplicando..." : "Aplicar al widget"}
+              {saving ? "Guardando..." : "Guardar Interface"}
             </ActionButton>
             <ActionButton type="button" variant="secondary" onClick={copyVars}>
               <Copy className="h-3.5 w-3.5" />
@@ -355,8 +347,8 @@ export default function ColorMixPage() {
         <article className="lmn-color-mix-panel">
           <div className="lmn-color-mix-panel-head">
             <div>
-              <h3>Mezcla manual</h3>
-              <p>Cambia los colores y ajusta el punto medio de la luz.</p>
+              <h3>Identidad del workspace</h3>
+              <p>Cambia los colores y ajusta la relación entre ambas luces.</p>
             </div>
             <StatusBadge tone="active">{bridge}</StatusBadge>
           </div>
@@ -368,10 +360,10 @@ export default function ColorMixPage() {
           </div>
 
           <label className="lmn-color-mix-slider">
-            <span>Balance de mezcla</span>
+            <span>Balance de acentos</span>
             <input
               type="range"
-              aria-label="Balance de mezcla"
+              aria-label="Balance de acentos"
               aria-valuetext={`${mixAmount}%`}
               min="0"
               max="100"
@@ -435,8 +427,46 @@ export default function ColorMixPage() {
               );
             })}
           </div>
+
+          <div className="mt-6 grid gap-5 border-t border-white/10 pt-5">
+            <div>
+              <h3>Operador personal</h3>
+              <p>Acompaña tu workspace y Pulse. El operador público se elige por separado en Widget.</p>
+              <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-7">
+                {LUMEN_OPERATORS.map((operator) => (
+                  <button
+                    key={operator.id}
+                    type="button"
+                    aria-label={`Elegir ${operator.name}`}
+                    aria-pressed={operatorId === operator.id}
+                    className={`grid place-items-center rounded-2xl border p-2 transition ${operatorId === operator.id ? "border-cyan-300/50 bg-cyan-300/10" : "border-white/10 bg-white/[.02] hover:border-white/25"}`}
+                    onClick={() => setOperatorId(operator.id)}
+                  >
+                    <OperatorAvatar operator={operator.id} mood="welcome" size={46} />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3>Densidad</h3>
+              <p>Controla cuánto contenido cabe en el espacio de trabajo.</p>
+              <div className="lmn-color-mix-mode mt-3">
+                <button type="button" className={density === "comfortable" ? "is-active" : undefined} onClick={() => setDensity("comfortable")}>Cómoda</button>
+                <button type="button" className={density === "compact" ? "is-active" : undefined} onClick={() => setDensity("compact")}>Compacta</button>
+              </div>
+            </div>
+            <div>
+              <h3>Movimiento</h3>
+              <p>Ajusta la expresividad de transiciones y señales.</p>
+              <div className="lmn-color-mix-mode mt-3">
+                <button type="button" className={motion === "full" ? "is-active" : undefined} onClick={() => setMotion("full")}>Dinámico</button>
+                <button type="button" className={motion === "reduced" ? "is-active" : undefined} onClick={() => setMotion("reduced")}>Reducido</button>
+              </div>
+            </div>
+          </div>
         </article>
       </section>
+      {error ? <div className="lmn-autoconfig-error" role="alert">{error}</div> : null}
     </div>
   );
 }

@@ -6,10 +6,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   EMPTY_OWNER_PROFILE,
   hasManagedOwnerAvatar,
+  isRecord,
   ownerProfileAvatarEndpoint,
   ownerProfileFromMetadata,
 } from "@/lib/owner-profile";
-import { normalizeOperatorId } from "@/lib/operators/catalog";
+import { normalizeInterfacePreferences } from "@/lib/interface-preferences";
 
 export default async function PanelLayout({
   children,
@@ -46,6 +47,9 @@ export default async function PanelLayout({
   }
 
   const metadata = (profile as { metadata?: unknown } | null)?.metadata;
+  const interfacePreferences = normalizeInterfacePreferences(
+    isRecord(metadata) ? metadata.interface_preferences : null,
+  );
   ownerProfile = ownerProfileFromMetadata({
     metadata,
     role: (profile as { role?: unknown } | null)?.role,
@@ -63,36 +67,18 @@ export default async function PanelLayout({
       : {}),
   });
 
-  const { data: widgetSettings } = await supabase
-    .from("widget_settings")
-    .select("operator_id,published_settings")
-    .eq("business_id", businessId)
-    .maybeSingle();
-
-  const publishedSettings =
-    widgetSettings?.published_settings &&
-    typeof widgetSettings.published_settings === "object" &&
-    !Array.isArray(widgetSettings.published_settings)
-      ? (widgetSettings.published_settings as Record<string, unknown>)
-      : {};
-  const publishedWidget =
-    publishedSettings.widget &&
-    typeof publishedSettings.widget === "object" &&
-    !Array.isArray(publishedSettings.widget)
-      ? (publishedSettings.widget as Record<string, unknown>)
-      : {};
-  const operatorId = normalizeOperatorId(
-    widgetSettings?.operator_id ?? publishedWidget.operatorId,
-  );
-
   return (
     <PanelProvider
       userId={user.id}
       businessId={businessId}
       email={user.email ?? null}
-      operatorId={operatorId}
+      operatorId={interfacePreferences.operatorId}
     >
-      <PanelShell userEmail={user.email} ownerProfile={ownerProfile}>
+      <PanelShell
+        userEmail={user.email}
+        ownerProfile={ownerProfile}
+        interfacePreferences={interfacePreferences}
+      >
         {children}
       </PanelShell>
     </PanelProvider>

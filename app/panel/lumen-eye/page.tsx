@@ -177,6 +177,8 @@ export default function LumenEyePage() {
   }
 
   useEffect(() => {
+    const view = new URLSearchParams(window.location.search).get("view");
+    if (view === "growth") setActiveFilter("Oportunidades");
     void load();
   }, []);
 
@@ -481,13 +483,13 @@ export default function LumenEyePage() {
                     <BrainCircuit className="h-3.5 w-3.5" />
                     Crear investigacion
                   </ActionButton>
-                  <ActionButton href="/panel/growth" variant="secondary">
+                  <ActionButton href="/panel/lumen-eye?view=growth" variant="secondary">
                     <LineChart className="h-3.5 w-3.5" />
-                    Crear oportunidad Growth
+                    Analizar crecimiento
                   </ActionButton>
-                  <ActionButton href="/panel/campaigns" variant="secondary">
+                  <ActionButton href="/panel/autoconfig?view=campaigns" variant="secondary">
                     <Megaphone className="h-3.5 w-3.5" />
-                    Crear campaña
+                    Preparar campaña con Config AI
                   </ActionButton>
                   <ActionButton href="/panel/autoconfig" variant="secondary">
                     <Sparkles className="h-3.5 w-3.5" />

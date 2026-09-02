@@ -1,11 +1,11 @@
 import {
   getLumenitePublicStatus,
   LUMENITE_BACKUP_MODEL,
-  resolveLumeniteEnv,
-  type LumeniteAgentKey,
+  resolveLumenAiEnv,
+  type LumenAiPillarKey,
 } from "@/lib/ai/lumenite/env";
 
-type GroqPurpose = LumeniteAgentKey;
+type GroqPurpose = LumenAiPillarKey;
 
 type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -13,7 +13,7 @@ type ChatMessage = {
 };
 
 export function getGroqApiKey(purpose: GroqPurpose) {
-  return resolveLumeniteEnv(purpose).apiKey;
+  return resolveLumenAiEnv(purpose).apiKey;
 }
 
 export function getGroqStatus(purpose: GroqPurpose) {
@@ -21,7 +21,7 @@ export function getGroqStatus(purpose: GroqPurpose) {
 }
 
 export function getGroqModel(purpose: GroqPurpose) {
-  return resolveLumeniteEnv(purpose).model;
+  return resolveLumenAiEnv(purpose).model;
 }
 
 function cleanAiContent(value: unknown) {
@@ -40,7 +40,7 @@ export async function callGroqChat(input: {
   maxTokens?: number;
   responseFormat?: "json_object";
 }) {
-  const resolved = resolveLumeniteEnv(input.purpose);
+  const resolved = resolveLumenAiEnv(input.purpose);
   const apiKey = resolved.apiKey;
 
   if (!apiKey) return null;
