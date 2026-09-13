@@ -641,6 +641,9 @@ export default function LoginPage() {
               <Link href="/support" className="transition hover:text-white/70">
                 Soporte
               </Link>
+              <Link href="/admin" className="transition hover:text-white/70">
+                Dirección privada
+              </Link>
             </div>
           </form>
       </section>

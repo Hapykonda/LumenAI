@@ -92,11 +92,13 @@ function PanelTopbar({
   ownerProfile,
   mode,
   onToggleMode,
+  privateAdmin,
 }: {
   userEmail?: string;
   ownerProfile: OwnerProfile;
   mode: "light" | "dark";
   onToggleMode: () => void;
+  privateAdmin: boolean;
 }) {
   const pathname = usePathname() || "/panel/overview";
   const [query, setQuery] = useState("");
@@ -126,7 +128,7 @@ function PanelTopbar({
           </div>
           <div className="lmx-live-status">
             <Activity aria-hidden="true" />
-            <span>Espacio de trabajo</span>
+            <span>{privateAdmin ? "Dirección privada" : "Espacio de trabajo"}</span>
           </div>
         </div>
 
@@ -175,7 +177,7 @@ function PanelTopbar({
             <i aria-hidden="true" />
           </Link>
           <Link
-            href="/panel/access"
+            href={privateAdmin ? "/admin" : "/panel/access"}
             className="lmx-profile-button"
             aria-label="Abrir perfil y preferencias"
           >
@@ -206,11 +208,13 @@ export default function PanelShell({
   userEmail,
   ownerProfile: initialOwnerProfile,
   interfacePreferences = DEFAULT_INTERFACE_PREFERENCES,
+  privateAdmin = false,
 }: {
   children: React.ReactNode;
   userEmail?: string;
   ownerProfile?: OwnerProfile;
   interfacePreferences?: InterfacePreferences;
+  privateAdmin?: boolean;
 }) {
   const pathname = usePathname() || "/panel/overview";
   const moduleExperience = useMemo(
@@ -322,6 +326,7 @@ export default function PanelShell({
               ownerProfile={ownerProfile}
               mode={mode}
               onToggleMode={toggleMode}
+              privateAdmin={privateAdmin}
             />
             <main
               id="lmn-main-content"

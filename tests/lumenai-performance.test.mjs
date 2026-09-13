@@ -9,9 +9,12 @@ function read(file) {
 test("the panel shell does not ship a second browser auth lifecycle", () => {
   const context = read("app/panel/_components/panel-context.tsx");
   const layout = read("app/panel/layout.tsx");
+  const guard = read("lib/supabase/lumen/requireBusiness.ts");
   assert.doesNotMatch(context, /supabase|onAuthStateChange|getUser\(/);
-  assert.match(layout, /redirect\("\/login\?e=no_session"\)/);
-  assert.match(layout, /redirect\("\/onboarding"\)/);
+  assert.match(layout, /await requireBusiness\(\)/);
+  assert.doesNotMatch(layout, /createSupabaseServerClient|auth\.getUser|onAuthStateChange/);
+  assert.match(guard, /redirect\("\/login"\)/);
+  assert.match(guard, /redirect\("\/onboarding"\)/);
 });
 
 test("Pulse and its heavy panel are deferred", () => {

@@ -29,7 +29,7 @@ const systemModules = [
   { icon: BrainCircuit, title: "Knowledge", copy: "Servicios, precios y políticas se transforman en memoria utilizable.", code: "MEMORY / 03", visual: "memory" },
   { icon: MessageSquareText, title: "Conversaciones", copy: "Atención humana e IA comparten contexto, historial y siguiente paso.", code: "LIVE / 04", visual: "chat", wide: true },
   { icon: Target, title: "Growth", copy: "Prioriza oportunidades según intención, impacto y capacidad comercial.", code: "GROWTH / 05", visual: "growth" },
-  { icon: GitBranch, title: "Business Twin", copy: "Simula escenarios antes de comprometer presupuesto o procesos.", code: "TWIN / 06", visual: "twin" },
+  { icon: GitBranch, title: "Business Twin", copy: "Simula escenarios antes de comprometer presupuesto o procesos.", code: "TWIN / 06", visual: "twin", wide: true },
 ];
 
 
@@ -68,10 +68,10 @@ export default function Home() {
             <span>AI BUSINESS OPERATING SYSTEM</span>
             <span><i /> OPERACIÓN CONECTADA</span>
           </div>
-          <h1><span>Un negocio</span><span>que entiende,</span><em>decide y avanza.</em></h1>
+          <h1><span>Toda tu empresa.</span><span>Un mismo sistema.</span><em>Decisiones claras.</em></h1>
           <p>
-            LumenAI conecta atención, ventas, conocimiento y ejecución en una sola
-            inteligencia operativa. Pulse interpreta el estado del negocio y explica qué hacer después.
+            LumenAI reúne atención, ventas, conocimiento y ejecución en una sola
+            inteligencia operativa. Pulse convierte cada señal en una decisión clara.
           </p>
           <div className={styles.heroActions}>
             <Link className={styles.primaryButton} href="/login">Construir mi sistema <ArrowRight aria-hidden="true" /></Link>
@@ -158,9 +158,6 @@ export default function Home() {
             <Reveal className={styles.posterHorizontal} delay={90}>
               <Image src="/brand/editorial/frosted-blue.png" alt="Vidrio y luz azul sobre una superficie clara" fill sizes="(max-width: 900px) 100vw, 52vw" />
               <span>LUMENAI / INTELLIGENCE IN MOTION</span>
-            </Reveal>
-            <Reveal className={styles.posterVertical} delay={150}>
-              <Image src="/brand/editorial/cobalt-folds.png" alt="Pliegues escultóricos en azul cobalto" fill sizes="280px" />
             </Reveal>
           </div>
         </div>

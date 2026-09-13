@@ -2,8 +2,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getSupabaseBrowserEnv } from "@/lib/env";
+import { ADMIN_SESSION_COOKIE, verifyAdminSession } from "@/lib/auth/admin-session";
 
 export async function proxy(request: NextRequest) {
+  const adminSession = await verifyAdminSession(
+    request.cookies.get(ADMIN_SESSION_COOKIE)?.value,
+  );
+  if (adminSession) return NextResponse.next();
+
   const response = NextResponse.next({
     request: { headers: request.headers },
   });

@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
-import { redirect } from "next/navigation";
 import PanelShell from "./_components/PanelShell";
 import { PanelProvider } from "./_components/panel-context";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireBusiness } from "@/lib/supabase/lumen/requireBusiness";
 import {
   EMPTY_OWNER_PROFILE,
   hasManagedOwnerAvatar,
@@ -17,13 +16,8 @@ export default async function PanelLayout({
 }: {
   children: ReactNode;
 }) {
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
-
-  if (!user) {
-    redirect("/login?e=no_session");
-  }
+  const { user, businessId, context } = await requireBusiness();
+  const supabase = context.admin;
 
   let ownerProfile = {
     ...EMPTY_OWNER_PROFILE,
@@ -35,16 +29,6 @@ export default async function PanelLayout({
     .select("active_business_id,business_id,role,metadata,updated_at")
     .eq("id", user.id)
     .single();
-
-  const businessId =
-    (profile as { active_business_id?: string; business_id?: string } | null)
-      ?.active_business_id ??
-    (profile as { active_business_id?: string; business_id?: string } | null)
-      ?.business_id;
-
-  if (!businessId) {
-    redirect("/onboarding");
-  }
 
   const metadata = (profile as { metadata?: unknown } | null)?.metadata;
   const interfacePreferences = normalizeInterfacePreferences(
@@ -78,6 +62,7 @@ export default async function PanelLayout({
         userEmail={user.email}
         ownerProfile={ownerProfile}
         interfacePreferences={interfacePreferences}
+        privateAdmin={context.accessMode === "private-admin"}
       >
         {children}
       </PanelShell>

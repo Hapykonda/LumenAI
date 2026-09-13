@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseBrowserEnv } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAdminSessionFromRequest } from "@/lib/auth/admin-session";
 
 export type BusinessAuthorizationCode =
   | "UNAUTHENTICATED"
@@ -52,6 +53,7 @@ export type AuthorizedBusinessContext = {
   user: User;
   authenticatedSupabaseClient: SupabaseClient;
   admin: ReturnType<typeof supabaseAdmin>;
+  accessMode: "account" | "private-admin";
 };
 
 export class BusinessAuthorizationError extends Error {
@@ -111,6 +113,60 @@ export function businessRoleHasPermission(
   return ROLE_PERMISSIONS[role].includes(permission);
 }
 
+async function privateAdminContext(request?: Request): Promise<AuthorizedBusinessContext | null> {
+  const session = await getAdminSessionFromRequest(request);
+  if (!session) return null;
+
+  const admin = supabaseAdmin();
+  const [userResult, businessResult, membershipResult] = await Promise.all([
+    admin.auth.admin.getUserById(session.userId),
+    admin
+      .from("businesses")
+      .select("id,name,public_key,owner_id,user_id,created_by,is_active")
+      .eq("id", session.businessId)
+      .maybeSingle(),
+    admin
+      .from("lumenai_business_members")
+      .select("id,business_id,user_id,role,status")
+      .eq("business_id", session.businessId)
+      .eq("user_id", session.userId)
+      .maybeSingle(),
+  ]);
+
+  const user = userResult.data.user;
+  const business = businessResult.data as ActiveBusiness | null;
+  const membership = membershipResult.data as Membership | null;
+  if (
+    userResult.error ||
+    !user ||
+    businessResult.error ||
+    !business?.id ||
+    business.is_active === false ||
+    membershipResult.error ||
+    !membership?.id ||
+    membership.status !== "active"
+  ) {
+    throw new BusinessAuthorizationError(
+      "MEMBERSHIP_INACTIVE",
+      "El workspace administrativo ya no está disponible.",
+      403,
+    );
+  }
+
+  return {
+    userId: user.id,
+    businessId: business.id,
+    membershipId: membership.id,
+    role: "owner",
+    permissions: permissionsForBusinessRole("owner"),
+    activeBusiness: business,
+    user,
+    authenticatedSupabaseClient: admin,
+    admin,
+    accessMode: "private-admin",
+  };
+}
+
 async function authenticatedClient(request?: Request) {
   const token = bearerToken(request);
 
@@ -148,6 +204,29 @@ export async function getAuthorizedBusinessContext(input?: {
   requestedBusinessId?: unknown;
   requiredPermission?: BusinessPermission;
 }): Promise<AuthorizedBusinessContext> {
+  const adminContext = await privateAdminContext(input?.request);
+  if (adminContext) {
+    const requestedBusinessId = cleanId(input?.requestedBusinessId);
+    if (requestedBusinessId && requestedBusinessId !== adminContext.businessId) {
+      throw new BusinessAuthorizationError(
+        "BUSINESS_MISMATCH",
+        "El recurso solicitado no pertenece al workspace administrativo.",
+        409,
+      );
+    }
+    if (
+      input?.requiredPermission &&
+      !adminContext.permissions.includes(input.requiredPermission)
+    ) {
+      throw new BusinessAuthorizationError(
+        "PERMISSION_DENIED",
+        "La sesión administrativa no tiene ese permiso.",
+        403,
+      );
+    }
+    return adminContext;
+  }
+
   const auth = await authenticatedClient(input?.request);
   const admin = supabaseAdmin();
 
@@ -255,6 +334,7 @@ export async function getAuthorizedBusinessContext(input?: {
     user: auth.user,
     authenticatedSupabaseClient: auth.client,
     admin,
+    accessMode: "account",
   };
 }
 
@@ -271,4 +351,3 @@ export function businessAuthorizationErrorResponse(error: unknown) {
     { status: 500, headers: { "Cache-Control": "no-store" } },
   );
 }
-
