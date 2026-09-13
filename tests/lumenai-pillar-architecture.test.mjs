@@ -5,7 +5,7 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-test("LumenAI exposes exactly eleven pillars and ten operational navigation entries", async () => {
+test("LumenAI exposes ten operational pillars plus Access in navigation", async () => {
   const [pillars, navigation] = await Promise.all([
     read("lib/lumenai/pillars.ts"),
     read("app/panel/_components/panel-nav.tsx"),
@@ -13,7 +13,7 @@ test("LumenAI exposes exactly eleven pillars and ten operational navigation entr
   const ids = ["calibration", "config-ai", "lumen-eye", "pulse-radar", "research", "widget", "chats", "knowledge", "interface", "overview", "access"];
   for (const id of ids) assert.match(pillars, new RegExp(`id:\\s*["']${id}["']`));
   assert.equal((pillars.match(/operational:\s*true/g) || []).length, 10);
-  assert.equal((navigation.match(/icon:\s*Icon\(/g) || []).length, 10);
+  assert.equal((navigation.match(/icon:\s*Icon\(/g) || []).length, 11);
   assert.doesNotMatch(navigation, /\/panel\/(?:growth|campaigns|leads|lumenite|approvals|permissions|twin|integrations|settings|color-mix|system-health)/);
 });
 

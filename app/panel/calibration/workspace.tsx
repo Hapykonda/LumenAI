@@ -507,7 +507,7 @@ function StudioToolbar({
     <header className={styles.toolbar}>
       <div className={styles.toolbarIdentity}>
         <span className={styles.logoBox}>
-          <Image src="/brand/lumenai-logo.svg" width={26} height={26} alt="LumenAI" priority />
+          <Image src="/brand/editorial/lumenai-mark-transparent.png" width={26} height={26} alt="LumenAI" priority />
         </span>
         <div className={styles.breadcrumb}>
           <span>Principal</span>

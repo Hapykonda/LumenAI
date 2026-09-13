@@ -2491,3 +2491,13 @@ body {
   .lmn-root[data-open="true"] .lmn-panel { border-radius: 14px; }
   .lmn-panelInner { border-radius: 13px; }
 }
+/* Transparent system operators keep customer-uploaded avatars unchanged. */
+.lmn-root .lmn-orbBtn[data-persona="operator"],
+.lmn-root .lmn-orbBtn[data-persona="operator"] .lmn-orbCore {
+  background:transparent!important;border:0!important;border-radius:0!important;
+  box-shadow:none!important;overflow:visible!important;
+}
+.lmn-root .lmn-orbBtn[data-persona="operator"]::before,
+.lmn-root .lmn-orbBtn[data-persona="operator"]::after,
+.lmn-root .lmn-orbBtn[data-persona="operator"] .lmn-orbCore::before,
+.lmn-root .lmn-orbBtn[data-persona="operator"] .lmn-orbCore::after {display:none!important}

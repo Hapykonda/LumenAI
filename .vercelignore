@@ -1,0 +1,11 @@
+.git
+.next
+node_modules
+.codex-logs
+docs
+tests
+.env
+.env.*
+*.bundle
+*.log
+*.tsbuildinfo

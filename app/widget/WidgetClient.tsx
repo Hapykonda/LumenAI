@@ -1077,6 +1077,7 @@ export default function WidgetClient({ publicKey }: { publicKey: string }) {
         <div className={`lmn-orbWrap ${open ? "is-docked" : ""}`}>
           <button
             className="lmn-orbBtn"
+            data-persona={avatarUrl ? "custom" : "operator"}
             onClick={() => {
               setMenuOpen(false);
               setOpen((value) => !value);

@@ -5,6 +5,7 @@ import {
   Eye,
   HeartPulse,
   Search,
+  ShieldCheck,
   WandSparkles,
   LayoutDashboard,
   MessagesSquare,
@@ -112,6 +113,7 @@ export const PANEL_NAV: NavItem[] = [
     group: "system",
     icon: Icon(Palette),
   },
+  { label: LUMENAI_PILLAR_BY_ID.access.label, href: LUMENAI_PILLAR_BY_ID.access.href, desc: LUMENAI_PILLAR_BY_ID.access.responsibility, group: "system", icon: Icon(ShieldCheck) },
 ];
 
 export const PANEL_NAV_GROUP_LABELS: Record<NavGroup, string> = {

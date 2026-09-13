@@ -89,11 +89,11 @@ export default function SubscriptionsPage() {
 
         <Reveal className={styles.heroVisual} delay={120}>
           <div className={styles.posterFrame}>
-            <Image src="/brand/studio/lumenai-editorial-poster.webp" alt="Identidad editorial de LumenAI" fill sizes="(max-width: 860px) 92vw, 430px" priority />
+            <Image src="/brand/editorial/cobalt-folds.png" alt="Identidad editorial de LumenAI" fill sizes="(max-width: 860px) 92vw, 430px" priority />
             <div className={styles.posterOverlay}><span>Intelligence / operating system</span><strong>LumenAI</strong></div>
           </div>
           <div className={styles.heroTicket}>
-            <span>Disponibilidad</span><strong><i /> Sistema activo</strong><small>Web · Widget · Pulse Radar</small>
+            <span>LumenAI</span><strong>Una misma inteligencia</strong><small>Web · Widget · Pulse Radar</small>
           </div>
         </Reveal>
       </section>
@@ -113,7 +113,7 @@ export default function SubscriptionsPage() {
             <Reveal className={`${styles.plan} ${plan.featured ? styles.featured : ""}`} delay={index * 80} key={plan.slug}>
               <header className={styles.planHeader}>
                 <span className={styles.planNumber}>{plan.number}</span>
-                <div><span className={styles.planName}>{plan.label}</span>{plan.featured ? <span className={styles.badge}>Más elegido</span> : null}</div>
+                <div><span className={styles.planName}>{plan.label}</span>{plan.featured ? <span className={styles.badge}>Recomendado</span> : null}</div>
               </header>
               <h3>{plan.title}</h3>
               <p className={styles.planCopy}>{plan.description}</p>

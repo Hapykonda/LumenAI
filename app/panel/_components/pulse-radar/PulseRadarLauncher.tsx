@@ -63,7 +63,7 @@ export function PulseRadarLauncher({
         aria-hidden="true"
       />
       <span className={styles.launcherCore}>
-        <PulsePersona state={state} size={44} />
+        <PulsePersona state={state} size={68} />
       </span>
       {unreadCount > 0 ? (
         <span className={styles.unreadSignal} aria-hidden="true" />

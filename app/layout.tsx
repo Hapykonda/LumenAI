@@ -5,6 +5,7 @@ import "./lumenai-obsidian.css";
 import "./lumenai-product.css";
 import "./lumenai-studio.css";
 import "./lumenai-agency.css";
+import "./lumenai-editorial.css";
 
 export const metadata: Metadata = {
   title: {

@@ -16,6 +16,34 @@
   letter-spacing: 0;
 }
 
+/* Shared character floats above the workspace; the button remains a 76px target. */
+:global(.lmx-app[data-design="enterprise-v4"]) .launcher {
+  display:flex!important;width:76px!important;height:76px!important;
+  padding:0!important;gap:0!important;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;overflow:visible!important;
+}
+:global(.lmx-app[data-design="enterprise-v4"]) .launcher::before,
+:global(.lmx-app[data-design="enterprise-v4"]) .launcher::after,
+:global(.lmx-app[data-design="enterprise-v4"]) .healthRing::after {display:none!important}
+:global(.lmx-app[data-design="enterprise-v4"]) .launcherCore {
+  width:68px!important;height:68px!important;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;overflow:visible!important;
+}
+:global(.lmx-app[data-design="enterprise-v4"]) .healthRing {
+  display:block!important;inset:auto 9px 8px auto!important;width:8px!important;height:8px!important;
+  border-radius:50%!important;background:var(--pulse-health,#9ba9bd)!important;mask:none!important;animation:none!important;
+}
+:global(.lmx-app[data-design="enterprise-v4"]) .launcherCopy {
+  position:absolute!important;right:calc(100% + 10px)!important;display:grid!important;
+  width:max-content!important;max-width:190px!important;padding:10px 12px!important;
+  border:1px solid #34475e!important;border-radius:2px!important;background:#0b1523!important;
+  opacity:0!important;pointer-events:none!important;transform:none!important;
+}
+:global(.lmx-app[data-design="enterprise-v4"]) .launcher:hover .launcherCopy,
+:global(.lmx-app[data-design="enterprise-v4"]) .launcher:focus-visible .launcherCopy {opacity:1!important}
+:global(.lmx-app[data-design="enterprise-v4"]) .launcherCopy strong {font-size:12px!important;color:#f4f6f7!important}
+:global(.lmx-app[data-design="enterprise-v4"]) .launcherCopy small {font-size:11px!important;color:#b1c3d9!important}
+
 .widget *,
 .widget *::before,
 .widget *::after {
@@ -23,34 +51,13 @@
 }
 
 .launcher {
-  position: relative;
-  display: flex;
-  width: 58px;
-  height: 58px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  background: rgba(8, 10, 16, 0.94);
-  color: white;
-  box-shadow:
-    0 15px 48px rgba(0, 0, 0, 0.42),
-    inset 0 0 24px rgba(var(--lmn-accent-rgb, 125 240 255), 0.08);
-  cursor: pointer;
-  isolation: isolate;
-  transition:
-    border-color 180ms ease,
-    transform 180ms ease,
-    box-shadow 180ms ease;
+  position: relative; display: flex; width: 76px; height: 76px;
+  align-items: center; justify-content: center; border: 0; border-radius: 0;
+  background: transparent; color: white; box-shadow: none; cursor: pointer;
+  isolation: isolate; transition: transform 180ms ease;
 }
 
-.launcher:hover {
-  transform: translateY(-2px);
-  border-color: rgba(var(--lmn-accent-rgb, 125 240 255), 0.52);
-  box-shadow:
-    0 20px 54px rgba(0, 0, 0, 0.5),
-    0 0 30px rgba(var(--lmn-accent-rgb, 125 240 255), 0.13);
-}
+.launcher:hover { transform: translateY(-2px); }
 
 .launcher:focus-visible,
 .panel button:focus-visible,
@@ -63,18 +70,9 @@
 }
 
 .healthRing {
-  position: absolute;
-  inset: -3px;
-  z-index: -1;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    var(--pulse-health, rgba(255, 255, 255, 0.28)) 0deg,
-    var(--pulse-health, rgba(255, 255, 255, 0.28)) var(--pulse-progress, 0deg),
-    rgba(255, 255, 255, 0.08) var(--pulse-progress, 0deg),
-    rgba(255, 255, 255, 0.08) 360deg
-  );
-  mask: radial-gradient(circle, transparent 62%, black 64%);
+  position: absolute; right: 9px; bottom: 8px; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--pulse-health, #9ba9bd);
+  box-shadow: 0 0 0 2px var(--pulse-surface); z-index: 1;
 }
 
 .healthRing[data-health="ready"] {
@@ -95,16 +93,7 @@
   animation: pulse-ring-spin 1.2s linear infinite;
 }
 
-.launcherCore {
-  display: grid;
-  width: 46px;
-  height: 46px;
-  place-items: center;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.14), transparent 42%),
-    #0a0d14;
-}
+.launcherCore { display: grid; width: 68px; height: 68px; place-items: center; background: transparent; }
 
 .unreadSignal {
   position: absolute;

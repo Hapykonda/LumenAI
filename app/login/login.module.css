@@ -1,280 +1,46 @@
-.shell {
-  min-height: 100vh;
-  background:
-    linear-gradient(90deg, rgba(20, 38, 72, .025) 1px, transparent 1px),
-    #eef1f6 !important;
-  background-size: 80px 80px !important;
-  color: #121a2c !important;
-}
+.shell{display:grid;grid-template-columns:54% 46%;min-height:100svh;background:#f4f6f7;color:#10141b;font-family:Arial,"Helvetica Neue",sans-serif}
+.shell *{box-sizing:border-box}
+.intro{position:relative;min-height:850px;overflow:hidden;background:#05080d;color:#f4f6f7}
+.artwork{object-fit:cover;object-position:65% center}
+.shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,8,13,.72),transparent 90%)}
+.brand{position:absolute;top:48px;left:7.5%;z-index:1;text-decoration:none;color:#fff}
+.brand :global(.lmn-brand-copy strong){font-size:30px!important;font-weight:500!important;color:#fff!important}
+.edition{position:absolute;right:9%;top:55px;font:10px/1.9 ui-monospace,monospace;letter-spacing:.24em;color:#c0cbd6}
+.manifesto{position:relative;z-index:1;padding:196px 7.5% 120px}
+.manifesto h1{font-size:clamp(40px,4.5vw,76px);font-weight:500;line-height:.98;letter-spacing:-.06em;margin:0}
+.manifesto h1 em{font-style:normal;color:#88c3ff}
+.manifesto p{font-size:18px;line-height:1.45;color:#d3dce5;margin:38px 0}
+.micro,.signature{display:block;font:10px/1.9 ui-monospace,monospace;letter-spacing:.24em}
+.micro:before{content:"";display:block;width:44px;height:1px;background:#a8b8c9;margin:0 0 20px}
+.signature{position:absolute;bottom:40px;left:7.5%;color:#afbdcc}
+.access{position:relative;display:flex;justify-content:center;align-items:center;padding:110px clamp(28px,5vw,80px) 64px;background:radial-gradient(ellipse at 100% 100%,#dcecff 0,transparent 42%),#f4f6f7}
+.back{position:absolute;top:42px;right:10%;display:flex;align-items:center;gap:12px;color:#435266;font-size:13px;text-decoration:none;min-height:44px}
+.form{position:relative;width:100%;max-width:490px;outline:none}
+.form h2{color:#080d13;font-size:clamp(38px,3.5vw,58px);font-weight:500;letter-spacing:-.055em;line-height:1.02;margin:18px 0 0}
+.form p{font-size:16px;line-height:1.5;color:#536173}
+.form :global([class*="text-white"]){color:#536173}
+.form :global(.text-white){color:#111924}
+.form :global(.font-black){font-weight:500}
+.form :global([class*="text-[10px]"]){font-size:10px;letter-spacing:.13em}
+.form :global(.text-xs){font-size:13px}
+.form :global([class*="border-white"]){border-color:#c4ced9}
+.form :global([class*="bg-white"]){background:transparent}
+.form :global([class*="bg-black"]){background:transparent}
+.form input{height:52px;background:transparent;color:#162233;border:1px solid #bcc9d6;border-radius:2px;font-size:16px}
+.form input::placeholder{color:#718398}
+.form input:focus{outline:2px solid #1477ff;outline-offset:2px}
+.form button{border-radius:2px;min-height:44px}
+.form>button{font-size:14px}
+.form :global(.lmn-auth-submit){height:52px;background:#0b1016;color:#fff;border:1px solid #0b1016;box-shadow:none}
+.form :global(.lmn-auth-submit):hover:not(:disabled){background:#1477ff;border-color:#1477ff}
+.form button:disabled{opacity:.55}
+.form [role="status"]{color:#18523d;border-color:#85bba6;background:#e4f2eb}
+.form [role="alert"]{color:#8e2631;border-color:#d9a0a6;background:#fbe9eb}
+.form a{color:#40546e}
+.form :focus-visible,.back:focus-visible,.brand:focus-visible{outline:2px solid #1477ff;outline-offset:4px}
+@media(min-width:1500px){.intro{min-height:100svh}.manifesto{padding-top:24vh}}
+@media(max-width:1000px){.shell{grid-template-columns:48% 52%}.edition{display:none}.manifesto{padding-top:210px}.manifesto h1{font-size:42px}.manifesto p{font-size:16px}.access{padding:110px 32px 50px}}
+@media(max-width:800px){.shell{display:block}.intro{min-height:330px}.brand{top:24px;left:24px}.brand :global(.lmn-brand-copy strong){font-size:24px!important}.manifesto{padding:118px 24px 30px}.manifesto h1{font-size:36px;line-height:1.02}.manifesto h1 br:nth-of-type(1){display:none}.manifesto p,.micro,.signature{display:none}.artwork{object-position:center 45%}.access{padding:72px 24px 40px}.back{top:14px;right:24px}.form h2{font-size:42px}.form{max-width:520px}}
+@media(prefers-reduced-motion:reduce){.shell *{transition:none!important;animation:none!important}}
 
-.shell::before {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(760px 520px at 8% 2%, rgba(48, 103, 255, .12), transparent 68%),
-    radial-gradient(620px 420px at 92% 100%, rgba(87, 145, 255, .08), transparent 70%);
-  content: "";
-  pointer-events: none;
-}
-
-.shell > :global(.lmn-animated-hero-lights),
-.shell > div[aria-hidden="true"] {
-  opacity: 0 !important;
-}
-
-.shell > nav {
-  width: min(1420px, 100%);
-  padding-top: 18px !important;
-  padding-bottom: 0 !important;
-}
-
-.shell > nav :global(.lmn-brand-copy strong) { color: #10192c; }
-.shell > nav :global(.lmn-brand-copy small) { color: #7b879b; }
-.shell > nav :global(.lmn-brand-mark) {
-  border: 1px solid #d6dde8;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 10px 28px rgba(25, 43, 79, .08);
-}
-
-.shell > nav > a:last-child {
-  border-color: #d9dfe8 !important;
-  border-radius: 8px !important;
-  background: #fff !important;
-  color: #58667e !important;
-  box-shadow: 0 8px 24px rgba(25, 43, 79, .05);
-}
-
-.shell :global(.lmn-auth-layout) {
-  width: min(1420px, 100%);
-  min-height: calc(100svh - 72px);
-  grid-template-columns: minmax(0, 1.3fr) minmax(390px, 470px);
-  gap: 18px;
-  align-items: center;
-}
-
-.intro {
-  position: relative;
-  min-height: min(730px, calc(100svh - 112px));
-  overflow: hidden;
-  padding: 54px 45% 48px 48px;
-  border: 1px solid rgba(255,255,255,.11);
-  border-radius: 22px;
-  color: #fff;
-  background:
-    linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px),
-    radial-gradient(620px 460px at 86% 35%,rgba(60,118,255,.28),transparent 68%),
-    #05070a;
-  background-size: 64px 64px,64px 64px,auto,auto;
-  box-shadow: 0 32px 90px rgba(25, 42, 76, .18);
-}
-
-.intro::before {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 3;
-  width: 5px;
-  background: #326dff;
-  box-shadow: 0 0 40px rgba(50,109,255,.64);
-  content: "";
-}
-
-.intro::after {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 2;
-  height: 54px;
-  border-top: 1px solid rgba(255,255,255,.09);
-  background: rgba(2,4,8,.78);
-  content: "LUMENAI / SECURE ACCESS / 2026";
-  padding: 20px 24px 0;
-  color: rgba(255,255,255,.27);
-  font-size: 7px;
-  font-weight: 800;
-  letter-spacing: .18em;
-}
-
-.intro > div:first-child {
-  position: relative;
-  z-index: 5;
-  border-color: rgba(255,255,255,.12) !important;
-  border-radius: 999px !important;
-  background: rgba(255,255,255,.045) !important;
-  color: rgba(255,255,255,.62) !important;
-  font-size: 9px !important;
-  letter-spacing: .05em;
-}
-
-.intro > div:first-child svg { color: #7da9ff !important; }
-
-.intro h1 {
-  position: relative;
-  z-index: 5;
-  max-width: 690px;
-  margin-top: 34px !important;
-  font-size: clamp(3.4rem, 5.4vw, 6.8rem) !important;
-  font-weight: 680 !important;
-  letter-spacing: -.073em !important;
-  line-height: .86 !important;
-}
-
-.intro > p,
-.intro > div:not(.pulseVisual) {
-  position: relative;
-  z-index: 5;
-}
-
-.intro > p {
-  max-width: 570px !important;
-  color: rgba(230,237,250,.55) !important;
-  font-size: 13px !important;
-  line-height: 1.72 !important;
-}
-
-.intro > div:nth-of-type(3) {
-  grid-template-columns: 1fr !important;
-  gap: 1px !important;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 10px;
-  background: rgba(255,255,255,.08);
-}
-
-.intro > div:nth-of-type(3) > div {
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: rgba(5,8,14,.88) !important;
-  padding: 12px !important;
-}
-
-.intro > div:nth-of-type(3) p { display: none; }
-.intro > div:nth-of-type(4) { margin-top: 22px !important; }
-
-.pulseVisual {
-  position: absolute;
-  z-index: 1;
-  top: 34px;
-  right: 42px;
-  bottom: 76px;
-  width: 39%;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 9px;
-  background: #163b91;
-  box-shadow: -36px 36px 90px rgba(0,0,0,.38);
-  transform: rotate(2deg);
-  pointer-events: none;
-}
-
-.pulseVisual::before,
-.pulseVisual::after {
-  position: absolute;
-  inset: 22px -36px -20px 36px;
-  z-index: -1;
-  border: 1px solid rgba(255,255,255,.08);
-  background: #111621;
-  content: "";
-}
-
-.pulseVisual::after { inset: 48px -68px -38px 68px; opacity: .55; }
-
-.pulseVisual img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.shell :global(.lmn-auth-card) {
-  overflow: hidden;
-  border: 1px solid #d7dde7 !important;
-  border-radius: 22px !important;
-  padding: 9px !important;
-  background: rgba(255,255,255,.74) !important;
-  box-shadow: 0 28px 80px rgba(25, 43, 79, .14) !important;
-  backdrop-filter: blur(18px);
-}
-
-.shell :global(.lmn-auth-form) {
-  padding: 30px !important;
-  border: 1px solid #e1e6ed !important;
-  border-radius: 15px !important;
-  background: #fff !important;
-  color: #172138 !important;
-  box-shadow: none !important;
-}
-
-.shell :global(.lmn-auth-form [class*="text-white"]) { color: #172138 !important; }
-.shell :global(.lmn-auth-form [class*="text-white/"]) { color: #6d788b !important; }
-.shell :global(.lmn-auth-form [class*="border-white"]) { border-color: #dfe4ec !important; }
-.shell :global(.lmn-auth-form [class*="bg-black"]),
-.shell :global(.lmn-auth-form [class*="bg-white/"]) { background: #f7f8fb !important; }
-
-.shell :global(.lmn-auth-form input),
-.shell :global(.lmn-auth-form button) { border-radius: 8px !important; }
-
-.shell :global(.lmn-auth-form input) {
-  border-color: #dbe1e9 !important;
-  background: #fafbfc !important;
-  color: #172138 !important;
-  box-shadow: inset 0 1px 2px rgba(20,31,52,.025);
-}
-
-.shell :global(.lmn-auth-form input:focus) {
-  border-color: #6c91ee !important;
-  box-shadow: 0 0 0 3px rgba(47,104,255,.09);
-}
-
-.shell :global(.lmn-auth-form input::placeholder) { color: #a0a9b7 !important; }
-
-.shell :global(.lmn-auth-submit) {
-  border: 1px solid #111722 !important;
-  border-radius: 8px !important;
-  background: #111722 !important;
-  color: #fff !important;
-  box-shadow: 0 14px 32px rgba(17,23,34,.18) !important;
-}
-
-.shell :global(.lmn-auth-submit:hover) { background: #223762 !important; }
-
-.shell :global(.lmn-auth-accent) {
-  display: block;
-  margin-top: 6px;
-  color: transparent !important;
-  background: linear-gradient(94deg,#fff,#c9dbff 38%,#73a0ff 100%) !important;
-  background-clip: text !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent;
-  animation: login-title 900ms cubic-bezier(.2,.75,.2,1) both;
-}
-
-@keyframes login-title {
-  from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateY(14px); }
-  to { opacity: 1; clip-path: inset(0 0 0 0); transform: translateY(0); }
-}
-
-@media (max-width: 1180px) {
-  .intro { padding-right: 40%; }
-  .pulseVisual { right: 24px; width: 36%; }
-}
-
-@media (max-width: 1023px) {
-  .shell :global(.lmn-auth-layout) { max-width: 640px; grid-template-columns: 1fr; }
-}
-
-@media (max-width: 600px) {
-  .shell > nav { padding-right: 14px !important; padding-left: 14px !important; }
-  .shell > nav :global(.lmn-brand-copy small) { display: none; }
-  .shell :global(.lmn-auth-layout) { padding-right: 12px !important; padding-left: 12px !important; }
-  .shell :global(.lmn-auth-card) { border-radius: 16px !important; }
-  .shell :global(.lmn-auth-form) { padding: 22px !important; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .shell *, .shell *::before, .shell *::after { animation: none !important; transition-duration: .001ms !important; }
-}
+.shell .access .form input:not([type="checkbox"]):not([type="radio"]){background:#f4f6f7!important;color:#142238!important;border:1px solid #bac8d8!important;border-radius:2px!important;box-shadow:none!important;font-weight:400!important}.shell .form button{border-radius:2px!important;box-shadow:none!important}.shell .access .form input:not([type="checkbox"]):not([type="radio"])::placeholder{color:#718398!important}.shell .access .form input:not([type="checkbox"]):not([type="radio"]):autofill{box-shadow:0 0 0 1000px #f4f6f7 inset!important;-webkit-text-fill-color:#142238!important}.shell .form>button{color:#27364b!important;background:transparent!important}.shell .form :global(.lmn-auth-submit){background:#0b1016!important;color:#fff!important}.shell .form :global(.lmn-auth-submit):hover:not(:disabled){background:#145fcb!important}.shell .access .form input:not([type="checkbox"]):not([type="radio"]):focus-visible{outline:2px solid #1477ff!important;outline-offset:2px!important}

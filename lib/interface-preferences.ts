@@ -10,9 +10,9 @@ export type InterfacePreferences = {
 
 export const DEFAULT_INTERFACE_PREFERENCES: InterfacePreferences = {
   theme: {
-    base: "#05070b",
-    primary: "#00e5ff",
-    secondary: "#1b43ff",
+    base: "#05080d",
+    primary: "#1477ff",
+    secondary: "#72baff",
     mode: "dark",
   },
   density: "comfortable",
@@ -36,7 +36,7 @@ export function normalizeInterfacePreferences(value: unknown): InterfacePreferen
   const theme = record(source.theme);
   return {
     theme: {
-      base: color(theme.base, DEFAULT_INTERFACE_PREFERENCES.theme.base || "#05070b"),
+      base: color(theme.base, DEFAULT_INTERFACE_PREFERENCES.theme.base || "#05080d"),
       primary: color(theme.primary, DEFAULT_INTERFACE_PREFERENCES.theme.primary),
       secondary: color(theme.secondary, DEFAULT_INTERFACE_PREFERENCES.theme.secondary),
       mode: theme.mode === "light" ? "light" : "dark",

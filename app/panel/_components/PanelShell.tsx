@@ -126,7 +126,7 @@ function PanelTopbar({
           </div>
           <div className="lmx-live-status">
             <Activity aria-hidden="true" />
-            <span>Operación sincronizada</span>
+            <span>Espacio de trabajo</span>
           </div>
         </div>
 

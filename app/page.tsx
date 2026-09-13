@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -21,7 +20,7 @@ import {
 import { LumenLogo } from "@/components/brand/lumen-logo";
 import { OperatorAvatar } from "@/components/brand/operator-avatar";
 import { Reveal } from "@/components/marketing/reveal";
-import { LUMEN_OPERATORS, type OperatorId } from "@/lib/operators/catalog";
+import { OperatorShowcase } from "@/components/marketing/operator-showcase";
 import styles from "./marketing.module.css";
 
 const systemModules = [
@@ -33,15 +32,6 @@ const systemModules = [
   { icon: GitBranch, title: "Business Twin", copy: "Simula escenarios antes de comprometer presupuesto o procesos.", code: "TWIN / 06", visual: "twin" },
 ];
 
-const operatorMoods: Record<OperatorId, "welcome" | "thinking" | "good-news" | "working"> = {
-  pulse: "welcome",
-  miu: "good-news",
-  nubi: "thinking",
-  orbit: "working",
-  luma: "good-news",
-  bit: "working",
-  flori: "welcome",
-};
 
 const operatingFlow = [
   ["01", "Escucha", "El widget y los canales capturan conversaciones y señales."],
@@ -95,18 +85,18 @@ export default function Home() {
         </div>
 
         <div className={styles.heroVisual} aria-label="Identidad visual de LumenAI">
-          <Image src="/brand/studio/lumenai-cinematic-keyvisual.webp" alt="Símbolo de LumenAI presentado como una escultura luminosa" fill priority sizes="(max-width: 900px) 100vw, 56vw" />
+          <Image src="/brand/editorial/lumenai-light-ribbon.png" alt="Escultura de luz azul sobre un fondo oscuro" fill priority sizes="(max-width: 900px) 100vw, 56vw" />
           <div className={styles.heroVisualShade} />
           <div className={styles.liveCard}>
             <div className={styles.liveCardTop}>
               <OperatorAvatar operator="pulse" mood="analyzing" size={54} priority />
-              <span><small>Pulse Radar</small><strong>Lectura ejecutiva lista</strong></span><i />
+              <span><small>Pulse Radar</small><strong>Una lectura. Un siguiente paso.</strong></span><i />
             </div>
-            <p>“La demanda subió y hay tres conversaciones con alta intención sin seguimiento.”</p>
+            <p>Pulse conecta tus señales con el contexto de tu negocio para ayudarte a priorizar.</p>
             <div className={styles.liveMetrics}>
-              <span><small>Salud</small><strong>92%</strong></span>
-              <span><small>Señales</small><strong>07</strong></span>
-              <span><small>Prioridad</small><strong>Alta</strong></span>
+              <span><small>01</small><strong>Observar</strong></span>
+              <span><small>02</small><strong>Entender</strong></span>
+              <span><small>03</small><strong>Actuar</strong></span>
             </div>
           </div>
         </div>
@@ -131,7 +121,7 @@ export default function Home() {
       <section className={styles.systemSection} id="sistema">
         <div className={styles.sectionFrame}>
           <Reveal className={styles.sectionHeading}>
-            <div><span className={styles.kicker}>El sistema LumenAI</span><h2>No es un panel con IA. Es una operación conectada.</h2></div>
+            <div><span className={styles.kicker}>El sistema LumenAI</span><h2>Cada área, conectada. Cada decisión, con contexto.</h2></div>
             <p>Cada módulo tiene una misión y una identidad propia. Todos comparten el mismo negocio, memoria, permisos y trazabilidad para que la información deje de fragmentarse.</p>
           </Reveal>
 
@@ -166,11 +156,11 @@ export default function Home() {
               </div>
             </Reveal>
             <Reveal className={styles.posterHorizontal} delay={90}>
-              <Image src="/brand/studio/lumenai-cinematic-keyvisual.webp" alt="Key visual horizontal de LumenAI" fill sizes="(max-width: 900px) 100vw, 52vw" />
+              <Image src="/brand/editorial/frosted-blue.png" alt="Vidrio y luz azul sobre una superficie clara" fill sizes="(max-width: 900px) 100vw, 52vw" />
               <span>LUMENAI / INTELLIGENCE IN MOTION</span>
             </Reveal>
             <Reveal className={styles.posterVertical} delay={150}>
-              <Image src="/brand/studio/lumenai-editorial-poster.webp" alt="Póster vertical editorial de LumenAI" fill sizes="280px" />
+              <Image src="/brand/editorial/cobalt-folds.png" alt="Pliegues escultóricos en azul cobalto" fill sizes="280px" />
             </Reveal>
           </div>
         </div>
@@ -180,22 +170,10 @@ export default function Home() {
         <div className={styles.sectionFrame}>
           <Reveal className={styles.pulseIntro}>
             <div><span className={styles.kicker}>Elige quién te acompaña</span><h2>Siete operadores. Una misma inteligencia.</h2></div>
-            <p>Pulse y su equipo traducen datos, enseñan cada sección y comunican buenas noticias, alertas, análisis o celebraciones con expresiones coherentes. El propietario puede elegir su operador desde Ajustes.</p>
+            <p>Pulse y su equipo traducen datos, enseñan cada sección y comunican buenas noticias, alertas, análisis o celebraciones con expresiones coherentes. El propietario puede elegir su operador desde Interfaz.</p>
           </Reveal>
 
-          <div className={styles.operatorGrid}>
-            {LUMEN_OPERATORS.map((operator, index) => (
-              <Reveal className={styles.operatorCard} key={operator.id} delay={(index % 4) * 60}>
-                <article style={{ "--operator": operator.accent } as CSSProperties}>
-                  <span className={styles.operatorIndex}>{String(index + 1).padStart(2, "0")}</span>
-                  <div className={styles.operatorStage}>
-                    <OperatorAvatar operator={operator.id} mood={operatorMoods[operator.id]} size={150} label={`${operator.name}, operador de LumenAI`} />
-                  </div>
-                  <div className={styles.operatorCopy}><h3>{operator.name}</h3><span>{operator.role}</span><p>{operator.personality}</p></div>
-                </article>
-              </Reveal>
-            ))}
-          </div>
+          <OperatorShowcase />
         </div>
       </section>
 

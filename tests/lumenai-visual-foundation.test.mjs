@@ -33,10 +33,12 @@ test("the eleven pillars have a visual and guided operating contract", async () 
     ["access", "settings"],
   ];
 
+  assert.match(stage, /data-artwork=\{experience.visual\}/);
+  assert.match(stage, /operator=\{operatorId\}/);
+  assert.doesNotMatch(stage, /<strong>94<|<strong>08<|LIVE \/ 00/);
   for (const [moduleName, visual] of modules) {
     assert.match(experience, new RegExp(`experience\\(["']${moduleName}["']`));
     assert.match(experience, new RegExp(`experience\\(["']${moduleName}["'][\\s\\S]{0,900}["']${visual}["']`));
-    assert.match(stage, new RegExp(`(?:case\\s*["']${visual}["']|experience\\.visual === ["']${visual}["'])`));
   }
 });
 

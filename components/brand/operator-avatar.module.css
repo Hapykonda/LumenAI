@@ -4,71 +4,42 @@
   display: inline-grid;
   flex: 0 0 auto;
   place-items: center;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--operator-accent) 38%, transparent);
-  border-radius: 31%;
-  background:
-    radial-gradient(circle at 50% 22%, color-mix(in srgb, var(--operator-accent) 22%, transparent), transparent 58%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.018)),
-    #070a11;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 24px color-mix(in srgb, var(--operator-accent) 14%, transparent);
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   isolation: isolate;
-}
-
-.avatar::after {
-  position: absolute;
-  inset: 16%;
-  z-index: -1;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--operator-accent) 15%, transparent);
-  content: "";
-  filter: blur(12px);
-  animation: operator-breathe 3.2s ease-in-out infinite;
 }
 
 .image {
   object-fit: contain;
-  transform: scale(1.08);
+  pointer-events: none;
   filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22));
   transition: transform 180ms ease, filter 180ms ease;
 }
 
 .avatar[data-mood="celebrating"] .image,
 .avatar[data-mood="dancing"] .image {
-  animation: operator-bounce 1.8s ease-in-out infinite;
+  animation: operator-bounce 1.2s ease-in-out 2;
 }
 
 .avatar[data-mood="thinking"] .image,
 .avatar[data-mood="analyzing"] .image,
 .avatar[data-mood="working"] .image {
-  animation: operator-focus 2.4s ease-in-out infinite;
-}
-
-@keyframes operator-breathe {
-  50% {
-    opacity: 0.62;
-    transform: scale(1.12);
-  }
+  animation: none;
 }
 
 @keyframes operator-bounce {
   50% {
-    transform: translateY(-3%) scale(1.08);
-  }
-}
-
-@keyframes operator-focus {
-  50% {
-    filter: drop-shadow(0 10px 15px color-mix(in srgb, var(--operator-accent) 24%, transparent));
-    transform: scale(1.04);
+    transform: translateY(-3px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .avatar::after,
   .image {
     animation: none !important;
   }
 }
+
+:global([data-lumen-motion="reduced"]) .image { animation: none !important; }

@@ -1637,7 +1637,7 @@ body {
   border-radius: 8px;
   background:
     linear-gradient(90deg, rgba(0,0,0,.58), rgba(0,0,0,.32) 48%, rgba(0,0,0,.50)),
-    url("/brand/lumenai-executive-hero-20260603.webp") center / cover no-repeat,
+    url("/brand/editorial/signal-horizon.png") center / cover no-repeat,
     #020306 !important;
   box-shadow:
     0 18px 46px rgba(0,0,0,.36),
@@ -1873,7 +1873,7 @@ body {
   border-color: rgba(255,255,255,.058) !important;
   background:
     linear-gradient(90deg, rgba(0,0,0,.80), rgba(0,0,0,.58) 46%, rgba(0,0,0,.72)),
-    url("/brand/lumenai-framed-wide-card.webp") center / cover no-repeat,
+    url("/brand/editorial/signal-horizon.png") center / cover no-repeat,
     #000 !important;
 }
 
@@ -1893,7 +1893,7 @@ body {
   background:
     linear-gradient(180deg, rgba(0,0,0,.14), rgba(0,0,0,.92)),
     linear-gradient(90deg, rgba(0,0,0,.90), rgba(0,0,0,.58) 56%, rgba(0,0,0,.26)),
-    var(--lmn-module-bg, url("/brand/lumenai-module-card-360.webp")) var(--lmn-module-pos, center) / cover no-repeat,
+    var(--lmn-module-bg, url("/brand/editorial/signal-horizon.png")) var(--lmn-module-pos, center) / cover no-repeat,
     #000 !important;
   box-shadow:
     0 14px 28px rgba(0,0,0,.34),
@@ -1904,12 +1904,12 @@ body {
 }
 
 .lmn-module-leads {
-  --lmn-module-bg: url("/brand/lumenai-module-leads.webp");
+  --lmn-module-bg: url("/brand/editorial/signal-horizon.png");
   --lmn-module-pos: center;
 }
 
 .lmn-module-autopilot {
-  --lmn-module-bg: url("/brand/lumenai-module-autopilot.webp");
+  --lmn-module-bg: url("/brand/editorial/signal-horizon.png");
   --lmn-module-pos: center;
 }
 
@@ -2024,7 +2024,7 @@ body {
   background:
     linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.78)),
     linear-gradient(90deg, rgba(0,0,0,.92), rgba(0,0,0,.52) 58%, rgba(0,0,0,.18)),
-    var(--lmn-module-bg, url("/brand/lumenai-module-card-360.webp")) var(--lmn-module-pos, center) / cover no-repeat,
+    var(--lmn-module-bg, url("/brand/editorial/signal-horizon.png")) var(--lmn-module-pos, center) / cover no-repeat,
     #000 !important;
 }
 
@@ -2189,7 +2189,7 @@ body,
   background:
     linear-gradient(90deg, rgba(0,0,0,.04), rgba(0,0,0,.42) 55%, rgba(0,0,0,.05)),
     linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.16) 78%, rgba(0,0,0,.36)),
-    url("/brand/lumenai-calibration-center-hero.webp") center / cover no-repeat,
+    url("/brand/editorial/signal-horizon.png") center / cover no-repeat,
     #000 !important;
   box-shadow:
     0 14px 34px rgba(0,0,0,.50),
@@ -2264,7 +2264,7 @@ body,
   background:
     linear-gradient(180deg, rgba(0,0,0,.04), rgba(0,0,0,.90)),
     linear-gradient(90deg, rgba(0,0,0,.84), rgba(0,0,0,.50) 58%, rgba(0,0,0,.14)),
-    var(--lmn-module-bg, url("/brand/lumenai-module-card-360.webp")) var(--lmn-module-pos, center) / cover no-repeat,
+    var(--lmn-module-bg, url("/brand/editorial/signal-horizon.png")) var(--lmn-module-pos, center) / cover no-repeat,
     #000 !important;
   box-shadow:
     0 10px 24px rgba(0,0,0,.42),
@@ -2291,8 +2291,8 @@ body,
   border-color: rgba(var(--lmn-accent-rgb), .20) !important;
   transform: translateY(-1px) translateZ(0);
 }
-.lmn-module-leads { --lmn-module-bg: url("/brand/lumenai-module-leads.webp"); }
-.lmn-module-autopilot { --lmn-module-bg: url("/brand/lumenai-module-autopilot.webp"); }
+.lmn-module-leads { --lmn-module-bg: url("/brand/editorial/signal-horizon.png"); }
+.lmn-module-autopilot { --lmn-module-bg: url("/brand/editorial/signal-horizon.png"); }
 
 .apex-panel,
 .lmn-panel,
@@ -2515,7 +2515,7 @@ select {
   background:
     linear-gradient(180deg, rgba(0,0,0,.10), rgba(0,0,0,.92)),
     linear-gradient(90deg, rgba(0,0,0,.92), rgba(0,0,0,.70) 54%, rgba(0,0,0,.38)),
-    var(--lmn-module-bg, url("/brand/lumenai-module-card.webp")) var(--lmn-module-pos, center) / cover no-repeat,
+    var(--lmn-module-bg, url("/brand/editorial/signal-horizon.png")) var(--lmn-module-pos, center) / cover no-repeat,
     #000 !important;
   box-shadow:
     0 10px 22px rgba(0,0,0,.46),

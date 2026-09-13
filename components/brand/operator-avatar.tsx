@@ -33,6 +33,7 @@ export function OperatorAvatar({
       aria-label={label}
       aria-hidden={label ? undefined : true}
       data-mood={mood}
+      data-operator-presence={current.id}
     >
       <Image
         src={operatorAsset(current.id, mood)}

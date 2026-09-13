@@ -35,7 +35,7 @@ export function LumenLogo({
     >
       <span className="lmn-brand-mark lumenai-mark" aria-hidden="true">
         <Image
-          src="/brand/lumenai-official-mark.png"
+          src="/brand/editorial/lumenai-mark-transparent.png"
           alt=""
           width={pixels}
           height={pixels}

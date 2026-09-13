@@ -7,9 +7,9 @@ export type PanelThemeColors = {
 
 export const PANEL_THEME_EVENT = "lumen-theme:update";
 
-const DEFAULT_BASE = "#05070b";
-const DEFAULT_PRIMARY = "#00e5ff";
-const DEFAULT_SECONDARY = "#1b43ff";
+const DEFAULT_BASE = "#05080d";
+const DEFAULT_PRIMARY = "#1477ff";
+const DEFAULT_SECONDARY = "#72baff";
 
 function normalizeHex(hex?: string) {
   if (!hex) return null;
@@ -58,9 +58,9 @@ export function applyPanelThemeToRoot(input?: Partial<PanelThemeColors>) {
   const root = document.documentElement;
   const theme = getSafePanelTheme(input);
 
-  const baseRgb = hexToRgbString(theme.base) || "5, 7, 11";
-  const primaryRgb = hexToRgbString(theme.primary) || "0, 229, 255";
-  const secondaryRgb = hexToRgbString(theme.secondary) || "27, 67, 255";
+  const baseRgb = hexToRgbString(theme.base) || "5, 8, 13";
+  const primaryRgb = hexToRgbString(theme.primary) || "20, 119, 255";
+  const secondaryRgb = hexToRgbString(theme.secondary) || "114, 186, 255";
   const resolvedMode =
     theme.mode === "system"
       ? window.matchMedia?.("(prefers-color-scheme: light)").matches
