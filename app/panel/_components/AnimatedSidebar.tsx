@@ -75,16 +75,14 @@ function DesktopSidebar({
       <div className="lmx-sidebar-frame">
         <header className="lmx-sidebar-header">
           <Link href="/panel/overview" aria-label="Abrir centro de mando">
-            <LumenLogo label={brand} subline="Enterprise Intelligence" priority />
+            <LumenLogo label={brand} priority />
           </Link>
-          <span className="lmx-sidebar-edition">04</span>
         </header>
 
         {rightSlot ? <div className="lmx-sidebar-slot">{rightSlot}</div> : null}
 
         <button type="button" className="lmx-sidebar-pulse" onClick={openPulseAssistant}>
-          <span className="lmx-sidebar-pulse-signal"><i aria-hidden="true" /> PULSE / ONLINE</span>
-          <strong>Inteligencia operativa</strong>
+          <strong>Consultar al operador</strong>
           <small>{subline || "Sistema empresarial"}</small>
           <Sparkles aria-hidden="true" />
         </button>
@@ -110,10 +108,9 @@ function DesktopSidebar({
           <Link href="/panel/access?view=security" className="lmx-system-status">
             <Activity aria-hidden="true" />
             <span>
-              <strong>Guardian activo</strong>
-              <small>Seguridad y permisos</small>
+              <strong>Seguridad y permisos</strong>
+              <small>Gestionar acceso</small>
             </span>
-            <i aria-hidden="true" />
           </Link>
 
           <div className="lmx-sidebar-footer-actions">
@@ -232,7 +229,7 @@ function MobileSidebar({
     <>
       <header className="lmx-mobile-header">
         <Link href="/panel/overview" aria-label="Abrir centro de mando">
-          <LumenLogo size="sm" label={brand} subline="Business Intelligence" />
+          <LumenLogo size="sm" label={brand} />
         </Link>
 
         <div className="lmx-mobile-header-actions">
@@ -276,7 +273,7 @@ function MobileSidebar({
             aria-label="Navegacion de LumenAI"
           >
             <header>
-              <LumenLogo label={brand} subline="Business Intelligence" />
+              <LumenLogo label={brand} />
               <button type="button" onClick={() => setOpen(false)} aria-label="Cerrar navegacion">
                 <X aria-hidden="true" />
               </button>

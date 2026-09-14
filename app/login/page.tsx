@@ -7,16 +7,12 @@ import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowRight,
-  Building2,
   CheckCircle2,
   Eye,
   EyeOff,
   KeyRound,
   Loader2,
-  LockKeyhole,
   Mail,
-  ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { LumenLogo } from "@/components/brand/lumen-logo";
@@ -383,16 +379,13 @@ export default function LoginPage() {
     <main className={styles.shell}>
       <a className="lmn-skip-link" href="#login-form">Ir al formulario de acceso</a>
       <section className={styles.intro} aria-label="LumenAI, inteligencia propia">
-        <Image className={styles.artwork} src="/brand/editorial/lumenai-light-ribbon.png" alt="" fill priority sizes="(max-width: 800px) 100vw, 54vw" />
+        <Image className={styles.artwork} src="/brand/editorial/lumenai-mesh-blue.webp" alt="" fill priority sizes="(max-width: 800px) 100vw, 54vw" />
         <div className={styles.shade} />
         <Link className={styles.brand} href="/" aria-label="Volver a LumenAI"><LumenLogo size="lg" priority /></Link>
-        <span className={styles.edition}>IDEAS<br />INTELIGENCIA<br />IMPACTO</span>
         <div className={styles.manifesto}>
           <h1>TU NEGOCIO,<br />CON<br /><em>INTELIGENCIA</em><br />PROPIA.</h1>
-          <p>El copiloto que entiende tu negocio,<br />aprende contigo y te ayuda<br />a dar el siguiente paso.</p>
-          <span className={styles.micro}>MÁS CLARIDAD.<br />MÁS TIEMPO.<br />MÁS POSIBILIDADES.</span>
+          <p>Atención, conocimiento y decisiones.<br />El espacio de trabajo de tu empresa.</p>
         </div>
-        <span className={styles.signature}>EL FUTURO<br />TRABAJA CONTIGO.</span>
       </section>
       <section className={styles.access} aria-label="Acceso a tu espacio">
         <Link className={styles.back} href="/">Volver al sitio <ArrowRight size={16} /></Link>
@@ -405,22 +398,16 @@ export default function LoginPage() {
           >
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/68">
-                  BIENVENIDO A UN NUEVO PUNTO DE PARTIDA
-                </div>
                 <h2 className="mt-2 text-3xl font-black tracking-[-0.045em] text-white">
-                  {passwordMode ? <>Inicia sesión<br />en LumenAI</> : <>Tu acceso.<br />Sin contraseña.</>}
+                  {passwordMode ? <>Inicia sesión.</> : <>Bienvenido.</>}
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-white/48">
                   {passwordMode
-                    ? "Tu negocio. Tus datos. Tu inteligencia."
+                    ? "Introduce tu correo y contraseña para continuar."
                     : "Te enviaremos un enlace seguro a tu correo para entrar o crear tu espacio."}
                 </p>
               </div>
 
-              <div className="grid h-11 w-11 place-items-center border border-white/[0.08] bg-white/[0.025] text-white/76">
-                <LockKeyhole className="h-5 w-5" />
-              </div>
             </div>
 
             <button
@@ -442,7 +429,7 @@ export default function LoginPage() {
             <div className="my-5 flex items-center gap-3">
               <span className="h-px flex-1 bg-white/[0.07]" />
               <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/26">
-                o usa email
+                o continúa con tu correo
               </span>
               <span className="h-px flex-1 bg-white/[0.07]" />
             </div>
@@ -614,22 +601,6 @@ export default function LoginPage() {
                 <span>{err}</span>
               </div>
             ) : null}
-
-            <div className="mt-6 grid grid-cols-3 gap-2">
-              {[
-                [<ShieldCheck key="secure" className="h-3.5 w-3.5" />, "Seguro"],
-                [<Building2 key="business" className="h-3.5 w-3.5" />, "Empresa"],
-                [<Sparkles key="ai" className="h-3.5 w-3.5" />, "IA"],
-              ].map(([icon, label]) => (
-                <div
-                  key={String(label)}
-                  className="flex items-center justify-center gap-2 border border-white/[0.05] bg-white/[0.014] px-2 py-2 text-[11px] font-black text-white/42"
-                >
-                  {icon}
-                  {label}
-                </div>
-              ))}
-            </div>
 
             <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-[11px] font-bold text-white/36">
               <Link href="/legal/terms" className="transition hover:text-white/70">

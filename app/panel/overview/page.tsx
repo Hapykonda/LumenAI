@@ -126,7 +126,7 @@ function buildFocus(data: OverviewData | null): FocusItem[] {
       title: "Conversaciones con intención sin resolver",
       copy: `${stats?.chats_unread ?? 0} conversaciones esperan respuesta. Pulse priorizó las de mayor intención comercial.`,
       href: "/panel/chat",
-      action: "Abrir inbox",
+      action: "Ver conversaciones",
       tone: "amber",
       icon: MessageCircleMore,
     });
@@ -248,13 +248,13 @@ export default function OverviewPage() {
     <div className="lmx-overview lmx-command-overview">
       <header className="lmx-command-pagebar">
         <div>
-          <span><i aria-hidden="true" /> COMMAND / HOY</span>
-          <p>La señal operativa del negocio, ordenada para decidir.</p>
+          <span><i aria-hidden="true" /> Hoy</span>
+          <p>Actividad y prioridades de tu empresa.</p>
         </div>
         <div className="lmx-page-actions">
           <button type="button" className="lmx-button lmx-button-ghost" onClick={() => void loadOverview(true)} disabled={refreshing}>
             <RefreshCw className={refreshing ? "animate-spin" : ""} aria-hidden="true" />
-            {refreshing ? "Leyendo" : "Actualizar señal"}
+            {refreshing ? "Leyendo" : "Actualizar"}
           </button>
           <Link href="/panel/autoconfig" className="lmx-button lmx-button-primary">
             <WandSparkles aria-hidden="true" /> Configurar con IA
@@ -273,17 +273,17 @@ export default function OverviewPage() {
       <section className="lmx-executive-grid" aria-busy={loading}>
         <article className="lmx-executive-state" data-health={health}>
           <header>
-            <span className="lmx-section-code">01 / ESTADO EJECUTIVO</span>
+            <span className="lmx-section-code">Estado del negocio</span>
             <span className="lmx-verified-state"><i aria-hidden="true" /> {healthLabel}</span>
           </header>
 
           <div className="lmx-state-primary">
             <div className="lmx-readiness-index">
               <span>{loading ? "—" : String(score).padStart(2, "0")}</span>
-              <small>READINESS<br />INDEX</small>
+              <small>PREPARACIÓN<br />DEL NEGOCIO</small>
             </div>
             <div className="lmx-state-narrative">
-              <small>PULSE / DIAGNÓSTICO</small>
+              <small>Diagnóstico</small>
               <h2>{health === "ready" ? "La operación está lista para escalar." : "La operación necesita una decisión."}</h2>
               <p>
                 {health === "ready"
@@ -296,14 +296,14 @@ export default function OverviewPage() {
           <div className="lmx-state-ledger">
             <StateLine label="Alertas críticas" value={summary?.criticalAlerts ?? 0} detail={(summary?.criticalAlerts ?? 0) ? "Requieren control" : "Sin bloqueos"} />
             <StateLine label="Decisiones" value={summary?.pendingApprovals ?? 0} detail="Aprobación pendiente" />
-            <StateLine label="Acciones activas" value={summary?.activeLumeniteActions ?? 0} detail="LumenAI ejecutando" />
+            <StateLine label="Acciones activas" value={summary?.activeLumeniteActions ?? 0} detail="En curso" />
           </div>
         </article>
 
         <aside className="lmx-pulse-brief">
           <header>
             <div>
-              <span className="lmx-section-code">PULSE / EXECUTIVE BRIEF</span>
+              <span className="lmx-section-code">Recomendación</span>
               <strong>La siguiente decisión</strong>
             </div>
             <span className="lmx-pulse-portrait">
@@ -315,8 +315,8 @@ export default function OverviewPage() {
             <p>{focus[0]?.title}. <span>{focus[0]?.copy}</span></p>
           </div>
           <div className="lmx-pulse-evidence">
-            <span><small>EVIDENCIA</small><strong>{stats?.chats_unread ?? 0} chats / {stats?.leads_new ?? 0} leads</strong></span>
-            <span><small>CONFIANZA</small><strong>{score >= 80 ? "Alta" : "Media"}</strong></span>
+            <span><small>Actividad</small><strong>{stats?.chats_unread ?? 0} chats / {stats?.leads_new ?? 0} leads</strong></span>
+            <span><small>Preparación</small><strong>{score >= 80 ? "Alta" : "Media"}</strong></span>
           </div>
           <div className="lmx-pulse-brief-actions">
             <Link href={focus[0]?.href || "/panel/radar"}>{focus[0]?.action || "Abrir señal"}<ArrowRight aria-hidden="true" /></Link>
@@ -334,7 +334,7 @@ export default function OverviewPage() {
 
       <section className="lmx-operations-grid">
         <div className="lmx-signal-board">
-          <SectionTitle code="02 / PRIORIDAD" title="Decisiones que mueven la operación" copy="Ordenadas por impacto, evidencia y urgencia." href="/panel/radar" action="Abrir Radar" />
+          <SectionTitle code="Prioridades" title="Tareas que requieren atención" copy="Ordenadas por impacto, evidencia y urgencia." href="/panel/radar" action="Abrir Radar" />
           <div className="lmx-command-focus-list">
             {focus.map((item, index) => {
               const Icon = item.icon;
@@ -351,7 +351,7 @@ export default function OverviewPage() {
         </div>
 
         <div className="lmx-telemetry-panel">
-          <SectionTitle code="03 / LUMEN EYE" title="Actividad de los últimos ciclos" copy="Interacciones y oportunidades detectadas por Business Intelligence." href="/panel/lumen-eye?view=growth" action="Profundizar" />
+          <SectionTitle code="Actividad" title="Actividad reciente" copy="Conversaciones y oportunidades por periodo." href="/panel/lumen-eye?view=growth" action="Profundizar" />
           <div className="lmx-telemetry-total"><strong>{stats?.chats_total ?? 0}</strong><span>interacciones<br />acumuladas</span></div>
           <div className="lmx-telemetry-chart" aria-label="Actividad por periodo">
             {(series.length ? series.slice(-10) : Array.from({ length: 10 }, (_, index) => ({ label: `${index + 1}`, widgetUsers: 0, leads: 0, buyers: 0, date: "" }))).map((point, index) => {
@@ -370,7 +370,7 @@ export default function OverviewPage() {
 
       <section className="lmx-live-grid">
         <div className="lmx-live-panel">
-          <SectionTitle code="04 / CONVERSACIONES" title="Última actividad comercial" copy="Mensajes que requieren contexto o continuidad." href="/panel/chat" action="Abrir inbox" />
+          <SectionTitle code="Conversaciones" title="Última actividad comercial" copy="Mensajes que requieren contexto o continuidad." href="/panel/chat" action="Ver conversaciones" />
           <div className="lmx-command-list">
             {loading ? <EmptyRow label="Leyendo conversaciones…" /> : (data?.recentMessages ?? []).length ? (data?.recentMessages ?? []).slice(0, 4).map((message) => (
               <Link key={message.id} href={`/panel/chat/${message.chat_id}`}>
@@ -383,7 +383,7 @@ export default function OverviewPage() {
         </div>
 
         <div className="lmx-live-panel">
-          <SectionTitle code="05 / CHATS" title="Oportunidades en movimiento" copy="Leads listos para una acción humana o automática." href="/panel/chat?view=leads" action="Filtrar leads" />
+          <SectionTitle code="Oportunidades" title="Oportunidades en movimiento" copy="Leads listos para una acción humana o automática." href="/panel/chat?view=leads" action="Filtrar leads" />
           <div className="lmx-command-list">
             {loading ? <EmptyRow label="Leyendo pipeline…" /> : (data?.recentLeads ?? []).length ? (data?.recentLeads ?? []).slice(0, 4).map((lead) => (
               <Link key={lead.id} href={lead.chat_id ? `/panel/chat/${lead.chat_id}` : "/panel/chat?view=leads"}>
@@ -397,18 +397,18 @@ export default function OverviewPage() {
       </section>
 
       <section className="lmx-capability-index">
-        <SectionTitle code="06 / 10 PILARES OPERATIVOS" title="Una arquitectura, responsabilidades claras" copy="Access gestiona identidad antes y fuera de esta navegación operativa." />
+        <SectionTitle code="Secciones" title="Todo tu espacio de trabajo" copy="Accede a las herramientas de tu negocio." />
         <div>
-          <Module href="/panel/overview" code="OVR" icon={HeartPulse} title="Overview" copy="Business Command Center" />
-          <Module href="/panel/calibration" code="CAL" icon={Zap} title="Calibration" copy="Brand Intelligence" />
-          <Module href="/panel/autoconfig" code="CFG" icon={WandSparkles} title="Config AI" copy="Natural Language Configuration" />
-          <Module href="/panel/lumen-eye" code="EYE" icon={Eye} title="Lumen Eye" copy="Business Intelligence" />
-          <Module href="/panel/radar" code="PLS" icon={Sparkles} title="Pulse Radar" copy="AI Chief of Staff" />
-          <Module href="/panel/research" code="RSH" icon={Search} title="Research" copy="External Intelligence" />
-          <Module href="/panel/widget" code="WGT" icon={Bot} title="Widget" copy="Customer Experience Studio" />
-          <Module href="/panel/chat" code="CHT" icon={MessageCircleMore} title="Chats" copy="Omnichannel Center" />
+          <Module href="/panel/overview" code="OVR" icon={HeartPulse} title="Resumen" copy="Resumen del negocio" />
+          <Module href="/panel/calibration" code="CAL" icon={Zap} title="Identidad" copy="Identidad del negocio" />
+          <Module href="/panel/autoconfig" code="CFG" icon={WandSparkles} title="Configuración" copy="Configuración asistida" />
+          <Module href="/panel/lumen-eye" code="EYE" icon={Eye} title="Lumen Eye" copy="Análisis del negocio" />
+          <Module href="/panel/radar" code="PLS" icon={Sparkles} title="Pulse Radar" copy="Prioridades y seguimiento" />
+          <Module href="/panel/research" code="RSH" icon={Search} title="Investigación" copy="Mercado y fuentes" />
+          <Module href="/panel/widget" code="WGT" icon={Bot} title="Asistente web" copy="Asistente web" />
+          <Module href="/panel/chat" code="CHT" icon={MessageCircleMore} title="Conversaciones" copy="Atención al cliente" />
           <Module href="/panel/knowledge" code="KNW" icon={BookOpenText} title="Knowledge" copy="Memoria operativa" />
-          <Module href="/panel/interface" code="INT" icon={ShieldCheck} title="Interface" copy="Personal Workspace" />
+          <Module href="/panel/interface" code="INT" icon={ShieldCheck} title="Interfaz" copy="Preferencias del panel" />
         </div>
       </section>
     </div>

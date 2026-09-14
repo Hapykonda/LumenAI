@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
-import { ArrowRight, MessageCircleMore, RotateCcw, Sparkles, X } from "lucide-react";
+import { ArrowRight, MessageCircleMore, RotateCcw, X } from "lucide-react";
 import { PulsePersona } from "@/components/brand/pulse-persona";
 import { useModalAccessibility } from "@/components/ui/use-modal-accessibility";
 import { getOperator } from "@/lib/operators/catalog";
@@ -126,18 +126,14 @@ export default function SectionIntroGate({
             </button>
 
             <div className={styles.personaStage} aria-hidden="true">
-              <span className={styles.orbitOne} />
-              <span className={styles.orbitTwo} />
               <PulsePersona className={styles.persona} size={230} expression="greeting" />
               <span className={styles.personaLabel}>
-                <Sparkles />
-                {operator.name} · operador elegido
+                {operator.name}
               </span>
-              <span className={styles.stageIndex}>LUMEN / {String(activeStep + 1).padStart(2, "0")}</span>
             </div>
 
             <div className={styles.content}>
-              <span className={styles.eyebrow}>LumenAI / briefing de módulo</span>
+              <span className={styles.eyebrow}>Guía de la sección</span>
               <h2 id={titleId}>{title}</h2>
               <p id={descriptionId}>{description}</p>
 

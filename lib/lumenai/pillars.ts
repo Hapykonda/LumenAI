@@ -25,7 +25,7 @@ export const LUMENAI_PILLARS: readonly LumenAiPillar[] = [
   {
     number: 1,
     id: "calibration",
-    label: "Calibration",
+    label: "Identidad",
     href: "/panel/calibration",
     responsibility: "Brand Intelligence",
     operational: true,
@@ -34,7 +34,7 @@ export const LUMENAI_PILLARS: readonly LumenAiPillar[] = [
   {
     number: 2,
     id: "config-ai",
-    label: "Config AI",
+    label: "Configuración",
     href: "/panel/autoconfig",
     responsibility: "Natural Language Configuration",
     operational: true,
@@ -61,7 +61,7 @@ export const LUMENAI_PILLARS: readonly LumenAiPillar[] = [
   {
     number: 5,
     id: "research",
-    label: "Research",
+    label: "Investigación",
     href: "/panel/research",
     responsibility: "External Intelligence",
     operational: true,
@@ -70,7 +70,7 @@ export const LUMENAI_PILLARS: readonly LumenAiPillar[] = [
   {
     number: 6,
     id: "widget",
-    label: "Widget",
+    label: "Asistente web",
     href: "/panel/widget",
     responsibility: "Customer Experience Studio",
     operational: true,
@@ -79,7 +79,7 @@ export const LUMENAI_PILLARS: readonly LumenAiPillar[] = [
   {
     number: 7,
     id: "chats",
-    label: "Chats",
+    label: "Conversaciones",
     href: "/panel/chat",
     responsibility: "Omnichannel Communication Center",
     operational: true,
@@ -97,7 +97,7 @@ export const LUMENAI_PILLARS: readonly LumenAiPillar[] = [
   {
     number: 9,
     id: "interface",
-    label: "Interface",
+    label: "Interfaz",
     href: "/panel/interface",
     responsibility: "LumenAI Personal Workspace",
     operational: true,
@@ -106,7 +106,7 @@ export const LUMENAI_PILLARS: readonly LumenAiPillar[] = [
   {
     number: 10,
     id: "overview",
-    label: "Overview",
+    label: "Resumen",
     href: "/panel/overview",
     responsibility: "Business Command Center",
     operational: true,
@@ -115,7 +115,7 @@ export const LUMENAI_PILLARS: readonly LumenAiPillar[] = [
   {
     number: 11,
     id: "access",
-    label: "Access",
+    label: "Cuenta",
     href: "/panel/access",
     responsibility: "Login, Identity & Onboarding",
     operational: false,

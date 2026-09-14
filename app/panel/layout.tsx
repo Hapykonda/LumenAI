@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "./panel-editorial.css";
 import PanelShell from "./_components/PanelShell";
 import { PanelProvider } from "./_components/panel-context";
 import { requireBusiness } from "@/lib/supabase/lumen/requireBusiness";

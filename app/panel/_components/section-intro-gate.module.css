@@ -60,7 +60,7 @@
   place-items: center;
   overflow: hidden;
   border-right: 1px solid #272b31;
-  background: #05080d url('/brand/editorial/signal-horizon.png') 70% center / cover no-repeat;
+  background: #05080d url('/brand/editorial/lumenai-mesh-blue.webp') 70% center / cover no-repeat;
 }
 .dialog[data-reverse="true"] .personaStage { border-right: 0; border-left: 1px solid #272b31; }
 .personaStage::before, .personaStage::after { display: none; }
@@ -172,3 +172,16 @@
   .persona { animation: none; }
   .progress > span, .steps li button { transition: none; }
 }
+
+/* Shared editorial direction for product guidance. */
+.dialog { border-radius:0; box-shadow:none; border-color:#3a4b60; }
+.dialog::after { display:none; }
+.personaLabel { border:0; padding:0; background:none; font-family:Arial,sans-serif; font-size:12px; font-weight:400; text-transform:none; letter-spacing:0; }
+.eyebrow { font-family:Arial,sans-serif; font-size:12px; letter-spacing:0; font-weight:400; text-transform:none; color:#a9c1db; }
+.content h2 { font-weight:400; font-size:38px; line-height:1.06; letter-spacing:-.045em; }
+.content>p { font-size:14px; line-height:1.65; color:#aab8c8; }
+.steps .stepCopy { font-weight:400; font-size:13px; }
+.steps .stepNumber,.progress small { font-size:10px; font-weight:400; }
+.actions button { border-radius:0; font-size:12px; font-weight:400; min-height:44px; }
+.reopen { border-radius:0; }
+@media(max-width:620px) { .content h2 { font-size:29px; }.content>p { font-size:13px; }.steps .stepCopy { font-size:12px; } }

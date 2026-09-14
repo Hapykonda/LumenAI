@@ -7,13 +7,13 @@
 .brand :global(.lmn-brand-copy strong){font-size:30px!important;font-weight:500!important;color:#fff!important}
 .edition{position:absolute;right:9%;top:55px;font:10px/1.9 ui-monospace,monospace;letter-spacing:.24em;color:#c0cbd6}
 .manifesto{position:relative;z-index:1;padding:196px 7.5% 120px}
-.manifesto h1{font-size:clamp(40px,4.5vw,76px);font-weight:500;line-height:.98;letter-spacing:-.06em;margin:0}
+.manifesto h1{font-size:clamp(40px,4.5vw,76px);font-weight:400;line-height:.98;letter-spacing:-.06em;margin:0}
 .manifesto h1 em{font-style:normal;color:#88c3ff}
 .manifesto p{font-size:18px;line-height:1.45;color:#d3dce5;margin:38px 0}
 .micro,.signature{display:block;font:10px/1.9 ui-monospace,monospace;letter-spacing:.24em}
 .micro:before{content:"";display:block;width:44px;height:1px;background:#a8b8c9;margin:0 0 20px}
 .signature{position:absolute;bottom:40px;left:7.5%;color:#afbdcc}
-.access{position:relative;display:flex;justify-content:center;align-items:center;padding:110px clamp(28px,5vw,80px) 64px;background:radial-gradient(ellipse at 100% 100%,#dcecff 0,transparent 42%),#f4f6f7}
+.access{position:relative;display:flex;justify-content:center;align-items:center;padding:110px clamp(28px,5vw,80px) 64px;background:#f2f3f1!important}
 .back{position:absolute;top:42px;right:10%;display:flex;align-items:center;gap:12px;color:#435266;font-size:13px;text-decoration:none;min-height:44px}
 .form{position:relative;width:100%;max-width:490px;outline:none}
 .form h2{color:#080d13;font-size:clamp(38px,3.5vw,58px);font-weight:500;letter-spacing:-.055em;line-height:1.02;margin:18px 0 0}
@@ -26,10 +26,10 @@
 .form :global([class*="border-white"]){border-color:#c4ced9}
 .form :global([class*="bg-white"]){background:transparent}
 .form :global([class*="bg-black"]){background:transparent}
-.form input{height:52px;background:transparent;color:#162233;border:1px solid #bcc9d6;border-radius:2px;font-size:16px}
+.form input{height:52px;background:transparent;color:#162233;border:1px solid #bcc9d6;border-radius:0;font-size:16px}
 .form input::placeholder{color:#718398}
 .form input:focus{outline:2px solid #1477ff;outline-offset:2px}
-.form button{border-radius:2px;min-height:44px}
+.form button{border-radius:0;min-height:44px}
 .form>button{font-size:14px}
 .form :global(.lmn-auth-submit){height:52px;background:#0b1016;color:#fff;border:1px solid #0b1016;box-shadow:none}
 .form :global(.lmn-auth-submit):hover:not(:disabled){background:#1477ff;border-color:#1477ff}
@@ -43,4 +43,4 @@
 @media(max-width:800px){.shell{display:block}.intro{min-height:330px}.brand{top:24px;left:24px}.brand :global(.lmn-brand-copy strong){font-size:24px!important}.manifesto{padding:118px 24px 30px}.manifesto h1{font-size:36px;line-height:1.02}.manifesto h1 br:nth-of-type(1){display:none}.manifesto p,.micro,.signature{display:none}.artwork{object-position:center 45%}.access{padding:72px 24px 40px}.back{top:14px;right:24px}.form h2{font-size:42px}.form{max-width:520px}}
 @media(prefers-reduced-motion:reduce){.shell *{transition:none!important;animation:none!important}}
 
-.shell .access .form input:not([type="checkbox"]):not([type="radio"]){background:#f4f6f7!important;color:#142238!important;border:1px solid #bac8d8!important;border-radius:2px!important;box-shadow:none!important;font-weight:400!important}.shell .form button{border-radius:2px!important;box-shadow:none!important}.shell .access .form input:not([type="checkbox"]):not([type="radio"])::placeholder{color:#718398!important}.shell .access .form input:not([type="checkbox"]):not([type="radio"]):autofill{box-shadow:0 0 0 1000px #f4f6f7 inset!important;-webkit-text-fill-color:#142238!important}.shell .form>button{color:#27364b!important;background:transparent!important}.shell .form :global(.lmn-auth-submit){background:#0b1016!important;color:#fff!important}.shell .form :global(.lmn-auth-submit):hover:not(:disabled){background:#145fcb!important}.shell .access .form input:not([type="checkbox"]):not([type="radio"]):focus-visible{outline:2px solid #1477ff!important;outline-offset:2px!important}
+.shell .access .form input:not([type="checkbox"]):not([type="radio"]){background:#f4f6f7!important;color:#142238!important;border:1px solid #bac8d8!important;border-radius:0!important;box-shadow:none!important;font-weight:400!important}.shell .form button{border-radius:0!important;box-shadow:none!important}.shell .access .form input:not([type="checkbox"]):not([type="radio"])::placeholder{color:#718398!important}.shell .access .form input:not([type="checkbox"]):not([type="radio"]):autofill{box-shadow:0 0 0 1000px #f4f6f7 inset!important;-webkit-text-fill-color:#142238!important}.shell .form>button{color:#27364b!important;background:transparent!important}.shell .form :global(.lmn-auth-submit){background:#0b1016!important;color:#fff!important}.shell .form :global(.lmn-auth-submit):hover:not(:disabled){background:#145fcb!important}.shell .access .form input:not([type="checkbox"]):not([type="radio"]):focus-visible{outline:2px solid #1477ff!important;outline-offset:2px!important}

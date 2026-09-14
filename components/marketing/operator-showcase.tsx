@@ -27,10 +27,10 @@ export function OperatorShowcase() {
 
   return (
     <div className={styles.showcase} data-surface={surface}>
-      <Image src={surface === "dark" ? "/brand/editorial/signal-horizon.png" : "/brand/editorial/frosted-blue.png"} alt="" fill sizes="(max-width: 760px) 100vw, 1200px" className={styles.backdrop} />
+      <Image src="/brand/editorial/lumenai-mesh-blue.webp" alt="" fill sizes="(max-width: 760px) 100vw, 1200px" className={styles.backdrop} />
       <div className={styles.shade} />
       <div className={styles.toolbar}>
-        <span>CONOCE A TU OPERADOR</span>
+        <span>Elige tu operador</span>
         <div role="group" aria-label="Fondo de la vista previa">
           <button type="button" aria-pressed={surface === "dark"} onClick={() => setSurface("dark")}>Oscuro</button>
           <button type="button" aria-pressed={surface === "light"} onClick={() => setSurface("light")}>Claro</button>
@@ -45,7 +45,6 @@ export function OperatorShowcase() {
         </div>
         <div className={styles.presence}>
           <OperatorAvatar key={`${operatorId}-${mood}`} operator={operatorId} mood={mood} size={240} label={`${operator.name}: ${expression.label}`} />
-          <span>Parte de tu espacio de trabajo.</span>
         </div>
       </div>
       <div className={styles.controls}>
@@ -54,7 +53,7 @@ export function OperatorShowcase() {
         </div>
         <label className={styles.expression}>Expresión<select value={mood} onChange={(event) => setMood(event.target.value as OperatorMood)}>{expressions.map((item) => <option key={item.mood} value={item.mood}>{item.label}</option>)}</select></label>
       </div>
-      <p className={styles.note}>Vista previa de personalidad y expresiones. Elige el operador de tu negocio desde Interfaz.</p>
+      <p className={styles.note}>Puedes cambiar tu elección desde Interfaz, en el panel.</p>
     </div>
   );
 }

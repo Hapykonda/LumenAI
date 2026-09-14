@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: "%s | LumenAI",
   },
   description:
-    "Atención, ventas, conocimiento e inteligencia empresarial conectados en un sistema vivo guiado por Pulse.",
+    "Atención, conocimiento y decisiones. El espacio de trabajo de tu empresa, conectado con LumenAI.",
   applicationName: "LumenAI",
   keywords: [
     "inteligencia artificial para empresas",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     "soporte con IA",
   ],
   openGraph: {
-    title: "LumenAI — Tu negocio convertido en un sistema vivo",
+    title: "LumenAI — Tu negocio, con inteligencia propia",
     description:
       "Conecta atención, ventas, conocimiento y decisiones con Pulse y LumenAI.",
     type: "website",
@@ -37,7 +37,7 @@ export default function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="es" suppressHydrationWarning className="font-sans">
+    <html lang="es" suppressHydrationWarning className="font-sans" data-scroll-behavior="smooth">
       <body
         style={{
           margin: 0,

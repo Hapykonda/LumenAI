@@ -5,9 +5,7 @@ import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Activity,
   ChevronRight,
-  Command,
   HeartPulse,
   Moon,
   Search,
@@ -120,15 +118,13 @@ function PanelTopbar({
     <header className="lmx-topbar">
       <div className="lmx-topbar-inner">
         <div className="lmx-topbar-context">
-          <span className="lmx-system-id">LMN / OS</span>
           <div className="lmx-breadcrumb">
-            <Link href="/panel/overview">Workspace</Link>
+            <Link href="/panel/overview">Mi empresa</Link>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/24" />
             <strong>{activeItem?.label ?? "Panel"}</strong>
           </div>
           <div className="lmx-live-status">
-            <Activity aria-hidden="true" />
-            <span>{privateAdmin ? "Dirección privada" : "Espacio de trabajo"}</span>
+            <span>{privateAdmin ? "Propietario" : "Mi espacio"}</span>
           </div>
         </div>
 
@@ -141,10 +137,9 @@ function PanelTopbar({
               onKeyDown={(event) => {
                 if (event.key === "Escape") setQuery("");
               }}
-              placeholder="Ir a módulo o comando"
+              placeholder="Buscar una sección"
               aria-label="Buscar módulo del panel"
             />
-            <span className="lmx-search-shortcut"><Command aria-hidden="true" /> K</span>
 
             {results.length ? (
               <div className="lmx-search-results" role="listbox" aria-label="Resultados de búsqueda">
@@ -174,7 +169,6 @@ function PanelTopbar({
           </Link>
           <Link href="/panel/access?view=security" className="lmx-icon-button lmx-notification" aria-label="Abrir seguridad operativa">
             <HeartPulse aria-hidden="true" />
-            <i aria-hidden="true" />
           </Link>
           <Link
             href={privateAdmin ? "/admin" : "/panel/access"}

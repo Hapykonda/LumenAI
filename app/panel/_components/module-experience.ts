@@ -59,12 +59,12 @@ export type ModuleTour = {
 
 const MODULE_TOURS: Record<string, ModuleTour> = {
   overview: {
-    title: "Tu empresa, explicada en una sola lectura.",
-    description: "Overview resume salud, cambios, oportunidades y decisiones pendientes sin crear nuevas aplicaciones para cada tarjeta.",
+    title: "Tu resumen, paso a paso.",
+    description: "Aquí encontrarás la actividad reciente de tu negocio y las tareas que requieren atención.",
     bullets: [
-      "Lee Business Health y Pulse Brief antes de profundizar.",
-      "Resuelve Pending Decisions con evidencia y trazabilidad.",
-      "Abre el pilar propietario cuando necesites el detalle completo.",
+      "Consulta el estado del negocio y la recomendación del operador.",
+      "Revisa las tareas pendientes y sus datos de origen.",
+      "Abre cada sección cuando necesites más detalle.",
     ],
   },
   calibration: {
